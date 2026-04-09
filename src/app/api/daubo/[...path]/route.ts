@@ -7,8 +7,17 @@ export const dynamic = "force-dynamic";
 const INTERNAL = "X-Daubo-Internal-Key";
 const USER_ID = "X-Daubo-User-Id";
 
+/** Strip trailing slashes and accidental `/v1` suffix (caller already sends `v1/...` in segments). */
+function normalizeApiBase(base: string): string {
+  let b = base.trim().replace(/\/+$/, "");
+  if (b.endsWith("/v1")) {
+    b = b.slice(0, -3).replace(/\/+$/, "");
+  }
+  return b;
+}
+
 function targetUrl(base: string, segments: string[], search: string): string {
-  const root = base.replace(/\/+$/, "");
+  const root = normalizeApiBase(base);
   if (!segments.length) return `${root}${search}`;
   const path = segments.map((s) => encodeURIComponent(s)).join("/");
   return `${root}/${path}${search}`;

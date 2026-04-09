@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Daubo FastAPI backend — LangGraph, OpenRouter, Jina embeddings, pgvector"
 requires-python = ">=3.11"
 dependencies = [
+    "python-multipart>=0.0.9",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "gunicorn>=23.0.0",

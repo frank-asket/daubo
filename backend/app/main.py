@@ -151,6 +151,18 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, prefix="/v1", dependencies=protected)
     app.include_router(me.router, prefix="/v1", dependencies=protected)
 
+    for route in app.routes:
+        path = getattr(route, "path", "") or ""
+        if "/me/resume" not in path:
+            continue
+        methods = getattr(route, "methods", None)
+        if methods:
+            logger.info(
+                "Mounted resume route %s %s",
+                ",".join(sorted(methods)),
+                path,
+            )
+
     return app
 
 

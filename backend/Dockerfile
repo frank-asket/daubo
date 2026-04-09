@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY pyproject.toml ./
 COPY app ./app
 
-RUN pip install --upgrade pip && pip install .
+# Installs deps from pyproject.toml — python-multipart is required so POST /v1/me/resume/upload can boot.
+RUN pip install --upgrade pip && pip install --no-cache-dir .
 
 # Local default; Railway overwrites PORT at runtime — must bind to $PORT there.
 ENV PORT=8000
