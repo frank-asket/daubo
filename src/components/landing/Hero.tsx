@@ -10,11 +10,14 @@ export function Hero() {
           Take control of your career pipeline
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-          Daubo&apos;s multi-agent system matches roles to your profile, generates a{" "}
+          Daubo&apos;s agents help you work{" "}
+          <span className="text-zinc-200">any sector, anywhere</span>—from nursing and
+          trades to finance, education, logistics, tech, and beyond—with{" "}
+          <span className="text-zinc-200">country-aware discovery</span>, a{" "}
           <span className="text-zinc-200">personalized resume for each job</span>, and
-          prepares the application email—then{" "}
-          <span className="text-zinc-200">applies from your own address</span> (e.g.
-          Gmail) after you approve. Interview prep reuses the same context.
+          application copy—then{" "}
+          <span className="text-zinc-200">send from your own address</span> after you
+          approve. Interview prep reuses the same context.
         </p>
         <Link
           href="/dashboard"
@@ -24,7 +27,7 @@ export function Hero() {
         </Link>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-zinc-400">
-          <span className="text-zinc-500">They trust us</span>
+          <span className="text-zinc-500">Daubo job seekers</span>
           <span className="flex gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
@@ -36,10 +39,10 @@ export function Hero() {
           </span>
           <span className="font-semibold text-white">4,9</span>
           <span
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-bold text-[#4285F4]"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-zinc-950"
             aria-hidden
           >
-            G
+            D
           </span>
         </div>
       </div>

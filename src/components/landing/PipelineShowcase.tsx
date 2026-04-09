@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 const roles = [
-  { title: "Staff Backend", company: "Rivermint", match: "94%", delta: "+4.2%", up: true },
-  { title: "Product Engineer", company: "Northbeam", match: "89%", delta: "+2.1%", up: true },
-  { title: "ML Platform", company: "Cinder", match: "87%", delta: "-0.6%", up: false },
-  { title: "Security", company: "Latchkey", match: "91%", delta: "+3.4%", up: true },
-  { title: "Design Systems", company: "Parcel", match: "85%", delta: "+1.8%", up: true },
+  { title: "ICU Nurse", company: "Metro Health", match: "94%", delta: "+4.2%", up: true },
+  { title: "Warehouse Lead", company: "Continental Line", match: "89%", delta: "+2.1%", up: true },
+  { title: "High School Teacher", company: "Northfield District", match: "87%", delta: "-0.6%", up: false },
+  { title: "Field Accountant", company: "Summit Co-op", match: "91%", delta: "+3.4%", up: true },
+  { title: "DevOps Engineer", company: "Ioncraft", match: "85%", delta: "+1.8%", up: true },
 ];
 
 function Initial({ name }: { name: string }) {
@@ -22,13 +22,14 @@ export function PipelineShowcase() {
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            All roles, one pipeline
+            Every sector, every country you target
           </h2>
           <p className="mt-4 text-lg text-zinc-400">
-            Every saved role can generate its own{" "}
+            Skilled trades, care work, retail, office roles, tech—queue openings from the
+            markets you choose. Each saved role gets its own{" "}
             <span className="text-zinc-300">resume variant</span> and{" "}
-            <span className="text-zinc-300">outbound email</span>—queued to send from
-            your inbox once you approve.
+            <span className="text-zinc-300">outbound email</span>, ready to send from your
+            inbox after you approve.
           </p>
           <Link
             href="/dashboard"

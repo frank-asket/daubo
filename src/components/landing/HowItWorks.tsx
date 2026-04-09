@@ -5,13 +5,13 @@ const steps = [
   {
     n: "1",
     title: "Connect profile & inbox",
-    body: "Sign in, upload your resume PDF, and connect Gmail when you want Daubo to send applications from your address.",
+    body: "Sign in to Daubo, upload your resume PDF, and connect your inbox when you want sends to go from your address.",
     mock: "signup",
   },
   {
     n: "2",
     title: "Match & personalize",
-    body: "Agents score listings, explain fit, and produce a job-specific resume file plus answers for that posting.",
+    body: "Agents score openings from your chosen countries and sectors, explain fit, and produce a job-specific resume file plus answers for that posting.",
     mock: "fund",
   },
   {
@@ -29,8 +29,8 @@ function MockSignup() {
         Resume PDF uploaded
       </div>
       <div className="flex h-8 items-center justify-between rounded-lg bg-zinc-900/80 px-2 text-[10px] text-zinc-400">
-        <span>Gmail connected</span>
-        <span className="text-emerald-400">OAuth</span>
+        <span>Inbox connected</span>
+        <span className="text-emerald-400">Active</span>
       </div>
     </div>
   );
@@ -39,7 +39,7 @@ function MockSignup() {
 function MockFund() {
   return (
     <div className="mt-6 space-y-2 rounded-xl border border-zinc-800 bg-black/40 p-3">
-      <p className="text-[10px] text-zinc-500">Output for Rivermint · Staff Backend</p>
+      <p className="text-[10px] text-zinc-500">Output for Metro Health · ICU Nurse</p>
       <div className="flex h-9 items-center justify-between rounded-lg border border-zinc-700 bg-zinc-900/60 px-2">
         <span className="truncate text-xs text-white">Resume_Alex_Rivermint.pdf</span>
         <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400">

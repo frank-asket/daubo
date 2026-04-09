@@ -2,6 +2,7 @@ import { BalanceChart } from "@/components/daubo/BalanceChart";
 import { QuickSwapCard } from "@/components/daubo/QuickSwapCard";
 import { AssetsTableCard } from "@/components/daubo/AssetsTableCard";
 import { RepartitionCard } from "@/components/daubo/RepartitionCard";
+import { BackendStatus } from "@/components/dashboard/BackendStatus";
 
 function BottomRow() {
   return (
@@ -21,6 +22,7 @@ function BottomRow() {
 export default function DashboardPage() {
   return (
     <div className="space-y-4 p-4 sm:p-6">
+      <BackendStatus />
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <BalanceChart />

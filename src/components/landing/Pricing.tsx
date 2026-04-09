@@ -9,7 +9,7 @@ const tiers = [
     name: "Free",
     monthly: "€0",
     yearly: "€0",
-    blurb: "Explore matching, resume tailoring previews, and drafts—without live Gmail send.",
+    blurb: "Explore matching, resume tailoring previews, and drafts—without live send from your inbox.",
     featured: false,
     features: [
       "Limited job ingest / month",
@@ -26,11 +26,11 @@ const tiers = [
     name: "Pro",
     monthly: "€12",
     yearly: "€10",
-    blurb: "Personalized resume files per posting + real applications from your Gmail.",
+    blurb: "Personalized resume files per posting + real applications from your own inbox.",
     featured: true,
     features: [
       "Higher job + model quotas",
-      "Gmail OAuth: send as your address with attachments",
+      "Daubo send: use your address with attachments (connected inbox)",
       "PDF resume generated per job (JD-aligned)",
       "Approve-before-send on every application",
       "Reply-assist drafts (inbox optional)",
@@ -106,6 +106,14 @@ export function Pricing() {
           </div>
         </div>
 
+        <p className="mt-8 text-center text-sm text-zinc-500">
+          Ready to subscribe? Open{" "}
+          <Link href="/pricing" className="font-semibold text-emerald-400 hover:underline">
+            Daubo plans &amp; billing
+          </Link>{" "}
+          and finish checkout from your account.
+        </p>
+
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {tiers.map((tier) => (
             <div
@@ -130,14 +138,14 @@ export function Pricing() {
               </div>
               <p className="mt-3 text-sm text-zinc-400">{tier.blurb}</p>
               <Link
-                href="/dashboard"
+                href={tier.name === "Free" ? "/sign-up" : "/pricing"}
                 className={`mt-8 inline-flex justify-center rounded-full py-3 text-sm font-semibold ${
                   tier.featured
                     ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"
                     : "border border-zinc-600 text-white hover:border-zinc-400"
                 }`}
               >
-                Get started
+                {tier.name === "Free" ? "Create account" : "Subscribe"}
               </Link>
 
               <div className="relative my-8">

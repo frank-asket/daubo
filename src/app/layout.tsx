@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Inter } from "next/font/google";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Daubo — Multi-agent job search & resume assistant",
+  title: "Daubo — Global job search & resume assistant for every sector",
   description:
-    "Match jobs to your profile, generate a personalized resume per offer, and apply from your own email after you approve—with interview prep in the same workspace.",
+    "Country-aware discovery for any industry: match openings to your profile, generate a personalized resume per offer, and apply from your own email after you approve—with interview prep in the same workspace.",
 };
 
 export default function RootLayout({
@@ -20,10 +22,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-black font-sans text-zinc-50">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider appearance={clerkAppearance}>
+      <html lang="en" className={`${inter.variable} h-full antialiased`}>
+        <body className="flex min-h-full flex-col bg-black font-sans text-zinc-50">
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

@@ -2,8 +2,8 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 
 const rows = [
   {
-    role: "Staff Backend",
-    company: "Rivermint",
+    role: "ICU Nurse",
+    company: "Metro Health",
     match: "94%",
     stage: "Ready for review",
     updated: "2h ago",
@@ -11,8 +11,8 @@ const rows = [
     up: true,
   },
   {
-    role: "Product Engineer",
-    company: "Northbeam",
+    role: "Warehouse Supervisor",
+    company: "Continental Line",
     match: "89%",
     stage: "Draft",
     updated: "5h ago",
@@ -20,8 +20,8 @@ const rows = [
     up: true,
   },
   {
-    role: "ML Platform",
-    company: "Cinder",
+    role: "Secondary Math Teacher",
+    company: "Northfield District",
     match: "87%",
     stage: "Sent",
     updated: "1d ago",

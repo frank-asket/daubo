@@ -12,7 +12,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
       <div className="mt-4 space-y-2">
         <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
           <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-            From (your Gmail)
+            From (your inbox)
           </p>
           <div className="mt-1 flex items-center justify-between gap-2">
             <span className="truncate font-mono text-sm text-white">
@@ -33,7 +33,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             Attached resume
           </div>
           <p className="mt-1 truncate text-sm text-white">
-            Resume_Alex_<span className="text-emerald-400">Rivermint_StaffBE</span>.pdf
+            Resume_Alex_<span className="text-emerald-400">MetroHealth_ICUNurse</span>.pdf
           </p>
           {!compact ? (
             <p className="mt-2 text-[11px] text-zinc-500">
@@ -46,7 +46,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             Subject
           </p>
           <p className="mt-1 line-clamp-2 text-xs text-zinc-300">
-            Application — Staff Backend Engineer — Alex Chen
+            Application — ICU Nurse — Alex Chen
           </p>
         </div>
       </div>
@@ -54,7 +54,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
         type="button"
         className="mt-auto rounded-xl border border-emerald-500/40 bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-400 transition hover:border-emerald-400/60 hover:bg-emerald-500/15"
       >
-        Approve &amp; send via Gmail
+        Approve &amp; send from inbox
       </button>
     </div>
   );

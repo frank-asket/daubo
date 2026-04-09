@@ -86,7 +86,7 @@ export function DauboSidebar({
             Daubo Pro
           </div>
           <p className="mt-1 text-[11px] leading-snug text-zinc-500">
-            Tailored resumes per job, apply via your Gmail, prep included
+            Tailored resumes per job, apply from your inbox, prep included
           </p>
         </div>
       </div>

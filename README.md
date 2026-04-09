@@ -18,7 +18,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520.9%20recommended-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-Private-111?style=flat-square)](LICENSE)
 
-**Daubo** is a multi-agent career assistant: it matches roles to your profile, generates a **job-specific resume** and application package, and—after you connect Gmail and **approve**—sends from **your address** so threads and replies stay yours. Interview prep reuses the same context.
+**Daubo** is a multi-agent career assistant for **any sector and country you target** (care, trades, logistics, education, finance, hospitality, technology, and beyond): it matches openings to your profile, generates a **job-specific resume** and application package, and—after you connect Gmail and **approve**—sends from **your address** so threads and replies stay yours. Interview prep reuses the same context.
 
 [Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Scripts](#-scripts) · [Structure](#-project-structure)
 
@@ -35,7 +35,8 @@
 | ✉️ | **Your inbox** — Gmail OAuth path to send applications *as you*, with personalized attachment + body. |
 | ✅ | **Approval gates** — Nothing mails without explicit sign-off per application. |
 | 📊 | **Pipeline dashboard** — Dark, high-clarity UI: pipeline trend, apply package preview, applications table, stage mix. |
-| 🎨 | **Premium shell** — Marketing + app chrome inspired by the [Cryptix](https://www.framer.com/marketplace/templates/cryptix/) Framer template (layout & rhythm). |
+| 🌍 | **Global, all-industry discovery** — Country- and sector-aware matching (not tech-only); ingestion expands with regional job feeds. |
+| 🎨 | **Premium shell** — Marketing and dashboard chrome built for Daubo’s dark, high-signal workspace. |
 
 ---
 
@@ -48,7 +49,7 @@ High-level flow from profile to send:
 flowchart TB
   subgraph ingest["📥 Ingest"]
     R[Resume PDF + preferences]
-    J[Job listings]
+    J[Openings by country + sector]
   end
 
   subgraph agents["🤖 Multi-agent layer"]
@@ -101,6 +102,14 @@ npm run build
 npm start
 ```
 
+### Deploy (Vercel + API)
+
+**Frontend (Vercel)**  
+Import the repo, set environment variables from [`.env.example`](.env.example): Daubo sign-in keys (`NEXT_PUBLIC_*` / `CLERK_SECRET_KEY`), `DAUBO_API_URL` (public URL of your API), and `DAUBO_INTERNAL_API_SECRET`. The App Router proxies authenticated calls through [`src/app/api/daubo/[...path]/route.ts`](src/app/api/daubo/[...path]/route.ts). Use `dauboBffUrl()` in [`src/lib/daubo-api.ts`](src/lib/daubo-api.ts) from the browser.
+
+**Backend**  
+Run the Docker image from [`backend/Dockerfile`](backend/Dockerfile) on your host (Fly.io, Railway, ECS, etc.) with production env: `APP_ENVIRONMENT=production`, `DATABASE_URL`, provider keys, `BACKEND_CORS_ORIGINS` including your Vercel origin (`https://….vercel.app`), `EXPOSE_OPENAPI=false`, and the same `DAUBO_INTERNAL_API_SECRET` as on Vercel. Optional: `TRUSTED_HOSTS` for your API hostname behind a reverse proxy.
+
 ---
 
 ## 📜 Scripts
@@ -111,6 +120,7 @@ npm start
 | `npm run build` | Production build + typecheck |
 | `npm run start` | Serve production build |
 | `npm run lint` | ESLint (`next/core-web-vitals`) |
+| `npm run backend:dev` | FastAPI with hot reload (from `backend/`, Python venv with deps installed) |
 
 ---
 
@@ -118,6 +128,8 @@ npm start
 
 ```
 daubo/
+├── backend/                 # FastAPI — LangGraph, OpenRouter, Jina, pgvector
+│   └── app/
 ├── src/
 │   ├── app/                 # App Router — pages & layouts
 │   │   ├── page.tsx         # Marketing landing
@@ -142,20 +154,13 @@ daubo/
 
 Planned wiring (not all implemented in this UI repo):
 
-- **Auth** — [Clerk](https://clerk.com/) (or similar) for accounts.
-- **Billing** — Stripe + entitlements for Free / Pro / Business.
-- **Gmail** — OAuth `gmail.send` (+ optional `gmail.readonly` for replies).
-- **Agents** — LangGraph / LangChain for match → tailor → QA graphs.
+- **Accounts** — Secure sign-in and profiles for every Daubo user.
+- **Billing** — Plans and entitlements for Free / Pro / Business inside Daubo.
+- **Inbox send** — OAuth to your mail provider so applications send as you.
+- **Agents** — Daubo’s multi-agent pipeline for country-aware discovery → match → tailor → QA (including `POST /v1/jobs/discover` for guidance and pasted listings; live feeds integrate next).
 - **Storage** — Resume blobs + generated PDFs; encrypted refresh tokens.
 
 Environment variables will be documented here as services are connected.
-
----
-
-## 🙌 Acknowledgements
-
-- UI rhythm and dark fintech aesthetic trace to **[Cryptix — Framer Marketplace](https://www.framer.com/marketplace/templates/cryptix/)** (Arthur Duchesne). Daubo branding and career-specific copy are our own.
-- Charts: [Recharts](https://recharts.org/). Icons in-app: [Lucide](https://lucide.dev/).
 
 ---
 

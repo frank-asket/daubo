@@ -7,7 +7,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "What is Daubo?",
-    a: "Daubo orchestrates specialized agents to find and score roles against your resume, generate a personalized resume variant and application email for each job, and—when you connect Gmail and approve—send that message from your own address with the tailored PDF attached. Interview prep reuses the same job + profile context.",
+    a: "Daubo orchestrates agents for job seekers in any industry and region you target: they help discover and score roles against your resume, generate a personalized resume variant and application email for each job, and—when you connect your inbox and approve—send from your own address with the tailored PDF attached. Interview prep reuses the same job + profile context.",
   },
   {
     q: "Does Daubo create a different resume for every job?",
@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "How does applying through my email work?",
-    a: "You authorize Gmail (OAuth). Daubo prepares the draft and attachment; you review and approve. The send action uses your mailbox so the From address, threading, and replies stay yours—subject to Google’s policies and verification for production apps.",
+    a: "You connect your inbox securely. Daubo prepares the draft and attachment; you review and approve. The send action uses your mailbox so the From address, threading, and replies stay yours, in line with Daubo’s terms and your provider’s requirements.",
   },
   {
     q: "How fast is the prepare flow?",
@@ -23,15 +23,15 @@ const faqs = [
   },
   {
     q: "Is my data secure?",
-    a: "We design for encrypted OAuth tokens at rest, minimal logging, and explicit scopes for Gmail. Details ship with your privacy policy.",
+    a: "We design for encrypted tokens at rest, minimal logging, and tight inbox scopes for sending. Full detail lives in Daubo’s privacy policy.",
   },
   {
     q: "Do I need to verify identity?",
-    a: "Clerk (or your auth provider) handles account verification; employer-side checks are separate.",
+    a: "Your Daubo account handles sign-in and verification; employer-side checks are separate.",
   },
   {
-    q: "Which job sources are supported?",
-    a: "MVP assumes one controlled ingest path; more boards arrive as licensing and reliability allow.",
+    q: "Which countries and job types are supported?",
+    a: "Daubo is designed for global use: you set the country (and city or region), industries, and languages so agents tailor discovery and documents to that market—whether you are applying in healthcare in Canada, logistics in Mexico, teaching in Japan, or office roles in France. Live listings come from feeds and sources you connect or paste; the roadmap adds more board integrations by region.",
   },
   {
     q: "Can I use Daubo on mobile?",
@@ -39,7 +39,7 @@ const faqs = [
   },
   {
     q: "What are the usage limits?",
-    a: "Free tiers cap ingest and model usage; paid tiers raise limits and enable Gmail send.",
+    a: "Free tiers cap ingest and model usage; paid tiers raise limits and enable send-from-inbox.",
   },
   {
     q: "How do I contact support?",

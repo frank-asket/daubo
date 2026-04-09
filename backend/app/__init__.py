@@ -1,0 +1,1 @@
+"""Daubo FastAPI application package."""

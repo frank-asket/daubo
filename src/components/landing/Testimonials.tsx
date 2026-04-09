@@ -1,27 +1,26 @@
 "use client";
 
-import Image from "next/image";
 import { ChevronLeft, ChevronRight, Zap } from "lucide-react";
 import { useState } from "react";
 
 const quotes = [
   {
-    text: "Each posting gets its own resume PDF and email draft—I tweak, approve, and it actually sends from my Gmail. Replies don’t land in some random relay.",
+    text: "Each posting gets its own resume PDF and email draft—I tweak, approve, and it actually sends from my inbox. Replies don’t land in some random relay.",
     name: "Alex M.",
-    role: "Backend engineer",
-    img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop",
+    role: "Registered nurse · Toronto",
+    initials: "A",
   },
   {
     text: "Interview prep pulled from the same packet I applied with—no more contradictory stories between the cover letter and prep.",
     name: "Jordan K.",
-    role: "Product designer",
-    img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120&h=120&fit=crop",
+    role: "Operations supervisor · Rotterdam",
+    initials: "J",
   },
   {
-    text: "We recommend structured search to our bootcamp grads; Daubo’s pipeline UI makes ‘what’s next’ obvious.",
+    text: "We use Daubo with our cohorts—health, logistics, office, tech. The pipeline view makes what’s next obvious.",
     name: "Samira L.",
     role: "Career coach",
-    img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop",
+    initials: "S",
   },
 ];
 
@@ -45,14 +44,11 @@ export function Testimonials() {
         <div className="mt-14 flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-[#0a0a0a] lg:flex-row">
           <div className="flex flex-1 flex-col gap-6 border-b border-zinc-800 p-8 lg:border-b-0 lg:border-r lg:border-zinc-800 lg:p-10">
             <div className="flex items-center gap-3">
-              <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-zinc-700">
-                <Image
-                  src={q.img}
-                  alt=""
-                  width={56}
-                  height={56}
-                  className="object-cover"
-                />
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/80 to-cyan-600/80 text-lg font-bold text-white ring-2 ring-zinc-700"
+                aria-hidden
+              >
+                {q.initials}
               </div>
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white">
                 <Zap className="h-5 w-5 fill-white" strokeWidth={0} />

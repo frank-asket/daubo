@@ -30,21 +30,12 @@ export function Footer() {
         <div className="sm:col-span-2 lg:col-span-1">
           <Logo href="/" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
-            Daubo — multi-agent job search: personalized resumes per offer,
-            applications through your email after approval. UI inspired by the{" "}
-            <a
-              href="https://www.framer.com/marketplace/templates/cryptix/"
-              className="text-zinc-400 hover:text-zinc-300"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Cryptix
-            </a>{" "}
-            Framer template (dark fintech layout).
+            Daubo helps you discover roles, tailor every application, and send from
+            your own inbox—after you approve each step.
           </p>
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">Navigation</p>
+          <p className="text-sm font-semibold text-white">Daubo</p>
           <ul className="mt-4 space-y-2 text-sm text-zinc-500">
             <li>
               <a href="#why" className="hover:text-zinc-300">
@@ -62,6 +53,11 @@ export function Footer() {
               </a>
             </li>
             <li>
+              <Link href="/pricing" className="hover:text-zinc-300">
+                Plans
+              </Link>
+            </li>
+            <li>
               <a href="#faq" className="hover:text-zinc-300">
                 FAQ
               </a>
@@ -74,17 +70,22 @@ export function Footer() {
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">Socials</p>
+          <p className="text-sm font-semibold text-white">Product</p>
           <ul className="mt-4 space-y-2 text-sm text-zinc-500">
             <li>
-              <a href="#" className="hover:text-zinc-300">
-                Twitter (X)
-              </a>
+              <Link href="/sign-in" className="hover:text-zinc-300">
+                Sign in
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-zinc-300">
-                LinkedIn
-              </a>
+              <Link href="/sign-up" className="hover:text-zinc-300">
+                Create account
+              </Link>
+            </li>
+            <li>
+              <Link href="/dashboard/settings" className="hover:text-zinc-300">
+                Account settings
+              </Link>
             </li>
           </ul>
         </div>

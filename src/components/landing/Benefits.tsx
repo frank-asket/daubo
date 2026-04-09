@@ -8,7 +8,7 @@ const items = [
   },
   {
     title: "Apply from your inbox",
-    body: "Connect your email so applications send as you: employers see your address, and replies land in your thread (Gmail path on Pro).",
+    body: "Connect your email so applications send as you: employers see your address, and replies land in your thread (included on Pro).",
     icon: Mail,
   },
   {
@@ -31,9 +31,10 @@ export function Benefits() {
           Why choose Daubo?
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
-          Serious job seekers use multi-agent leverage for personalized resumes per
-          offer and authentic outreach from their own email—without giving up
-          control of what gets sent.
+          Built for <span className="text-zinc-300">global labour markets</span>: nurses,
+          drivers, teachers, builders, accountants, baristas, engineers—any title you
+          chase. Personalized resumes per offer and sends from your own email, with
+          you approving every message.
         </p>
 
         <div className="mt-14 grid border-l border-t border-zinc-800 sm:grid-cols-2 lg:grid-cols-4">

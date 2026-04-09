@@ -1,0 +1,93 @@
+import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const INTERNAL = "X-Daubo-Internal-Key";
+
+function targetUrl(base: string, segments: string[], search: string): string {
+  const root = base.replace(/\/+$/, "");
+  if (!segments.length) return `${root}${search}`;
+  const path = segments.map((s) => encodeURIComponent(s)).join("/");
+  return `${root}/${path}${search}`;
+}
+
+/** Public proxy paths (no signed-in Daubo session required). */
+function isPublicProxy(method: string, pathKey: string): boolean {
+  return method === "GET" && (pathKey === "v1/health" || pathKey === "health");
+}
+
+async function handle(req: NextRequest, segments: string[]): Promise<NextResponse> {
+  const base = process.env.DAUBO_API_URL;
+  if (!base?.trim()) {
+    return NextResponse.json(
+      { error: "DAUBO_API_URL is not configured on the server" },
+      { status: 503 },
+    );
+  }
+
+  const pathKey = segments.join("/");
+  if (!isPublicProxy(req.method, pathKey)) {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  const secret = process.env.DAUBO_INTERNAL_API_SECRET;
+  const url = targetUrl(base, segments, req.nextUrl.search);
+
+  const headers = new Headers();
+  const ct = req.headers.get("content-type");
+  if (ct) headers.set("content-type", ct);
+  const accept = req.headers.get("accept");
+  if (accept) headers.set("accept", accept);
+  if (secret) headers.set(INTERNAL, secret);
+
+  const init: RequestInit = {
+    method: req.method,
+    headers,
+    cache: "no-store",
+  };
+  if (!["GET", "HEAD"].includes(req.method)) {
+    init.body = await req.arrayBuffer();
+  }
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(url, init);
+  } catch {
+    return NextResponse.json({ error: "Upstream API unreachable" }, { status: 502 });
+  }
+
+  const out = new NextResponse(await upstream.arrayBuffer(), { status: upstream.status });
+  const rid = upstream.headers.get("x-request-id");
+  if (rid) out.headers.set("x-request-id", rid);
+  const resCt = upstream.headers.get("content-type");
+  if (resCt) out.headers.set("content-type", resCt);
+  return out;
+}
+
+type Ctx = { params: Promise<{ path?: string[] }> | { path?: string[] } };
+
+async function segmentsFrom(ctx: Ctx): Promise<string[]> {
+  const p = await Promise.resolve(ctx.params);
+  return p.path ?? [];
+}
+
+export async function GET(req: NextRequest, ctx: Ctx) {
+  return handle(req, await segmentsFrom(ctx));
+}
+export async function POST(req: NextRequest, ctx: Ctx) {
+  return handle(req, await segmentsFrom(ctx));
+}
+export async function PUT(req: NextRequest, ctx: Ctx) {
+  return handle(req, await segmentsFrom(ctx));
+}
+export async function PATCH(req: NextRequest, ctx: Ctx) {
+  return handle(req, await segmentsFrom(ctx));
+}
+export async function DELETE(req: NextRequest, ctx: Ctx) {
+  return handle(req, await segmentsFrom(ctx));
+}
