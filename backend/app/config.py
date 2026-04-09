@@ -53,6 +53,19 @@ class Settings(BaseSettings):
     def log_level_upper(cls, v: str) -> str:
         return v.upper()
 
+    @field_validator("database_url")
+    @classmethod
+    def database_url_asyncpg(cls, v: str) -> str:
+        """Railway/Heroku often set postgres:// or postgresql://; async engine needs +asyncpg."""
+        u = v.strip()
+        if u.startswith("postgresql+") or u.startswith("postgres+"):  # include other drivers
+            return u
+        if u.startswith("postgres://"):
+            return "postgresql+asyncpg://" + u[len("postgres://") :]
+        if u.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + u[len("postgresql://") :]
+        return u
+
     @property
     def is_production(self) -> bool:
         return self.app_environment == "production"

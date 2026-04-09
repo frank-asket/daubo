@@ -102,13 +102,42 @@ npm run build
 npm start
 ```
 
-### Deploy (Vercel + API)
+### Deploy (Vercel frontend + Railway backend)
 
-**Frontend (Vercel)**  
-Import the repo, set environment variables from [`.env.example`](.env.example): Daubo sign-in keys (`NEXT_PUBLIC_*` / `CLERK_SECRET_KEY`), `DAUBO_API_URL` (public URL of your API), and `DAUBO_INTERNAL_API_SECRET`. The App Router proxies authenticated calls through [`src/app/api/daubo/[...path]/route.ts`](src/app/api/daubo/[...path]/route.ts). Use `dauboBffUrl()` in [`src/lib/daubo-api.ts`](src/lib/daubo-api.ts) from the browser.
+**1 — Railway (FastAPI + Postgres)**
 
-**Backend**  
-Run the Docker image from [`backend/Dockerfile`](backend/Dockerfile) on your host (Fly.io, Railway, ECS, etc.) with production env: `APP_ENVIRONMENT=production`, `DATABASE_URL`, provider keys, `BACKEND_CORS_ORIGINS` including your Vercel origin (`https://….vercel.app`), `EXPOSE_OPENAPI=false`, and the same `DAUBO_INTERNAL_API_SECRET` as on Vercel. Optional: `TRUSTED_HOSTS` for your API hostname behind a reverse proxy.
+1. In [Railway](https://railway.app), create a project and deploy **from this GitHub repo**.
+2. Set the service **root directory** to `backend` so Railway uses [`backend/Dockerfile`](backend/Dockerfile) (or use the included [`backend/railway.toml`](backend/railway.toml)).
+3. Add a **PostgreSQL** database (or any Postgres that allows the **`vector`** extension; Daubo runs `CREATE EXTENSION vector` on startup). If your host does not support pgvector, use a pgvector-capable database (e.g. Neon, Supabase) and set `DATABASE_URL` to that connection string.
+4. **Variables** on the API service (see [`.env.example`](.env.example)):
+
+   | Variable | Notes |
+   |----------|--------|
+   | `DATABASE_URL` | Reference Railway Postgres `${{Postgres.DATABASE_URL}}` or paste a URL. Plain `postgres://` / `postgresql://` is normalized to **`postgresql+asyncpg://`** in code. |
+   | `APP_ENVIRONMENT` | `production` (Dockerfile default is already production). |
+   | `BACKEND_CORS_ORIGINS` | Your Vercel URL(s), comma-separated, e.g. `https://your-app.vercel.app` (and preview URLs if you need them). |
+   | `DAUBO_INTERNAL_API_SECRET` | Long random string; **same value** on Vercel (below). |
+   | `EXPOSE_OPENAPI` | `false` in production unless you want public `/docs`. |
+   | `TRUSTED_HOSTS` | Optional; comma-separated hostnames of your Railway **public** API URL (see Railway networking docs if you use a custom domain). |
+   | `OPENROUTER_API_KEY`, `JINA_API_KEY`, etc. | As needed for chat/embeddings. |
+
+5. Generate a **public URL** (or attach a custom domain) for the API. Health check: `GET /health` (used by [`backend/railway.toml`](backend/railway.toml)).
+
+**2 — Vercel (Next.js UI)**
+
+1. Import the same (or frontend-only) repo in [Vercel](https://vercel.com). Use the **default project root** (repository root).
+2. **Environment variables:**
+
+   | Variable | Notes |
+   |----------|--------|
+   | Clerk — `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Use **production** keys for production deployment. |
+   | Clerk URLs | `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`; redirect URLs `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` / `…SIGN_UP…` (e.g. `/dashboard`). |
+   | `DAUBO_API_URL` | **HTTPS** public base URL of the Railway API, **no trailing slash**, e.g. `https://your-api.up.railway.app`. |
+   | `DAUBO_INTERNAL_API_SECRET` | **Identical** to the Railway API service value. |
+
+3. In the [Clerk dashboard](https://dashboard.clerk.com), add your Vercel URLs to **Allowed origins** and **Redirect URLs** as required.
+
+The App Router proxies the browser to the API via [`src/app/api/daubo/[...path]/route.ts`](src/app/api/daubo/[...path]/route.ts). From the client, use `dauboBffUrl()` in [`src/lib/daubo-api.ts`](src/lib/daubo-api.ts).
 
 ---
 
