@@ -152,7 +152,11 @@ export function JobDiscoverPanel({
         const h = (await r.json()) as DiscoverHints;
         hintsPrefilled.current = true;
         setCountry(h.country?.trim() || "");
-        setCountryCode(h.country_code?.trim().toUpperCase() || null);
+        {
+          const cc =
+            typeof h.country_code === "string" ? h.country_code.trim().toUpperCase() : "";
+          setCountryCode(cc.length === 2 ? cc : null);
+        }
         setCityOrRegion(h.city_or_region?.trim() || "");
         setRoleFocus(h.role_focus?.trim() || "");
         setIndustries((h.industries ?? []).map((s) => s.trim()).filter(Boolean).join(", "));
