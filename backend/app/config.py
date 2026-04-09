@@ -42,6 +42,13 @@ class Settings(BaseSettings):
 
     adzuna_app_id: str = ""
     adzuna_app_key: str = ""
+    adzuna_default_country: str = Field(
+        default="us",
+        description=(
+            "Lowercase Adzuna jobs region slug (e.g. us, gb) when resume/infer country is not mapped. "
+            "Set empty to skip Adzuna instead of defaulting."
+        ),
+    )
 
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000

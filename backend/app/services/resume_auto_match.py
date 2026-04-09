@@ -12,7 +12,18 @@ from sqlalchemy import func, select
 from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.models import AgentMatchRun, JobApplication, UserResume
-from app.schemas.jobs import JobDiscoverParams, JobDiscoverResponse, ResumeSearchInference
+from app.schemas.jobs import (
+    JobDiscoverLLMOut,
+    JobDiscoverParams,
+    JobDiscoverResponse,
+    PortalGuide,
+    ResumeSearchInference,
+)
+from app.services.adzuna_jobs import (
+    build_adzuna_search_query,
+    fetch_adzuna_listings,
+    resolve_adzuna_country_slug,
+)
 from app.services.job_discover_live import run_job_discovery_with_optional_adzuna
 from app.services.llm import chat_llm
 
@@ -115,10 +126,95 @@ async def _persist_applications_from_parsed(
         )
 
 
+async def _resume_automatch_adzuna_only(
+    settings: Settings,
+    clerk_user_id: str,
+    resume_text: str,
+) -> None:
+    """Fill pipeline from Adzuna when OpenRouter is off (no LLM inference)."""
+    excerpt = resume_text.strip()[:RESUME_EXCERPT]
+    params = JobDiscoverParams(
+        country="United States",
+        country_code="US",
+        city_or_region=None,
+        industries=[],
+        role_focus=None,
+        languages=[],
+        locale="en",
+        pasted_listings=None,
+        resume_context=excerpt,
+    )
+    slug = resolve_adzuna_country_slug(
+        params.country_code,
+        params.country,
+        default_slug=(settings.adzuna_default_country or "").strip() or None,
+    )
+    if not slug:
+        logger.warning("Adzuna-only auto-match: no regional slug (set ADZUNA_DEFAULT_COUNTRY)")
+        return
+
+    api_listings = await fetch_adzuna_listings(
+        settings,
+        country_slug=slug,
+        what=build_adzuna_search_query(params),
+        where=params.city_or_region,
+        max_results=15,
+    )
+
+    result = JobDiscoverLLMOut(
+        executive_summary=(
+            "OpenRouter is not configured, so there is no AI matching plan. "
+            f"The rows below are live Adzuna listings for region {slug!r} when your API keys return data."
+        ),
+        portals=[
+            PortalGuide(
+                name="Adzuna API",
+                kind="aggregator",
+                how_to_use="Register at https://developer.adzuna.com/ for app_id and app_key; "
+                "set ADZUNA_APP_ID, ADZUNA_APP_KEY, and optionally ADZUNA_DEFAULT_COUNTRY (e.g. gb, fr).",
+            )
+        ],
+        example_search_queries=[build_adzuna_search_query(params)],
+        filters_to_apply=[],
+        regulatory_reminders=(
+            "Open the original posting to confirm details. Aggregated listings can be stale or redirected."
+        ),
+        parsed_listings=api_listings,
+    )
+    response = JobDiscoverResponse(
+        country=params.country,
+        country_code=params.country_code,
+        result=result,
+    )
+    payload = response.model_dump(mode="json")
+
+    async with SessionLocal() as session:
+        session.add(
+            AgentMatchRun(
+                clerk_user_id=clerk_user_id,
+                kind=KIND,
+                payload=payload,
+            )
+        )
+        await _persist_applications_from_parsed(session, clerk_user_id, result.parsed_listings)
+        await session.commit()
+
+    logger.info(
+        "Adzuna-only resume auto-match completed user=%s listings=%s",
+        clerk_user_id[:12],
+        len(api_listings),
+    )
+
+
 async def run_resume_auto_match_for_user(clerk_user_id: str) -> None:
     settings = get_settings()
-    if not settings.openrouter_api_key:
-        logger.info("Skipping resume auto-match: OPENROUTER_API_KEY not set")
+    has_or = bool((settings.openrouter_api_key or "").strip())
+    has_adz = bool((settings.adzuna_app_id or "").strip() and (settings.adzuna_app_key or "").strip())
+
+    if not has_or and not has_adz:
+        logger.info(
+            "Skipping resume auto-match: set OPENROUTER_API_KEY and/or ADZUNA_APP_ID + ADZUNA_APP_KEY"
+        )
         return
 
     async with SessionLocal() as session:
@@ -144,6 +240,10 @@ async def run_resume_auto_match_for_user(clerk_user_id: str) -> None:
             return
 
         resume_text = row.content_text
+
+    if not has_or and has_adz:
+        await _resume_automatch_adzuna_only(settings, clerk_user_id, resume_text)
+        return
 
     params = await _infer_params(settings, resume_text)
 

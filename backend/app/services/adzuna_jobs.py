@@ -81,6 +81,33 @@ _NAME_SLUG_HINTS: tuple[tuple[str, str], ...] = (
 )
 
 
+def resolve_adzuna_country_slug(
+    country_code: str | None,
+    country_name: str,
+    *,
+    default_slug: str | None,
+) -> str | None:
+    """Return Adzuna path slug, or *default_slug* (if set) when country is unmapped."""
+    slug = adzuna_country_slug(country_code, country_name)
+    if slug:
+        return slug
+    d = (default_slug or "").strip().lower()
+    if d:
+        logger.warning(
+            "Adzuna: unmapped country name=%r code=%r — using default region slug=%s",
+            (country_name or "")[:80],
+            country_code,
+            d,
+        )
+        return d
+    logger.info(
+        "Adzuna: skip — no regional slug for country=%r code=%r and no ADZUNA_DEFAULT_COUNTRY",
+        (country_name or "")[:80],
+        country_code,
+    )
+    return None
+
+
 def adzuna_country_slug(country_code: str | None, country_name: str) -> str | None:
     if country_code:
         c = country_code.strip().upper()
@@ -166,6 +193,62 @@ def format_listings_as_paste_block(listings: list[ParsedListing]) -> str:
     return header + "\n\n".join(blocks)
 
 
+def _parse_adzuna_payload(r: httpx.Response) -> dict[str, Any] | None:
+    ctype = (r.headers.get("content-type") or "").lower()
+    if "json" not in ctype and r.text and r.text.lstrip()[:1] not in "{[":
+        return None
+    try:
+        data = r.json()
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+async def _fetch_adzuna_once(
+    client: httpx.AsyncClient,
+    *,
+    country_slug: str,
+    app_id: str,
+    app_key: str,
+    n: int,
+    what: str,
+    where: str | None,
+) -> tuple[int, dict[str, Any] | None, str]:
+    """Return (status_code, json_dict_or_none, body_prefix_for_logs)."""
+    params: dict[str, str | int] = {
+        "app_id": app_id,
+        "app_key": app_key,
+        "results_per_page": n,
+        "what": what or "jobs",
+        "content-type": "application/json",
+    }
+    if where and where.strip():
+        params["where"] = where.strip()[:200]
+
+    url = f"{_ADZUNA_BASE}/{country_slug}/search/1"
+    r = await client.get(url, params=params, headers={"Accept": "application/json"})
+    data = _parse_adzuna_payload(r)
+    prefix = (r.text or "")[:180].replace("\n", " ")
+    return r.status_code, data, prefix
+
+
+def _listings_from_payload(payload: dict[str, Any] | None, n: int) -> list[ParsedListing]:
+    if not payload:
+        return []
+    results = payload.get("results")
+    if not isinstance(results, list):
+        return []
+
+    out: list[ParsedListing] = []
+    for hit in results:
+        if not isinstance(hit, dict):
+            continue
+        pl = _hit_to_listing(hit)
+        if pl:
+            out.append(pl)
+    return out[:n]
+
+
 async def fetch_adzuna_listings(
     settings: Settings,
     *,
@@ -181,50 +264,63 @@ async def fetch_adzuna_listings(
         return []
 
     n = max(1, min(max_results, 25))
-    params: dict[str, str | int] = {
-        "app_id": app_id,
-        "app_key": app_key,
-        "results_per_page": n,
-        "what": what or "jobs",
-    }
-    if where and where.strip():
-        params["where"] = where.strip()[:200]
-
-    url = f"{_ADZUNA_BASE}/{country_slug}/search/1"
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
-            r = await client.get(url, params=params)
+            status, payload, prefix = await _fetch_adzuna_once(
+                client,
+                country_slug=country_slug,
+                app_id=app_id,
+                app_key=app_key,
+                n=n,
+                what=what,
+                where=where,
+            )
+
+            if status == 404:
+                logger.info("Adzuna: no jobs endpoint for region slug=%s", country_slug)
+                return []
+
+            if not (200 <= status < 300):
+                msg = ""
+                if payload:
+                    msg = str(payload.get("display") or payload.get("exception") or "")[:200]
+                logger.warning(
+                    "Adzuna HTTP %s region=%s what=%r — %s — body_prefix=%s",
+                    status,
+                    country_slug,
+                    what[:80],
+                    msg or "check ADZUNA_APP_ID / ADZUNA_APP_KEY (from developer.adzuna.com)",
+                    prefix,
+                )
+                return []
+
+            listings = _listings_from_payload(payload, n)
+            if not listings and where and where.strip():
+                logger.info(
+                    "Adzuna: 0 hits with where=%r; retrying without location filter",
+                    where[:80],
+                )
+                status2, payload2, _ = await _fetch_adzuna_once(
+                    client,
+                    country_slug=country_slug,
+                    app_id=app_id,
+                    app_key=app_key,
+                    n=n,
+                    what=what,
+                    where=None,
+                )
+                if 200 <= status2 < 300:
+                    listings = _listings_from_payload(payload2, n)
+
+            if listings:
+                logger.info("Adzuna: %s listings region=%s what=%r", len(listings), country_slug, what[:60])
+            else:
+                logger.info(
+                    "Adzuna: HTTP 200 but 0 results region=%s what=%r — try broader role/location or another region",
+                    country_slug,
+                    what[:80],
+                )
+            return listings
     except httpx.HTTPError:
         logger.warning("Adzuna request failed (network) for country=%s", country_slug)
         return []
-
-    if r.status_code == 404:
-        logger.info("Adzuna has no regional endpoint for slug=%s", country_slug)
-        return []
-    if not r.is_success:
-        logger.warning(
-            "Adzuna HTTP %s for country=%s body_prefix=%s",
-            r.status_code,
-            country_slug,
-            (r.text or "")[:120],
-        )
-        return []
-
-    try:
-        payload = r.json()
-    except ValueError:
-        logger.warning("Adzuna returned non-JSON")
-        return []
-
-    results = payload.get("results")
-    if not isinstance(results, list):
-        return []
-
-    out: list[ParsedListing] = []
-    for hit in results:
-        if not isinstance(hit, dict):
-            continue
-        pl = _hit_to_listing(hit)
-        if pl:
-            out.append(pl)
-    return out[:n]
