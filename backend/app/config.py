@@ -77,11 +77,11 @@ class Settings(BaseSettings):
     )
     openrouter_top_k: int | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         le=500,
         description=(
-            "If set, sent to the provider (model-dependent; omit in env to disable). "
-            "Some models ignore top_k."
+            "If set, sent to the provider (0 is valid; optional env unset = omit). "
+            "Model-dependent; some ignore top_k."
         ),
     )
 
