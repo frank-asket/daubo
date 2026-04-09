@@ -2,6 +2,7 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.deps.users import get_clerk_user_id
-from app.models import JobApplication, UserResume
+from app.models import AgentMatchRun, JobApplication, UserResume
 from app.schemas.me import (
     ApplicationCreate,
     ApplicationOut,
@@ -18,11 +19,19 @@ from app.schemas.me import (
     ResumeOut,
     ResumeUploadOut,
 )
+from app.services.resume_auto_match import schedule_resume_auto_match
 from app.services.resume_ingest import extract_resume_text
 from app.services.resume_kickoff import agent_ack_after_resume_upload
 
 router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
+
+_AUTODISCOVER_KIND = "resume_autodiscover"
+
+
+class AgentMatchLatestResponse(BaseModel):
+    run: dict | None = None
+    created_at: str | None = None
 
 
 @router.get("/me/stats")
@@ -90,7 +99,30 @@ async def upsert_resume(
         session.add(row)
     await session.commit()
     await session.refresh(row)
+    schedule_resume_auto_match(user_id)
     return row
+
+
+@router.get("/me/agent-match/latest", response_model=AgentMatchLatestResponse)
+async def latest_agent_match(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> AgentMatchLatestResponse:
+    result = await session.execute(
+        select(AgentMatchRun)
+        .where(
+            AgentMatchRun.clerk_user_id == user_id,
+            AgentMatchRun.kind == _AUTODISCOVER_KIND,
+        )
+        .order_by(AgentMatchRun.created_at.desc())
+        .limit(1)
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        return AgentMatchLatestResponse(run=None, created_at=None)
+    ts = row.created_at
+    iso = ts.isoformat() if ts else None
+    return AgentMatchLatestResponse(run=row.payload, created_at=iso)
 
 
 @router.post("/me/resume/upload", response_model=ResumeUploadOut)
@@ -131,6 +163,7 @@ async def upload_resume_file(
     await session.commit()
     await session.refresh(row)
 
+    schedule_resume_auto_match(user_id)
     agent_reply = await agent_ack_after_resume_upload(settings)
     return ResumeUploadOut(
         id=row.id,

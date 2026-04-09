@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type DiscoverResult = {
@@ -17,6 +17,9 @@ type DiscoverResult = {
 };
 
 export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?: () => void }) {
+  const onCompleteRef = useRef(onDiscoveryComplete);
+  onCompleteRef.current = onDiscoveryComplete;
+
   const [country, setCountry] = useState("");
   const [roleFocus, setRoleFocus] = useState("");
   const [industries, setIndustries] = useState("");
@@ -24,10 +27,43 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DiscoverResult | null>(null);
+  const [autoPlanAt, setAutoPlanAt] = useState<string | null>(null);
+  const lastFetchedCreatedAt = useRef<string | null>(null);
+
+  const fetchLatestPlan = useCallback(async () => {
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/agent-match/latest"), {
+        credentials: "same-origin",
+      });
+      if (!r.ok) return;
+      const j = (await r.json()) as { run: DiscoverResult | null; created_at: string | null };
+      if (j.run) {
+        const isNew = j.created_at != null && j.created_at !== lastFetchedCreatedAt.current;
+        if (j.created_at) lastFetchedCreatedAt.current = j.created_at;
+        setData(j.run);
+        setAutoPlanAt(j.created_at);
+        setCountry((prev) => prev.trim() || j.run?.country || "");
+        if (isNew) onCompleteRef.current?.();
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchLatestPlan();
+    const a = setTimeout(() => void fetchLatestPlan(), 20_000);
+    const b = setTimeout(() => void fetchLatestPlan(), 50_000);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+  }, [fetchLatestPlan]);
 
   async function runDiscover() {
     setError(null);
     setData(null);
+    setAutoPlanAt(null);
     if (!country.trim()) {
       setError("Add a country so agents can focus the matching plan.");
       return;
@@ -68,9 +104,17 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
     <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
       <h3 className="text-sm font-semibold text-white">Matching scope (country &amp; sector)</h3>
       <p className="mt-1 text-xs text-zinc-500">
-        You do not search job boards here—agents match your resume to offers worldwide. Use this to
-        steer geography and focus; optional paste helps ingest specific ads into structured rows.
+        When you save or upload a resume, agents automatically infer geography and roles, then draft a
+        sourcing plan in the background—no extra clicks. Use the fields below to refine or re-run
+        manually; optional paste pulls real ads into pipeline rows.
       </p>
+      {autoPlanAt ? (
+        <p className="mt-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-100/90">
+          Last auto-plan from your resume
+          {autoPlanAt ? `: ${new Date(autoPlanAt).toLocaleString()}` : ""}. Plans can take ~30–60s
+          after a resume update—refresh if this block is still empty.
+        </p>
+      ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">

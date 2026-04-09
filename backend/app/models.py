@@ -34,6 +34,21 @@ class UserResume(Base):
     )
 
 
+class AgentMatchRun(Base):
+    """Stored output from background agent runs (e.g. auto job-market plan from resume)."""
+
+    __tablename__ = "agent_match_runs"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), index=True)
+    kind: Mapped[str] = mapped_column(String(64), index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+
 class JobApplication(Base):
     """Tracked job / application row for pipeline UI."""
 

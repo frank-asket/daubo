@@ -23,6 +23,11 @@ class JobDiscoverParams(BaseModel):
         max_length=120_000,
         description="Raw text of vacancies to normalize into parsed_listings",
     )
+    resume_context: str | None = Field(
+        default=None,
+        max_length=16_000,
+        description="Resume excerpt for tailoring search strategy (not treated as job adverts).",
+    )
 
 
 class ParsedListing(BaseModel):
@@ -49,6 +54,17 @@ class JobDiscoverLLMOut(BaseModel):
     filters_to_apply: list[str]
     regulatory_reminders: str
     parsed_listings: list[ParsedListing] = Field(default_factory=list)
+
+
+class ResumeSearchInference(BaseModel):
+    """LLM output: geography and focus inferred from resume text only."""
+
+    country: str = Field(..., min_length=2, max_length=120)
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    city_or_region: str | None = Field(default=None, max_length=200)
+    industries: list[str] = Field(default_factory=list)
+    role_focus: str | None = Field(default=None, max_length=500)
+    languages: list[str] = Field(default_factory=list)
 
 
 class JobDiscoverResponse(BaseModel):

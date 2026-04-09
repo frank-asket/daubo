@@ -20,6 +20,9 @@ make up obscure domains.
 Boolean-style patterns).
 5) regulatory_reminders: briefly remind users to verify work authorization, contract types, \
 and local norms—they vary by country.
+6) If the user message includes a resume excerpt (candidate profile), tailor executive_summary, \
+example_search_queries, filters_to_apply, and portals to that profile. Never invent \
+parsed_listings from the resume alone—parsed_listings only from explicit pasted job ads.
 
 Respond using the required structured schema only."""
 
@@ -46,6 +49,11 @@ def _user_message(params: JobDiscoverParams) -> str:
             "The following text may contain job ads pasted by the user. "
             "Extract parsed_listings from it when possible; otherwise leave parsed_listings empty.\n\n"
             + params.pasted_listings.strip()
+        )
+    if params.resume_context:
+        parts.append(
+            "\n---\nCandidate resume excerpt (tailor search strategy only; these are NOT job ads):\n"
+            + params.resume_context.strip()
         )
     return "\n".join(parts)
 
