@@ -133,7 +133,7 @@ npm start
    | Variable | Notes |
    |----------|--------|
    | Clerk — `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Use **production** keys for production deployment. |
-   | Clerk URLs | `NEXT_PUBLIC_CLERK_SIGN_IN_URL`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL`; redirect URLs `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` / `…SIGN_UP…` (e.g. `/dashboard`). |
+   | Clerk URLs | `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/auth/sign-in`, `NEXT_PUBLIC_CLERK_SIGN_UP_URL=/auth/sign-up`; redirect URLs `NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL` / `…SIGN_UP…` (e.g. `/dashboard`). Match these paths in the Clerk dashboard. |
    | `DAUBO_API_URL` | **HTTPS** public base URL of the Railway API, **no trailing slash**, e.g. `https://your-api.up.railway.app`. |
    | `DAUBO_INTERNAL_API_SECRET` | **Identical** to the Railway API service value. |
 

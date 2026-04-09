@@ -10,7 +10,8 @@ export const clerkAppearance: Appearance = {
     colorNeutral: "#a1a1aa",
   },
   elements: {
-    card: "bg-zinc-950 shadow-xl border border-zinc-800",
+    rootBox: "w-full",
+    card: "w-full bg-zinc-950 shadow-xl border border-zinc-800",
     headerTitle: "text-white",
     headerSubtitle: "text-zinc-400",
     socialButtonsBlockButton: "border-zinc-700 bg-zinc-900 text-white",

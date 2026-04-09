@@ -138,7 +138,7 @@ export function Pricing() {
               </div>
               <p className="mt-3 text-sm text-zinc-400">{tier.blurb}</p>
               <Link
-                href={tier.name === "Free" ? "/sign-up" : "/pricing"}
+                href={tier.name === "Free" ? "/auth/sign-up" : "/pricing"}
                 className={`mt-8 inline-flex justify-center rounded-full py-3 text-sm font-semibold ${
                   tier.featured
                     ? "bg-emerald-400 text-zinc-950 hover:bg-emerald-300"

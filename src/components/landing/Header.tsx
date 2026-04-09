@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -44,22 +38,18 @@ export function Header() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <SignedOut>
-            <SignInButton mode="redirect" forceRedirectUrl="/dashboard">
-              <button
-                type="button"
-                className="hidden rounded-full border border-zinc-600 px-4 py-2 text-xs font-semibold text-zinc-200 transition hover:border-zinc-400 hover:text-white sm:inline-flex"
-              >
-                Log in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="redirect" forceRedirectUrl="/dashboard">
-              <button
-                type="button"
-                className="hidden rounded-full border border-white/80 px-5 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black sm:inline-flex"
-              >
-                Get started
-              </button>
-            </SignUpButton>
+            <Link
+              href="/auth/sign-in"
+              className="hidden rounded-full border border-zinc-600 px-4 py-2 text-xs font-semibold text-zinc-200 transition hover:border-zinc-400 hover:text-white sm:inline-flex sm:items-center sm:justify-center"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              className="hidden rounded-full border border-white/80 px-5 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black sm:inline-flex sm:items-center sm:justify-center"
+            >
+              Get started
+            </Link>
           </SignedOut>
           <SignedIn>
             <UserButton
@@ -96,16 +86,20 @@ export function Header() {
             ))}
             <div className="flex flex-col gap-2">
               <SignedOut>
-                <SignInButton mode="redirect" forceRedirectUrl="/dashboard">
-                  <span className="block rounded-full border border-zinc-600 py-2 text-center text-sm font-semibold text-zinc-200">
-                    Log in
-                  </span>
-                </SignInButton>
-                <SignUpButton mode="redirect" forceRedirectUrl="/dashboard">
-                  <span className="block rounded-full border border-white/80 py-2 text-center text-sm font-semibold text-white">
-                    Get started
-                  </span>
-                </SignUpButton>
+                <Link
+                  href="/auth/sign-in"
+                  className="block rounded-full border border-zinc-600 py-2 text-center text-sm font-semibold text-zinc-200"
+                  onClick={() => setOpen(false)}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/auth/sign-up"
+                  className="block rounded-full border border-white/80 py-2 text-center text-sm font-semibold text-white"
+                  onClick={() => setOpen(false)}
+                >
+                  Get started
+                </Link>
               </SignedOut>
               <SignedIn>
                 <div className="flex justify-center py-2">

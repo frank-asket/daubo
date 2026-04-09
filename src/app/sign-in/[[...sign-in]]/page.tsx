@@ -1,21 +1,26 @@
-import { SignIn } from "@clerk/nextjs";
-import Link from "next/link";
-import { clerkAppearance } from "@/lib/clerk-appearance";
+import { redirect } from "next/navigation";
 
-export default function SignInPage() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 py-12">
-      <Link
-        href="/"
-        className="mb-8 text-sm font-medium text-zinc-500 transition hover:text-zinc-300"
-      >
-        ← Back to Daubo
-      </Link>
-      <SignIn
-        appearance={clerkAppearance}
-        fallbackRedirectUrl="/dashboard"
-        forceRedirectUrl="/dashboard"
-      />
-    </div>
-  );
+function queryString(
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(searchParams)) {
+    if (v === undefined) continue;
+    if (Array.isArray(v)) v.forEach((x) => u.append(k, x));
+    else u.set(k, v);
+  }
+  const s = u.toString();
+  return s ? `?${s}` : "";
+}
+
+export default function LegacySignInRedirect({
+  params,
+  searchParams,
+}: {
+  params: { "sign-in"?: string[] };
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const parts = params["sign-in"] ?? [];
+  const suffix = parts.length ? `/${parts.join("/")}` : "";
+  redirect(`/auth/sign-in${suffix}${queryString(searchParams)}`);
 }

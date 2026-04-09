@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 
 export const metadata = {
   title: "Plans — Daubo",
@@ -44,22 +44,18 @@ export default function PricingPage() {
 
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <SignedOut>
-            <SignInButton mode="redirect" forceRedirectUrl="/dashboard">
-              <button
-                type="button"
-                className="rounded-full border border-zinc-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-zinc-400"
-              >
-                Sign in
-              </button>
-            </SignInButton>
-            <SignUpButton mode="redirect" forceRedirectUrl="/dashboard">
-              <button
-                type="button"
-                className="rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 shadow-[0_0_32px_-8px_rgba(74,222,128,0.5)] transition hover:bg-emerald-300"
-              >
-                Create account
-              </button>
-            </SignUpButton>
+            <Link
+              href="/auth/sign-in"
+              className="inline-flex rounded-full border border-zinc-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:border-zinc-400"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              className="inline-flex rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 shadow-[0_0_32px_-8px_rgba(74,222,128,0.5)] transition hover:bg-emerald-300"
+            >
+              Create account
+            </Link>
           </SignedOut>
           <SignedIn>
             <Link
