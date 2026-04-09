@@ -21,7 +21,14 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     openrouter_api_key: str = ""
-    openrouter_chat_model: str = "anthropic/claude-3.5-sonnet"
+    openrouter_chat_model: str = Field(
+        default="openai/gpt-4o-mini",
+        description=(
+            "OpenRouter model id (see https://openrouter.ai/models). "
+            "Avoid deprecated slugs like anthropic/claude-3.5-sonnet — use a dated id from the site "
+            "or a stable default such as openai/gpt-4o-mini."
+        ),
+    )
     openrouter_vision_model: str = Field(
         default="openai/gpt-4o-mini",
         description="Vision-capable model on OpenRouter for resume images (PNG/JPEG/WebP).",
