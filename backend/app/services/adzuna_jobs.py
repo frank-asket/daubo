@@ -220,7 +220,6 @@ async def _fetch_adzuna_once(
         "app_key": app_key,
         "results_per_page": n,
         "what": what or "jobs",
-        "content-type": "application/json",
     }
     if where and where.strip():
         params["where"] = where.strip()[:200]
