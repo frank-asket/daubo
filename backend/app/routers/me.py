@@ -53,8 +53,12 @@ from app.services.gmail_integration import (
     fetch_google_email,
     gmail_oauth_configured,
 )
+from app.schemas.jobs import DiscoverHintsOut
 from app.services.profile_documents_context import profile_documents_prompt_block
-from app.services.resume_auto_match import schedule_resume_auto_match
+from app.services.resume_auto_match import (
+    infer_job_discover_params_from_resume_text,
+    schedule_resume_auto_match,
+)
 from app.services.resume_ingest import extract_resume_text
 from app.services.resume_kickoff import agent_ack_after_resume_upload
 
@@ -222,6 +226,42 @@ async def latest_agent_match(
     ts = row.created_at
     iso = ts.isoformat() if ts else None
     return AgentMatchLatestResponse(run=row.payload, created_at=iso)
+
+
+@router.get("/me/discover/hints", response_model=DiscoverHintsOut)
+async def discover_hints_from_resume(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> DiscoverHintsOut:
+    if not (settings.openrouter_api_key or "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail="OPENROUTER_API_KEY is not configured — resume-based hints require the AI service.",
+        )
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    row = result.scalar_one_or_none()
+    if row is None or not (row.content_text or "").strip():
+        raise HTTPException(
+            status_code=404,
+            detail="Add your résumé first — we use it to infer country, nearby markets, and global/remote angles.",
+        )
+    try:
+        params = await infer_job_discover_params_from_resume_text(settings, row.content_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    excerpt = row.content_text.strip()[:12_000]
+    return DiscoverHintsOut(
+        country=params.country,
+        country_code=params.country_code,
+        city_or_region=params.city_or_region,
+        industries=params.industries,
+        role_focus=params.role_focus,
+        languages=params.languages,
+        additional_country_codes=params.additional_country_codes,
+        emphasize_remote_global=params.emphasize_remote_global,
+        resume_excerpt=excerpt,
+    )
 
 
 @router.post("/me/resume/upload", response_model=ResumeUploadOut)

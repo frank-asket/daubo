@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type DiscoverResult = {
@@ -23,6 +24,18 @@ type DiscoverResult = {
   notice: string;
 };
 
+type DiscoverHints = {
+  country: string;
+  country_code: string | null;
+  city_or_region: string | null;
+  industries: string[];
+  role_focus: string | null;
+  languages: string[];
+  additional_country_codes: string[];
+  emphasize_remote_global: boolean;
+  resume_excerpt: string;
+};
+
 export function JobDiscoverPanel({
   onDiscoveryComplete,
   onAddedToPipeline,
@@ -33,10 +46,17 @@ export function JobDiscoverPanel({
   const onCompleteRef = useRef(onDiscoveryComplete);
   onCompleteRef.current = onDiscoveryComplete;
 
+  const { stats } = useDashboardStats();
   const [country, setCountry] = useState("");
+  const [countryCode, setCountryCode] = useState<string | null>(null);
+  const [cityOrRegion, setCityOrRegion] = useState("");
   const [roleFocus, setRoleFocus] = useState("");
   const [industries, setIndustries] = useState("");
   const [pasted, setPasted] = useState("");
+  const [additionalCountryCodes, setAdditionalCountryCodes] = useState<string[]>([]);
+  const [emphasizeRemoteGlobal, setEmphasizeRemoteGlobal] = useState(false);
+  const [resumeExcerpt, setResumeExcerpt] = useState<string | null>(null);
+  const hintsPrefilled = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<DiscoverResult | null>(null);
@@ -122,6 +142,34 @@ export function JobDiscoverPanel({
     };
   }, [fetchLatestPlan]);
 
+  useEffect(() => {
+    if (!stats?.has_resume || hintsPrefilled.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(dauboBffUrl("v1/me/discover/hints"), { credentials: "same-origin" });
+        if (!r.ok || cancelled) return;
+        const h = (await r.json()) as DiscoverHints;
+        hintsPrefilled.current = true;
+        setCountry(h.country?.trim() || "");
+        setCountryCode(h.country_code?.trim().toUpperCase() || null);
+        setCityOrRegion(h.city_or_region?.trim() || "");
+        setRoleFocus(h.role_focus?.trim() || "");
+        setIndustries((h.industries ?? []).map((s) => s.trim()).filter(Boolean).join(", "));
+        setAdditionalCountryCodes(
+          (h.additional_country_codes ?? []).map((c) => c.trim().toUpperCase()).filter(Boolean),
+        );
+        setEmphasizeRemoteGlobal(Boolean(h.emphasize_remote_global));
+        setResumeExcerpt(typeof h.resume_excerpt === "string" ? h.resume_excerpt : null);
+      } catch {
+        /* hints are optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [stats?.has_resume]);
+
   async function runDiscover() {
     setError(null);
     setData(null);
@@ -134,6 +182,8 @@ export function JobDiscoverPanel({
     try {
       const body = {
         country: country.trim(),
+        country_code: countryCode?.trim() ? countryCode.trim().slice(0, 2).toUpperCase() : null,
+        city_or_region: cityOrRegion.trim() || null,
         industries: industries
           .split(",")
           .map((s) => s.trim())
@@ -141,6 +191,9 @@ export function JobDiscoverPanel({
         role_focus: roleFocus.trim() || null,
         pasted_listings: pasted.trim() || null,
         locale: "en",
+        additional_country_codes: additionalCountryCodes,
+        emphasize_remote_global: emphasizeRemoteGlobal,
+        resume_context: resumeExcerpt?.trim() || null,
       };
       const r = await fetch(dauboBffUrl("v1/jobs/discover"), {
         method: "POST",
@@ -166,10 +219,10 @@ export function JobDiscoverPanel({
     <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
       <h3 className="text-sm font-semibold text-white">Find role ideas</h3>
       <p className="mt-1 text-xs text-zinc-500">
-        Tell us where you want to work and what you do. Daubo suggests search angles and example roles;
-        you can also paste text from real job ads to add them to your list. Ideas are starting points—
-        always open the employer’s own site to confirm details. Some regions show more live listings than
-        others. Found a role elsewhere? Add it under{" "}
+        Fields can <strong className="font-medium text-zinc-400">prefill from your résumé</strong>—primary
+        location, nearby region, extra countries tied to your CV, and remote/global angles when it fits. Edit
+        anything, then run discover. Daubo suggests search strategies and sample roles; paste real job ads
+        below if you have them. Always confirm on the employer site. Found a role elsewhere? Add it under{" "}
         <Link href="/dashboard/applications" className="font-semibold text-emerald-400/90 hover:underline">
           My jobs
         </Link>{" "}
@@ -205,7 +258,36 @@ export function JobDiscoverPanel({
             placeholder="e.g. ward nurse, warehouse lead"
           />
         </label>
+        <label className="block sm:col-span-2">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            City or region (optional)
+          </span>
+          <input
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-zinc-600"
+            value={cityOrRegion}
+            onChange={(e) => setCityOrRegion(e.target.value)}
+            placeholder="e.g. Lyon, Scotland, Iowa — tightens nearby live listings"
+          />
+        </label>
       </div>
+      {additionalCountryCodes.length > 0 ? (
+        <p className="mt-2 text-[11px] text-zinc-500">
+          <span className="font-medium text-zinc-400">Also weighted from your CV: </span>
+          {additionalCountryCodes.join(", ")}
+        </p>
+      ) : null}
+      <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-xl border border-zinc-800/80 bg-black/20 px-3 py-2.5">
+        <input
+          type="checkbox"
+          checked={emphasizeRemoteGlobal}
+          onChange={(e) => setEmphasizeRemoteGlobal(e.target.checked)}
+          className="mt-1 rounded border-zinc-600 bg-black text-emerald-500 focus:ring-emerald-500/40"
+        />
+        <span className="text-xs leading-snug text-zinc-400">
+          <span className="font-medium text-zinc-300">Include remote &amp; global boards</span> in the plan
+          (uses your résumé signals when prefilled; you can override anytime).
+        </span>
+      </label>
       <label className="mt-3 block">
         <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
           Industries (comma-separated)

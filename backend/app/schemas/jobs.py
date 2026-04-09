@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class JobDiscoverParams(BaseModel):
@@ -10,9 +10,23 @@ class JobDiscoverParams(BaseModel):
         description="ISO 3166-1 alpha-2, optional but helps disambiguation",
     )
     city_or_region: str | None = Field(default=None, max_length=200)
+    additional_country_codes: list[str] = Field(
+        default_factory=list,
+        max_length=6,
+        description=(
+            "Extra ISO2 markets to include (live feed + search ideas)—e.g. second citizenship, "
+            "past work countries, or stated relocation targets. Primary country is not repeated here."
+        ),
+    )
+    emphasize_remote_global: bool = Field(
+        default=False,
+        description=(
+            "When true, discovery should cover remote-first and international boards alongside local/near-user."
+        ),
+    )
     industries: list[str] = Field(
         default_factory=list,
-        description="Sectors to emphasize: nursing, construction, teaching, etc.",
+        description="Sectors to emphasize: nursing, infrastructure, teaching, etc.",
     )
     role_focus: str | None = Field(default=None, max_length=500)
     seniority: str | None = Field(default=None, max_length=120)
@@ -28,6 +42,31 @@ class JobDiscoverParams(BaseModel):
         max_length=16_000,
         description="Resume excerpt for tailoring search strategy (not treated as job adverts).",
     )
+
+    @field_validator("additional_country_codes", mode="before")
+    @classmethod
+    def _normalize_additional_country_codes(cls, v: object) -> list[str]:
+        if v is None:
+            return []
+        if not isinstance(v, list):
+            return []
+        out: list[str] = []
+        for item in v:
+            c = str(item).strip().upper()
+            if c == "UK":
+                c = "GB"
+            if len(c) == 2 and c.isalpha() and c not in out:
+                out.append(c)
+        return out[:6]
+
+    @model_validator(mode="after")
+    def _dedupe_additional_vs_primary(self) -> "JobDiscoverParams":
+        primary = (self.country_code or "").strip().upper()
+        if primary == "UK":
+            primary = "GB"
+        if primary:
+            self.additional_country_codes = [c for c in self.additional_country_codes if c != primary]
+        return self
 
 
 class ParsedListing(BaseModel):
@@ -67,9 +106,39 @@ class ResumeSearchInference(BaseModel):
     country: str = Field(..., min_length=2, max_length=120)
     country_code: str | None = Field(default=None, min_length=2, max_length=2)
     city_or_region: str | None = Field(default=None, max_length=200)
+    additional_country_codes: list[str] = Field(
+        default_factory=list,
+        max_length=6,
+        description=(
+            "Other ISO2 countries with clear CV ties (work, education, authorization, or explicit job-search intent). "
+            "Never duplicate primary country_code."
+        ),
+    )
+    open_to_remote_or_global: bool = Field(
+        default=False,
+        description=(
+            "True if the CV signals remote, distributed teams, digital nomad, or multi-country search intent."
+        ),
+    )
     industries: list[str] = Field(default_factory=list)
     role_focus: str | None = Field(default=None, max_length=500)
     languages: list[str] = Field(default_factory=list)
+
+    @field_validator("additional_country_codes", mode="before")
+    @classmethod
+    def _normalize_inference_codes(cls, v: object) -> list[str]:
+        if v is None:
+            return []
+        if not isinstance(v, list):
+            return []
+        out: list[str] = []
+        for item in v:
+            c = str(item).strip().upper()
+            if c == "UK":
+                c = "GB"
+            if len(c) == 2 and c.isalpha() and c not in out:
+                out.append(c)
+        return out[:6]
 
 
 class JobDiscoverResponse(BaseModel):
@@ -80,3 +149,17 @@ class JobDiscoverResponse(BaseModel):
         "Guidance is AI-generated from your parameters and any pasted text. "
         "When Adzuna API keys are configured, live listings from that region are merged into suggestions."
     )
+
+
+class DiscoverHintsOut(BaseModel):
+    """Prefill for job discover UI — inferred from saved résumé."""
+
+    country: str
+    country_code: str | None
+    city_or_region: str | None
+    industries: list[str]
+    role_focus: str | None
+    languages: list[str]
+    additional_country_codes: list[str]
+    emphasize_remote_global: bool
+    resume_excerpt: str = Field(..., max_length=16_000)

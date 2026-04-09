@@ -33,11 +33,11 @@ KIND = "resume_autodiscover"
 COOLDOWN = timedelta(minutes=12)
 RESUME_EXCERPT = 12_000
 
-INFER_SYSTEM = """You read a CV/resume and output structured job-search hints.
+INFER_SYSTEM = """You read a CV/resume and output structured job-search hints for Daubo job discovery.
 Rules:
-- country: English name of the primary country where this person is located or most likely authorized to work (infer from address, phone, institutions, or experience). If truly unknown, answer "United States".
-- country_code: ISO 3166-1 alpha-2 only if you are fairly sure (e.g. US, FR). Otherwise null.
-- city_or_region: city or region if clear from the document; else null.
+- country / country_code / city_or_region: Primary base — where the person most likely lives, works, or is authorized to work today (address, phone, recent roles, institutions). If truly unknown, use "United States" / US.
+- additional_country_codes: Up to 6 OTHER ISO 3166-1 alpha-2 codes only when the CV shows clear ties: past jobs abroad, dual markets, education, citizenship, "open to roles in X/Y", relocation targets, or clients across borders. Never duplicate country_code. Use [] if none.
+- open_to_remote_or_global: True if the CV mentions remote work, hybrid, distributed teams, digital nomad, worldwide applicants, EU+US search, "anywhere", or similar; false otherwise.
 - industries: up to 8 short sector tags implied by roles (e.g. healthcare, logistics).
 - role_focus: one short phrase for the main role to hunt (e.g. "ICU nurse", "warehouse supervisor").
 - languages: spoken languages listed or clearly implied; else empty.
@@ -67,6 +67,8 @@ async def _infer_params(settings: Settings, resume_text: str) -> JobDiscoverPara
             country="United States",
             country_code=None,
             city_or_region=None,
+            additional_country_codes=[],
+            open_to_remote_or_global=False,
             industries=[],
             role_focus=None,
             languages=[],
@@ -75,6 +77,8 @@ async def _infer_params(settings: Settings, resume_text: str) -> JobDiscoverPara
         country=inf.country.strip()[:120] or "United States",
         country_code=(inf.country_code.strip().upper()[:2] if inf.country_code else None),
         city_or_region=(inf.city_or_region.strip()[:200] if inf.city_or_region else None),
+        additional_country_codes=list(inf.additional_country_codes),
+        emphasize_remote_global=bool(inf.open_to_remote_or_global),
         industries=[s.strip() for s in inf.industries if s.strip()][:20],
         role_focus=(inf.role_focus.strip()[:500] if inf.role_focus else None),
         languages=[s.strip() for s in inf.languages if s.strip()][:20],
@@ -137,6 +141,8 @@ async def _resume_automatch_adzuna_only(
         country="United States",
         country_code="US",
         city_or_region=None,
+        additional_country_codes=[],
+        emphasize_remote_global=False,
         industries=[],
         role_focus=None,
         languages=[],
@@ -272,3 +278,16 @@ async def run_resume_auto_match_for_user(clerk_user_id: str) -> None:
         await session.commit()
 
     logger.info("Resume auto-match completed for user=%s", clerk_user_id[:12])
+
+
+async def infer_job_discover_params_from_resume_text(
+    settings: Settings,
+    resume_text: str,
+) -> JobDiscoverParams:
+    """Infer discover parameters from résumé text (same logic as background auto-match)."""
+    text = (resume_text or "").strip()
+    if not text:
+        raise ValueError("Resume text is empty")
+    if not (settings.openrouter_api_key or "").strip():
+        raise ValueError("OPENROUTER_API_KEY is required for resume-based discovery hints")
+    return await _infer_params(settings, text)

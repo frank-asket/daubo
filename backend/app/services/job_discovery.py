@@ -25,6 +25,9 @@ and local norms—they vary by country.
 6) If the user message includes a resume excerpt (candidate profile), tailor executive_summary, \
 example_search_queries, filters_to_apply, and portals to that profile. Never invent \
 parsed_listings from the resume alone—parsed_listings only from explicit pasted job ads.
+7) When additional ISO countries or remote/global intent are supplied, blend guidance: \
+local and near-user markets **and** cross-border / remote-first strategies (major global boards, \
+remote job sites, and region-specific portals). Still do not invent specific posting URLs.
 
 Respond using the required structured schema only."""
 
@@ -56,6 +59,17 @@ def _user_message(params: JobDiscoverParams) -> str:
         parts.append(
             "\n---\nCandidate resume excerpt (tailor search strategy only; these are NOT job ads):\n"
             + params.resume_context.strip()
+        )
+    if params.additional_country_codes:
+        parts.append(
+            "Also surface job-market angles for these additional ISO countries (cross-border, relocation, "
+            "or ties shown on the CV): "
+            + ", ".join(params.additional_country_codes)
+        )
+    if params.emphasize_remote_global:
+        parts.append(
+            "Candidate profile suggests openness to remote, distributed, or multi-country roles—include "
+            "worldwide and remote-first search patterns alongside local/nearby listings."
         )
     return "\n".join(parts)
 
