@@ -9,21 +9,23 @@ export function DashboardOverview({ hasResume }: { hasResume: boolean | null }) 
         <div className="min-w-0">
           <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-400/90">
             <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Your career workspace
+            Your platform for opportunity
           </p>
           <h1 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            Move forward on your job search—with help that keeps you in charge
+            From job search to your own venture—one automated workspace
           </h1>
           <p className="mt-2 text-sm font-medium text-emerald-400/90">
-            Daubo prepares you to apply—you still click Apply.
+            Daubo automates drafts, prep, and pipeline—you still approve every Apply and Send.
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-            Daubo helps you <strong className="font-medium text-zinc-400">find roles</strong>,{" "}
-            <strong className="font-medium text-zinc-400">shape stronger applications</strong>, and{" "}
-            <strong className="font-medium text-zinc-400">prepare for interviews</strong>. Turn on{" "}
-            <strong className="font-medium text-zinc-400">Smart prep</strong> below and we’ll draft
-            materials for new jobs you save—you always review and hit &ldquo;send&rdquo; yourself on
-            company sites and LinkedIn.
+            Use Daubo whether you&apos;re <strong className="font-medium text-zinc-400">chasing a dream role</strong>{" "}
+            or <strong className="font-medium text-zinc-400">sharpening how you show up</strong> for grants,
+            clients, or a business you&apos;re starting. We help you{" "}
+            <strong className="font-medium text-zinc-400">find and track opportunities</strong>,{" "}
+            <strong className="font-medium text-zinc-400">shape stronger materials</strong> from your résumé and
+            credentials, and <strong className="font-medium text-zinc-400">prepare for interviews</strong>. Turn on{" "}
+            <strong className="font-medium text-zinc-400">Smart prep</strong> and we&apos;ll draft for new items
+            you save—you review and submit on official sites (and Gmail drafts when connected).
           </p>
           {!hasResume ? (
             <p className="mt-3 max-w-2xl rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">

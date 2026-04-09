@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Daubo — Career workspace for tailored applications & interview practice",
+  title: "Daubo — The platform for your next job or venture",
   description:
-    "Save jobs, refine your materials from your real résumé, apply on official sites yourself, and practice interviews—with optional Gmail drafts you send when ready. Built for any sector.",
+    "Daubo builds your professional profile and automates tailored drafts, pipeline tracking, and interview prep—whether you're chasing a dream job or starting something of your own. You review and submit on official channels; nothing goes out without you.",
 };
 
 export default function RootLayout({

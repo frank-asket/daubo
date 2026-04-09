@@ -7,20 +7,24 @@ export function Hero() {
     <section className="border-b border-zinc-800">
       <div className="mx-auto max-w-6xl px-4 pb-6 pt-14 text-center sm:px-6 sm:pt-20 lg:px-8 lg:pt-24">
         <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-          A calmer way to move your career forward
+          The platform for your next chapter—dream job or your own venture
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm font-medium leading-snug text-emerald-400/95 sm:text-base">
-          Daubo prepares you to apply—you still click Apply.
+          Production-grade automation for your profile, pipeline, and materials—you still click Apply and Send.
         </p>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-          Daubo helps people in{" "}
-          <span className="text-zinc-200">any line of work—care, trades, office, clinical roles,</span> and
-          beyond—<span className="text-zinc-200">organize roles they care about</span>, get{" "}
-          <span className="text-zinc-200">clear, tailored application wording</span> grounded in their real
-          résumé, and <span className="text-zinc-200">practice interviews</span> in the same place. You
-          always <span className="text-zinc-200">apply on the employer&apos;s or LinkedIn&apos;s own site</span>;
-          with Gmail connected we can save <span className="text-zinc-200">draft emails</span> for you to
-          review and send—nothing goes out without you.
+          Daubo is built for people actively looking for opportunity:{" "}
+          <span className="text-zinc-200">
+            land a role you want, or professionalize the story behind a business or side project you’re
+            building.
+          </span>{" "}
+          In one workspace you <span className="text-zinc-200">keep résumé, credentials, and jobs organized</span>,
+          get <span className="text-zinc-200">tailored application wording</span> grounded in your real profile,
+          and <span className="text-zinc-200">practice interviews</span>. We automate the heavy lifting—not
+          decisions on your behalf. You always{" "}
+          <span className="text-zinc-200">submit on the employer&apos;s or LinkedIn&apos;s own site</span>; with
+          Gmail connected we save <span className="text-zinc-200">draft emails</span> you review before anything
+          goes out.
         </p>
         <Link
           href="/dashboard"
@@ -30,7 +34,7 @@ export function Hero() {
         </Link>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-zinc-400">
-          <span className="text-zinc-500">Daubo job seekers</span>
+          <span className="text-zinc-500">Daubo members</span>
           <span className="flex gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star

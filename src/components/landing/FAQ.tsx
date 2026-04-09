@@ -7,7 +7,11 @@ import { useState } from "react";
 const faqs = [
   {
     q: "What is Daubo?",
-    a: "Daubo is a career workspace for job seekers in any field. You save roles you care about, get help tailoring application wording from your real résumé, apply on employer or LinkedIn sites yourself, and practice interviews with questions tied to those roles. With Gmail connected, Daubo can save outreach as drafts—you review and send.",
+    a: "Daubo is the platform for people who want their next opportunity—whether that's a dream job or a more professional launchpad for entrepreneurship. You build a real profile (résumé, certifications, saved roles or leads), and we automate tailored drafts, pipeline tracking, and interview prep. You always apply or send on official channels yourself; with Gmail connected, we can create drafts you finish and send.",
+  },
+  {
+    q: "Can I use Daubo if I'm starting a business, not only applying to jobs?",
+    a: "Yes. Many members use the same workspace to keep their story consistent: clear pitch-style wording from their background, organized \"opportunities\" they add manually (programs, clients, roles), and professional drafts they edit before sending. Daubo isn't legal, tax, or fundraising advice—but it helps you show up credibly while you build.",
   },
   {
     q: "Does Daubo create a different resume for every job?",
