@@ -1,13 +1,15 @@
-from typing import Literal
+import logging
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from app.config import Settings, get_settings
-from app.graph.chat_workflow import build_chat_graph
+from app.services.llm import chat_llm
 
 router = APIRouter(tags=["chat"])
+logger = logging.getLogger("daubo")
 
 DAUBO_ASSISTANT_SYSTEM = """You are Daubo Assistant inside the Daubo career workspace. Be concise and practical.
 
@@ -66,6 +68,42 @@ def _trim_history(msgs: list[ChatHistoryMessage]) -> list[ChatHistoryMessage]:
     return list(reversed(kept))
 
 
+def _text_from_content(content: Any) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict):
+                t = block.get("text")
+                if isinstance(t, str):
+                    parts.append(t)
+                elif block.get("type") == "text" and isinstance(block.get("text"), str):
+                    parts.append(block["text"])
+        return "".join(parts).strip()
+    if content is None:
+        return ""
+    return str(content).strip()
+
+
+def _latest_assistant_text(messages: list[BaseMessage]) -> str:
+    """Resolve reply text; OpenRouter/LangChain may use AIMessage subclasses or block lists."""
+    for m in reversed(messages):
+        if isinstance(m, AIMessage):
+            t = _text_from_content(m.content)
+            if t:
+                return t
+            continue
+        role = getattr(m, "type", None)
+        if role == "ai":
+            t = _text_from_content(getattr(m, "content", None))
+            if t:
+                return t
+    return ""
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
@@ -79,11 +117,33 @@ async def chat(
     lc_messages.extend(_history_to_lc(prior))
     lc_messages.append(HumanMessage(content=body.message))
 
-    graph = build_chat_graph(settings)
-    result = await graph.ainvoke({"messages": lc_messages})
-    last = result["messages"][-1]
-    if not isinstance(last, AIMessage):
-        raise HTTPException(status_code=500, detail="Unexpected model output type")
-    content = last.content
-    text = content if isinstance(content, str) else str(content)
-    return ChatResponse(reply=text.strip() or "…", model=settings.openrouter_chat_model)
+    llm = chat_llm(settings)
+    try:
+        reply_msg = await llm.ainvoke(lc_messages)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("chat llm.ainvoke failed (OpenRouter / LangChain)")
+        msg = str(exc).strip() or repr(exc)
+        if len(msg) > 500:
+            msg = msg[:500] + "…"
+        raise HTTPException(
+            status_code=502,
+            detail=f"Assistant could not reach the model. Check OPENROUTER_API_KEY and model id. ({msg})",
+        ) from exc
+
+    if not isinstance(reply_msg, BaseMessage):
+        logger.error("chat llm returned non-message type=%s", type(reply_msg).__name__)
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected model output. Try another OPENROUTER_CHAT_MODEL.",
+        )
+
+    text = _latest_assistant_text([reply_msg])
+    if not text:
+        text = _text_from_content(getattr(reply_msg, "content", None))
+    if not text:
+        logger.error("Empty assistant content from model; type=%s", type(reply_msg).__name__)
+        raise HTTPException(
+            status_code=500,
+            detail="The model returned no assistant text. Try another OPENROUTER_CHAT_MODEL or retry.",
+        )
+    return ChatResponse(reply=text or "…", model=settings.openrouter_chat_model)
