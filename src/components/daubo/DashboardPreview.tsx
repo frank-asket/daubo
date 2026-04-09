@@ -47,7 +47,7 @@ const previewSegments = [
 function BottomRow() {
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      {["Recent applications", "Job market", "Resources"].map((t) => (
+      {["Pipeline", "Matching", "Support"].map((t) => (
         <div
           key={t}
           className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-400"
@@ -89,7 +89,7 @@ export function DashboardPreview() {
                 </button>
                 <div className="hidden items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 sm:flex">
                   <Search className="h-4 w-4 text-zinc-500" strokeWidth={1.75} />
-                  <span className="text-xs text-zinc-500">Search by country · role</span>
+                  <span className="text-xs text-zinc-500">Multi-agent matching · pipeline</span>
                 </div>
               </div>
             </header>

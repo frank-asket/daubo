@@ -49,7 +49,7 @@ function BottomRow() {
         href="/dashboard"
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
       >
-        Job discovery → run a new search
+        Dashboard → adjust matching scope for agents
       </Link>
       <Link
         href="/dashboard/support"

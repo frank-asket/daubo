@@ -7,7 +7,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "What is Daubo?",
-    a: "Daubo orchestrates agents for job seekers in any industry and region you target: they help discover and score roles against your resume, generate a personalized resume variant and application email for each job, and—when you connect your inbox and approve—send from your own address with the tailored PDF attached. Interview prep reuses the same job + profile context.",
+    a: "Daubo orchestrates multi-agent workflows for job seekers in any industry: agents match your resume to offers worldwide (you are not expected to hunt boards by hand), score fit, and generate a resume variant plus application materials aligned to each posting's requirements. When your inbox is connected, applications can be sent from your own address with tailored materials attached. Interview prep reuses the same job + profile context.",
   },
   {
     q: "Does Daubo create a different resume for every job?",
@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "How does applying through my email work?",
-    a: "You connect your inbox securely. Daubo prepares the draft and attachment; you review and approve. The send action uses your mailbox so the From address, threading, and replies stay yours, in line with Daubo’s terms and your provider’s requirements.",
+    a: "You connect your inbox securely. Daubo's agents prepare requirement-aligned drafts and attachments and can submit applications through your mailbox so the From address, threading, and replies stay yours, in line with Daubo's terms and your provider's requirements.",
   },
   {
     q: "How fast is the prepare flow?",
@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: "Which countries and job types are supported?",
-    a: "Daubo is designed for global use: you set the country (and city or region), industries, and languages so agents tailor discovery and documents to that market—whether you are applying in healthcare in Canada, logistics in Mexico, teaching in Japan, or office roles in France. Live listings come from feeds and sources you connect or paste; the roadmap adds more board integrations by region.",
+    a: "Daubo is built for global use: agents match your profile against openings across markets—not only one country—while you can still steer preferred regions, industries, and languages so documents stay locally credible. Live listings come from feeds and sources you connect or paste; the roadmap adds more integrations by region.",
   },
   {
     q: "Can I use Daubo on mobile?",

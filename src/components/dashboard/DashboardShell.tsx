@@ -46,7 +46,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </button>
               <div className="hidden items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 sm:flex">
                 <Search className="h-4 w-4 text-zinc-500" strokeWidth={1.75} />
-                <span className="text-xs text-zinc-500">Search by country · role</span>
+                <span className="text-xs text-zinc-500">Multi-agent matching · pipeline</span>
               </div>
               <UserButton />
             </div>

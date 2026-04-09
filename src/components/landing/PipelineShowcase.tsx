@@ -22,14 +22,14 @@ export function PipelineShowcase() {
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Every sector, every country you target
+            Every sector, matched worldwide
           </h2>
           <p className="mt-4 text-lg text-zinc-400">
-            Skilled trades, care work, retail, office roles, tech—queue openings from the
-            markets you choose. Each saved role gets its own{" "}
-            <span className="text-zinc-300">resume variant</span> and{" "}
-            <span className="text-zinc-300">outbound email</span>, ready to send from your
-            inbox after you approve.
+            Skilled trades, care work, retail, office roles, tech—agents surface relevant
+            openings from global sources and line them up in your pipeline. Each role gets its
+            own <span className="text-zinc-300">resume variant</span> and{" "}
+            <span className="text-zinc-300">application package</span> aligned to that
+            employer&apos;s requirements, ready to go out from your inbox when connected.
           </p>
           <Link
             href="/dashboard"

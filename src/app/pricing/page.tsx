@@ -28,9 +28,8 @@ export default function PricingPage() {
           Plans &amp; subscription
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-zinc-400">
-          Pick the Daubo tier that fits how you search and apply. Subscribe from your
-          account settings, change or cancel when you need to, and keep every send
-          behind your approval.
+          Pick the Daubo tier that fits how aggressively you want agents to match and apply on
+          your behalf. Subscribe from your account settings, change or cancel when you need to.
         </p>
 
         <div className="mt-10 rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6 sm:p-8">

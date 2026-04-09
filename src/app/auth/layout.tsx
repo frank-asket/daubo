@@ -4,7 +4,7 @@ import { AuthBrandingPanel } from "@/components/auth/AuthBrandingPanel";
 export const metadata: Metadata = {
   title: "Account — Daubo",
   description:
-    "Sign in or create your Daubo account—tailored resumes, country-aware discovery, and applications from your own inbox after approval.",
+    "Sign in or create your Daubo account—multi-agent resume matching worldwide, requirement-tailored applications, and sends from your own inbox.",
 };
 
 export default function AuthLayout({

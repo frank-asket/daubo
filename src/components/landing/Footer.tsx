@@ -6,11 +6,11 @@ export function FooterCTA() {
     <section className="bg-black px-4 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl rounded-2xl border border-cyan-500/50 bg-black px-8 py-14 text-center sm:px-12 sm:py-16">
         <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Ready to run a calmer, higher-signal search?
+          Ready for agents to match you worldwide?
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-400">
-          Ship a stronger resume for every role and land in recruiters’ inboxes
-          from the address they already expect—yours.
+          Let Daubo pair your resume with relevant offers and ship requirement-aligned packages—
+          from the address employers already expect: yours.
         </p>
         <Link
           href="/dashboard"
@@ -30,8 +30,8 @@ export function Footer() {
         <div className="sm:col-span-2 lg:col-span-1">
           <Logo href="/" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
-            Daubo helps you discover roles, tailor every application, and send from
-            your own inbox—after you approve each step.
+            Daubo matches your resume to offers worldwide, tailors every application to
+            each posting&apos;s requirements, and sends from your own inbox when you connect it.
           </p>
         </div>
         <div>

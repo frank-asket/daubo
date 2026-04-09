@@ -8,17 +8,17 @@ const items = [
   },
   {
     title: "Apply from your inbox",
-    body: "Connect your email so applications send as you: employers see your address, and replies land in your thread (included on Pro).",
+    body: "Connect your email so requirement-aligned applications go out as you: employers see your address, and replies land in your thread (included on Pro).",
     icon: Mail,
   },
   {
-    title: "You approve every send",
-    body: "Multi-agent drafting stops before the wire. Review the package, then one tap to send from your account—no silent autopilot.",
+    title: "Built for each posting",
+    body: "Agents don't reuse one generic draft—every application reflects that employer's requirements, keywords, and tone.",
     icon: BadgeCheck,
   },
   {
     title: "One continuous workspace",
-    body: "Matching, packages, outbound status, and interview prep share the same job + profile context end to end.",
+    body: "Agent matching, packages, outbound status, and interview prep share the same job + profile context end to end.",
     icon: LayoutGrid,
   },
 ];

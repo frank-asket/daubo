@@ -156,7 +156,8 @@ export function ApplicationsBoard() {
           </div>
         ) : items.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">
-            No applications yet. Add one above or run discovery on the dashboard.
+            No applications yet. Add one above, or let agents populate matches from your resume as
+            they run.
           </p>
         ) : (
           <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-800">

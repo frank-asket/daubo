@@ -10,14 +10,15 @@ export function Hero() {
           Take control of your career pipeline
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-          Daubo&apos;s agents help you work{" "}
+          Daubo&apos;s multi-agent system works{" "}
           <span className="text-zinc-200">any sector, anywhere</span>—from nursing and
-          trades to finance, education, logistics, tech, and beyond—with{" "}
-          <span className="text-zinc-200">country-aware discovery</span>, a{" "}
-          <span className="text-zinc-200">personalized resume for each job</span>, and
-          application copy—then{" "}
-          <span className="text-zinc-200">send from your own address</span> after you
-          approve. Interview prep reuses the same context.
+          trades to finance, education, logistics, tech, and beyond. It{" "}
+          <span className="text-zinc-200">matches your resume to openings worldwide</span>{" "}
+          (no hunting listings by hand), builds a{" "}
+          <span className="text-zinc-200">tailored resume and application per offer</span>{" "}
+          aligned to each employer&apos;s requirements, and can{" "}
+          <span className="text-zinc-200">apply on your behalf from your own address</span>{" "}
+          when your inbox is connected. Interview prep reuses the same context.
         </p>
         <Link
           href="/dashboard"

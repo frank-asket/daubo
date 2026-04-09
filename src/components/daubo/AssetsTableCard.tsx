@@ -78,11 +78,12 @@ export function AssetsTableCard({
             ) : applications.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
-                  No applications yet. Add one on{" "}
+                  No applications yet. Agents will add matched roles here as packages progress—
+                  or add one manually on{" "}
                   <a href="/dashboard/applications" className="text-emerald-400 hover:underline">
                     Applications
-                  </a>{" "}
-                  or run discovery below.
+                  </a>
+                  .
                 </td>
               </tr>
             ) : (

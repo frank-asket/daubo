@@ -3,8 +3,8 @@ import { Check } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const highlights = [
-  "Tailored resume for every job you save",
-  "Approve every email before it sends from your inbox",
+  "Agents match your resume to offers worldwide",
+  "Each package follows that job's posted requirements",
   "Same workspace for applications & interview prep",
 ];
 
@@ -22,11 +22,11 @@ export function AuthBrandingPanel() {
       <div className="relative">
         <Logo href="/" />
         <p className="mt-10 text-2xl font-semibold leading-snug tracking-tight text-white sm:text-3xl">
-          Your pipeline for every sector you target.
+          Your pipeline—agents find the fit, you bring the truth.
         </p>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500">
-          Sign in to match roles worldwide, generate job-specific resumes, and keep every
-          application on your terms—with a hard stop before anything goes out.
+          Sign in so multi-agent matching can pair your resume with global openings and build
+          requirement-aware applications without you combing every board by hand.
         </p>
         <ul className="mt-10 space-y-3">
           {highlights.map((line) => (

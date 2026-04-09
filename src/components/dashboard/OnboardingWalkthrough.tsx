@@ -13,7 +13,7 @@ import {
 const STEPS = [
   {
     title: "Welcome to Daubo",
-    body: "You’re in the workspace where discovery, tailored resumes, and applications come together—always with you in control.",
+    body: "You’re in the workspace where multi-agent matching, tailored resumes, and applications come together—your resume drives worldwide fit, not manual job hunting.",
   },
   {
     title: "Start with your resume",
@@ -21,11 +21,11 @@ const STEPS = [
   },
   {
     title: "Match & personalize",
-    body: "Point Daubo at the countries and roles you care about. Agents score fit and draft a job-specific resume variant plus application copy for each listing.",
+    body: "Agents match your resume to relevant offers worldwide and draft each package against that job's requirements—resume variant plus application copy per listing.",
   },
   {
-    title: "Approve, then send as you",
-    body: "Every outbound message is held for your sign-off. When your inbox is connected, sends go from your address so threads and replies stay yours.",
+    title: "Apply as you",
+    body: "Applications are assembled to meet each posting's requirements. When your inbox is connected, outreach can go from your address so threads and replies stay yours.",
   },
   {
     title: "You’re set",

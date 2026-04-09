@@ -10,14 +10,14 @@ const steps = [
   },
   {
     n: "2",
-    title: "Match & personalize",
-    body: "Agents score openings from your chosen countries and sectors, explain fit, and produce a job-specific resume file plus answers for that posting.",
+    title: "Worldwide match & tailor",
+    body: "Multi-agent matching pairs your resume with relevant offers globally, scores fit, then drafts a resume variant and application package tuned to that job's posted requirements—not a one-size-fits-all PDF.",
     mock: "fund",
   },
   {
     n: "3",
-    title: "Approve & apply as you",
-    body: "Review the package; on approval, the outbound email—with your tailored resume attached—sends via your connected account.",
+    title: "Apply as you",
+    body: "Outbound email and attachments are prepared to satisfy each posting; when your inbox is connected, sends can go from your address so employers always see you.",
     mock: "trade",
   },
 ] as const;
@@ -76,10 +76,10 @@ export function HowItWorks() {
               How it works
             </h2>
             <p className="mt-4 max-w-xl text-lg text-zinc-400">
-              From your resume to a{" "}
-              <span className="text-zinc-300">personalized file per job</span> to an{" "}
-              <span className="text-zinc-300">email sent from your inbox</span>—with a
-              hard stop for your approval.
+              From your resume to{" "}
+              <span className="text-zinc-300">agent-matched offers worldwide</span> to a{" "}
+              <span className="text-zinc-300">requirement-aligned package per job</span>—
+              without you manually searching boards for each role.
             </p>
           </div>
           <Link

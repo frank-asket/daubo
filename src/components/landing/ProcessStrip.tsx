@@ -1,11 +1,11 @@
 const cols = [
   {
     title: "Profile in, truth preserved",
-    body: "Upload your base resume and preferences so agents never invent employers, dates, or credentials.",
+    body: "Upload your base resume so agents match you to offers worldwide without inventing employers, dates, or credentials.",
   },
   {
-    title: "Agents tailor, you verify",
-    body: "Each job gets a fresh resume variant plus email body; you edit or reject before anything is queued to send.",
+    title: "Matched & requirement-aware",
+    body: "Each matched role gets a fresh resume variant plus application copy shaped to that posting's stated requirements—no generic blast.",
   },
   {
     title: "Send as yourself",

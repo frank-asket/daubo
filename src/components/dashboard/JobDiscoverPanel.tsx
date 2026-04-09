@@ -29,7 +29,7 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
     setError(null);
     setData(null);
     if (!country.trim()) {
-      setError("Add a country to focus the search plan.");
+      setError("Add a country so agents can focus the matching plan.");
       return;
     }
     setLoading(true);
@@ -52,13 +52,13 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError((j as { detail?: string }).detail ?? `Discover failed (${r.status})`);
+        setError((j as { detail?: string }).detail ?? `Matching plan failed (${r.status})`);
         return;
       }
       setData((await r.json()) as DiscoverResult);
       onDiscoveryComplete?.();
     } catch {
-      setError("Network error running discovery");
+      setError("Network error running matching planner");
     } finally {
       setLoading(false);
     }
@@ -66,9 +66,10 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-      <h3 className="text-sm font-semibold text-white">Job discovery (country &amp; sector)</h3>
+      <h3 className="text-sm font-semibold text-white">Matching scope (country &amp; sector)</h3>
       <p className="mt-1 text-xs text-zinc-500">
-        Daubo drafts where to search and how to query—paste ads below to extract structured rows.
+        You do not search job boards here—agents match your resume to offers worldwide. Use this to
+        steer geography and focus; optional paste helps ingest specific ads into structured rows.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
@@ -122,7 +123,7 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
         disabled={loading}
         className="mt-4 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
       >
-        {loading ? "Running…" : "Run discovery"}
+        {loading ? "Running…" : "Generate matching plan"}
       </button>
       {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
       {data ? (
@@ -152,7 +153,7 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
           {data.result.example_search_queries.length > 0 ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Example searches
+                Example source queries (for feeds &amp; integrations)
               </p>
               <ul className="mt-2 list-inside list-disc text-zinc-400">
                 {data.result.example_search_queries.slice(0, 8).map((q) => (
