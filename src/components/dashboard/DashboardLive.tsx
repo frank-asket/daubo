@@ -126,9 +126,19 @@ export function DashboardLive() {
       <GettingStartedCard />
       <CareerNextStepsCard />
       {statsError ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-          {statsError}
-        </p>
+        <div
+          className="flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-200 sm:flex-row sm:items-center sm:justify-between"
+          role="alert"
+        >
+          <p>{statsError}</p>
+          <button
+            type="button"
+            onClick={() => void reloadStats()}
+            className="shrink-0 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 hover:bg-amber-400/20"
+          >
+            Try again
+          </button>
+        </div>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
@@ -169,6 +179,7 @@ export function DashboardLive() {
             applications={applications.slice(0, 8)}
             loading={appsLoading}
             error={appsError}
+            onRetry={loadApplications}
           />
         </div>
         <div className="lg:col-span-2">

@@ -91,6 +91,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <DashboardStatsProvider>
+      <a
+        href="#dashboard-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-lg focus:bg-emerald-400 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-zinc-950 focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <div className="flex min-h-screen bg-black text-zinc-50">
         <OnboardingWalkthrough />
 
@@ -188,13 +194,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                           <strong className="text-zinc-400">Coach</strong> button at the bottom-right of
                           the screen.
                         </p>
-                        <Link
-                          href="/dashboard/settings"
-                          className="mt-3 inline-block text-[11px] font-medium text-emerald-400 hover:underline"
-                          onClick={closeNotif}
-                        >
-                          Email &amp; settings →
-                        </Link>
+                        <div className="mt-3 flex flex-col gap-2">
+                          <Link
+                            href="/dashboard/settings"
+                            className="text-[11px] font-medium text-emerald-400 hover:underline"
+                            onClick={closeNotif}
+                          >
+                            Email &amp; settings →
+                          </Link>
+                          <Link
+                            href="/dashboard/support"
+                            className="text-[11px] font-medium text-zinc-400 hover:text-emerald-400 hover:underline"
+                            onClick={closeNotif}
+                          >
+                            Help &amp; Support →
+                          </Link>
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -210,7 +225,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
-          <div className="flex-1 overflow-auto pb-[env(safe-area-inset-bottom)]">{children}</div>
+          <div
+            id="dashboard-main"
+            role="main"
+            tabIndex={-1}
+            className="flex-1 scroll-mt-2 overflow-auto pb-[env(safe-area-inset-bottom)] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+          >
+            {children}
+          </div>
           <DauboAssistantPanel />
         </div>
       </div>

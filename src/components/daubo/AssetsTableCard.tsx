@@ -32,17 +32,32 @@ export function AssetsTableCard({
   applications,
   loading,
   error,
+  onRetry,
 }: {
   applications: ApplicationSummary[];
   loading?: boolean;
   error?: string | null;
+  /** Shown as “Try again” when `error` is set */
+  onRetry?: () => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-0">
       {error ? (
-        <p className="px-4 py-3 text-xs text-amber-200/95" role="alert">
-          {error}
-        </p>
+        <div
+          className="flex flex-col gap-2 border-b border-amber-500/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          role="alert"
+        >
+          <p className="text-xs text-amber-200/95">{error}</p>
+          {onRetry ? (
+            <button
+              type="button"
+              onClick={() => onRetry()}
+              className="shrink-0 self-start rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold text-amber-100 hover:bg-amber-400/20 sm:self-auto"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
       ) : null}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] text-left text-xs">
@@ -67,12 +82,15 @@ export function AssetsTableCard({
               </tr>
             ) : applications.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
-                  No jobs saved yet. Add roles from Discover or manually on{" "}
-                  <a href="/dashboard/applications" className="text-emerald-400 hover:underline">
-                    My jobs
-                  </a>
-                  .
+                <td colSpan={5} className="px-4 py-10 text-center">
+                  <p className="text-sm font-medium text-zinc-300">No jobs on your list yet</p>
+                  <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-zinc-500">
+                    Use <strong className="text-zinc-400">Discover</strong> on the home page, or open{" "}
+                    <a href="/dashboard/applications" className="font-semibold text-emerald-400 hover:underline">
+                      My jobs
+                    </a>{" "}
+                    and add a title, company, and optional posting link—takes under a minute.
+                  </p>
                 </td>
               </tr>
             ) : (

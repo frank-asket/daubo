@@ -41,7 +41,7 @@ export function GettingStartedCard() {
     {
       done: o.resume_added,
       title: "Add your résumé",
-      hint: "Daubo uses it for every tailored suggestion—nothing is invented.",
+      hint: "Daubo uses it for every tailored suggestion—nothing is invented. Certificates and degrees go under Profile (optional but helpful).",
       href: "/dashboard/resume",
       cta: "My résumé",
     },
@@ -122,14 +122,23 @@ export function GettingStartedCard() {
           Gmail is optional—skip it if you prefer to copy drafts from Daubo manually.
         </p>
       ) : null}
-      {email ? (
-        <p className="mt-3 text-[11px] text-zinc-600">
-          Questions?{" "}
-          <a href={`mailto:${encodeURIComponent(email)}`} className="font-medium text-emerald-400 hover:underline">
-            {email}
-          </a>
-        </p>
-      ) : null}
+      <p className="mt-3 text-[11px] text-zinc-600">
+        <Link href="/dashboard/profile" className="font-medium text-emerald-400/90 hover:underline">
+          Profile
+        </Link>
+        {" · "}
+        <Link href="/dashboard/support" className="font-medium text-emerald-400/90 hover:underline">
+          Support
+        </Link>
+        {email ? (
+          <>
+            {" · "}
+            <a href={`mailto:${encodeURIComponent(email)}`} className="font-medium text-emerald-400 hover:underline">
+              {email}
+            </a>
+          </>
+        ) : null}
+      </p>
     </section>
   );
 }

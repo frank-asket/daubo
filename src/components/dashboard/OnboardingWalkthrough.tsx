@@ -13,23 +13,23 @@ import {
 const STEPS = [
   {
     title: "Welcome to Daubo",
-    body: "This is your career workspace: find roles, shape tailored application materials, and practice interviews—all grounded in the story on your resume.",
+    body: "Your workspace for the next step—whether that’s a new job or a more polished story for your own venture. Everything is built around what you upload: résumé, credentials, and the roles you save.",
   },
   {
-    title: "Start with your resume",
-    body: "Add your resume once (on the My resume page). We use it as the source of truth so suggestions stay honest—no made-up jobs, dates, or titles.",
+    title: "Start with your résumé (and optional credentials)",
+    body: "On My résumé, add or paste your CV once—it’s the source of truth. On Profile you can upload certificates or diplomas too; they strengthen drafts and interview prep.",
   },
   {
-    title: "Find roles that fit",
-    body: "Discover openings and save the ones you like. We’ll help you adapt your materials to each posting’s wording and requirements.",
+    title: "Save opportunities you care about",
+    body: "Use Discover for ideas or add a role manually on My jobs. Each saved item gets its own materials—no mixing up companies or job titles.",
   },
   {
-    title: "Apply on your terms",
-    body: "You submit applications on the company or LinkedIn site yourself. When Gmail is connected, we can save outreach as drafts in your inbox—you press send.",
+    title: "You stay in control",
+    body: "You apply on the real employer or LinkedIn site. With Gmail connected, we can place drafts in your inbox—you edit and press send. Nothing goes out automatically.",
   },
   {
-    title: "You’re set",
-    body: "Add your resume to unlock personalized packages. Explore the dashboard anytime; this tour won’t show again after you continue.",
+    title: "You’re ready to explore",
+    body: "Add your résumé when you’re ready to unlock tailored packages. You can skip this tour anytime; reopen Profile or Support if you get stuck.",
   },
 ] as const;
 

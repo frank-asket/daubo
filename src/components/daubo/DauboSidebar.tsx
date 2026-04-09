@@ -72,6 +72,7 @@ export function DauboSidebar({
               key={item.href}
               href={item.href}
               onClick={onNavLinkClick}
+              aria-current={isActive ? "page" : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
                   ? "bg-zinc-800/90 text-white"
@@ -93,12 +94,18 @@ export function DauboSidebar({
         <nav className="flex flex-col gap-0.5">
           {secondary.map((item) => {
             const Icon = item.icon;
+            const isActive = active === item.label;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={onNavLinkClick}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200"
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-zinc-800/60 text-zinc-200"
+                    : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+                }`}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                 {item.label}

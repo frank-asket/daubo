@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { formatApiErrorMessage } from "@/lib/api-error-message";
 import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
 
@@ -47,8 +48,8 @@ export function ApplicationsBoard() {
     try {
       const r = await fetch(dauboBffUrl("v1/me/applications"), { credentials: "same-origin" });
       if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
+        throw new Error(formatApiErrorMessage(j.detail, `Could not load jobs (${r.status}). Try again.`));
       }
       const raw = (await r.json()) as Application[];
       setItems(
@@ -76,8 +77,8 @@ export function ApplicationsBoard() {
         credentials: "same-origin",
       });
       if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? "Could not export");
+        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
+        throw new Error(formatApiErrorMessage(j.detail, "Could not export. Try again."));
       }
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
@@ -151,8 +152,8 @@ export function ApplicationsBoard() {
         }),
       });
       if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
+        throw new Error(formatApiErrorMessage(j.detail, "Could not save this job. Try again."));
       }
       setTitle("");
       setCompany("");

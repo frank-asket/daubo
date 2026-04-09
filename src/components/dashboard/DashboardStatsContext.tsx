@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { formatApiErrorMessage } from "@/lib/api-error-message";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 export type CareerStats = {
@@ -60,20 +61,16 @@ export function DashboardStatsProvider({ children }: { children: React.ReactNode
           detail?: unknown;
           error?: string;
         };
-        const detail = j.detail;
-        let msg: string | null =
-          typeof detail === "string"
-            ? detail.trim() || null
-            : Array.isArray(detail)
-              ? JSON.stringify(detail)
-              : detail != null
-                ? String(detail).trim() || null
-                : null;
-        if (!msg && typeof j.error === "string" && j.error.trim()) {
-          msg = j.error.trim();
-        }
+        const fromDetail = formatApiErrorMessage(
+          j.detail,
+          "We couldn’t load your overview. Try refreshing.",
+        );
+        const msg =
+          typeof j.error === "string" && j.error.trim()
+            ? j.error.trim()
+            : fromDetail;
         setStats(null);
-        setError(msg ?? "We couldn’t load your overview. Try refreshing.");
+        setError(msg);
         return;
       }
       setStats((await r.json()) as MeStats);
