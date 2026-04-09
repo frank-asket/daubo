@@ -23,4 +23,5 @@ EXPOSE 8000
 
 # Workers: tune per CPU; 2 is a safe default for small APIs
 # Use shell so ${PORT} expands. Without this, healthchecks fail (proxy ≠ port 8000).
-CMD ["/bin/sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} --workers 2 --access-logfile - --error-logfile - --capture-output"]
+# Single worker avoids two parallel lifespan threads racing on init_db / create_all.
+CMD ["/bin/sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} --workers 1 --access-logfile - --error-logfile - --capture-output"]

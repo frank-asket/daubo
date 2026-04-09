@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -40,11 +41,34 @@ async def lifespan(app: FastAPI):
             "DAUBO_INTERNAL_API_SECRET is empty in production — API is open to anyone who can reach it. "
             "Set the secret and call through your Next.js proxy."
         )
-    await init_db()
-    logger.info("Database initialized")
-    yield
-    await engine.dispose()
-    logger.info("Database connections closed")
+
+    # Run DB setup in the background so HTTP (e.g. Railway /health) can respond immediately.
+    # A blocking await init_db() before yield prevents the server from accepting connections
+    # until Postgres is reachable — healthchecks then see "service unavailable" indefinitely.
+    async def _init_db_task():
+        try:
+            await init_db()
+            logger.info("Database initialized")
+        except Exception:
+            logger.exception(
+                "Database initialization failed — verify DATABASE_URL on the service, network access "
+                "to Postgres, and that the database allows the pgvector extension"
+            )
+
+    init_task = asyncio.create_task(_init_db_task())
+    try:
+        yield
+    finally:
+        if not init_task.done():
+            init_task.cancel()
+        try:
+            await init_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass  # already logged inside _init_db_task
+        await engine.dispose()
+        logger.info("Database connections closed")
 
 
 def create_app() -> FastAPI:

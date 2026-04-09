@@ -123,7 +123,7 @@ npm start
 
 5. Generate a **public URL** (or attach a custom domain) for the API. Health check: `GET /health` (used by [`backend/railway.toml`](backend/railway.toml)). The Docker image binds Gunicorn to **`$PORT`** (Railway sets this); a fixed port like `8000` alone will fail the healthcheck.
 
-6. If the replica stays unhealthy, open **Deploy logs**: verify **`DATABASE_URL`** on the API service, Postgres is up, and the DB allows the **`vector`** extension (or use an external pgvector-capable URL).
+6. The API serves **`/health`** immediately while **Postgres migrations/extension** run in the background. If the replica is still unhealthy, check **`PORT`** (see Dockerfile) and runtime **Deploy logs**. After a successful healthcheck, look for **`Database initialized`** or **`Database initialization failed`** to confirm `DATABASE_URL`, SSL, and **pgvector** on your provider.
 
 **2 — Vercel (Next.js UI)**
 
