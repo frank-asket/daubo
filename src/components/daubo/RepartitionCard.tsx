@@ -18,7 +18,7 @@ export function RepartitionCard({
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-      <p className="text-sm font-semibold text-white">By stage</p>
+      <p className="text-sm font-semibold text-white">By status</p>
       <div className="mt-2 flex min-h-0 flex-1 items-center justify-center" style={{ height: 200 }}>
         {!mounted ? (
           <div className="h-full w-full rounded-lg bg-zinc-900/50" aria-hidden />

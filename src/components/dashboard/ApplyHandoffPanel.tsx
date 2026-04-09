@@ -211,7 +211,7 @@ export function ApplyHandoffPanel({
               onClick={() => onStatusChange(application.id, "ready_to_apply")}
               className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-200 hover:border-zinc-500"
             >
-              Mark ready to apply
+              Mark as ready to apply
             </button>
             <button
               type="button"
@@ -224,7 +224,7 @@ export function ApplyHandoffPanel({
 
           <label className="block">
             <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-              Job description (improves drafts)
+              Job description (helps with better wording)
             </span>
             <textarea
               className="mt-1 min-h-[100px] w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-zinc-600"
@@ -236,14 +236,14 @@ export function ApplyHandoffPanel({
 
           <label className="block">
             <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-              Channel hint (optional)
+              How you’ll apply (optional)
             </span>
             <select
               className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white"
               value={channelOverride || ""}
               onChange={(e) => setChannelOverride(e.target.value)}
             >
-              <option value="">Let Daubo infer</option>
+              <option value="">Let Daubo choose</option>
               <option value="linkedin">LinkedIn</option>
               <option value="email">Email to HR</option>
               <option value="web">Company careers site</option>
@@ -262,7 +262,7 @@ export function ApplyHandoffPanel({
                 Generating…
               </span>
             ) : (
-              "Generate application package"
+              "Generate application materials"
             )}
           </button>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}

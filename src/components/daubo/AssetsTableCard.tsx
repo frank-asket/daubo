@@ -40,7 +40,9 @@ export function AssetsTableCard({
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-0">
       {error ? (
-        <p className="px-4 py-3 text-xs text-red-400">{error}</p>
+        <p className="px-4 py-3 text-xs text-amber-200/95" role="alert">
+          {error}
+        </p>
       ) : null}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] text-left text-xs">
@@ -49,7 +51,7 @@ export function AssetsTableCard({
               <th className="px-4 py-3 font-medium">Role</th>
               <th className="px-4 py-3 font-medium">Company</th>
               <th className="px-4 py-3 font-medium">Location</th>
-              <th className="px-4 py-3 font-medium">Stage</th>
+              <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Updated</th>
             </tr>
           </thead>

@@ -184,16 +184,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       >
                         <p className="text-xs font-semibold text-white">Notifications</p>
                         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                          Pipeline updates and Gmail handoff reminders can appear here as we wire push
-                          delivery. For now, use <strong className="text-zinc-400">Assistant</strong>{" "}
-                          (bottom-right) for guidance.
+                          Job reminders and alerts aren’t turned on yet. For quick help, open the{" "}
+                          <strong className="text-zinc-400">Coach</strong> button at the bottom-right of
+                          the screen.
                         </p>
                         <Link
                           href="/dashboard/settings"
                           className="mt-3 inline-block text-[11px] font-medium text-emerald-400 hover:underline"
                           onClick={closeNotif}
                         >
-                          Settings &amp; Gmail →
+                          Email &amp; settings →
                         </Link>
                       </div>
                     ) : null}

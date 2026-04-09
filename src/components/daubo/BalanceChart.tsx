@@ -38,9 +38,11 @@ export function BalanceChart({
       <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-zinc-500">Applications tracked</p>
+            <p className="text-xs font-medium text-zinc-500">Jobs you’re tracking</p>
             <p className="mt-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {trackedRoles != null ? `${trackedRoles} roles` : "—"}
+              {trackedRoles != null
+                ? `${trackedRoles} job${trackedRoles === 1 ? "" : "s"}`
+                : "—"}
             </p>
           </div>
         </div>
@@ -53,16 +55,22 @@ export function BalanceChart({
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-zinc-500">Applications tracked</p>
+          <p className="text-xs font-medium text-zinc-500">Jobs you’re tracking</p>
           <div className="mt-1 flex flex-wrap items-baseline gap-3">
             <span className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {trackedRoles != null ? `${trackedRoles} roles` : "24 roles"}
+              {trackedRoles != null
+                ? `${trackedRoles} job${trackedRoles === 1 ? "" : "s"}`
+                : "—"}
             </span>
             <span
               className={`text-sm font-semibold ${trackedRoles != null ? "text-zinc-500" : "text-emerald-400"}`}
-              title={trackedRoles != null ? "Trend when history is wired" : undefined}
+              title={
+                trackedRoles != null
+                  ? "Illustrative trend—your exact history chart is coming"
+                  : "Preview only until you save jobs"
+              }
             >
-              {trackedRoles != null ? "tracked" : "+18%"}
+              {trackedRoles != null ? "saved in Daubo" : "sample chart"}
             </span>
           </div>
         </div>
@@ -107,7 +115,7 @@ export function BalanceChart({
                 fontSize: "12px",
               }}
               labelStyle={{ color: "#a1a1aa" }}
-              formatter={(v: number) => [`${v.toFixed(0)} saved`, "Activity"]}
+              formatter={(v: number) => [`${v.toFixed(0)} (example)`, "Trend"]}
             />
             <Area
               type="monotone"

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { dauboBffUrl } from "@/lib/daubo-api";
+import { jobStageLabel } from "@/lib/job-stages";
 
 type Application = {
   id: string;
@@ -65,7 +66,7 @@ export function InterviewPrepBoard() {
       }
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Prep failed");
+      setError(e instanceof Error ? e.message : "Couldn’t refresh practice questions. Try again.");
     } finally {
       setGeneratingId(null);
     }
@@ -74,13 +75,13 @@ export function InterviewPrepBoard() {
   return (
     <div className="space-y-8">
       <p className="max-w-2xl text-sm text-zinc-500">
-        After you apply, generate a focused prep pack for each role. Daubo uses your resume and the
-        job context—then you practice answers before the real conversation.
+        After you apply, get practice questions for each role. Daubo uses your résumé and the job
+        context—then you rehearse answers before the real conversation.
       </p>
       <p className="max-w-2xl text-sm text-zinc-500">
-        Roles shown here are in stages{" "}
-        <strong className="text-zinc-300">applied</strong> or{" "}
-        <strong className="text-zinc-300">interview</strong>. Update stages in{" "}
+        Roles listed here have status{" "}
+        <strong className="text-zinc-300">{jobStageLabel("applied")}</strong> or{" "}
+        <strong className="text-zinc-300">{jobStageLabel("interview")}</strong>. Update status in{" "}
         <Link href="/dashboard/applications" className="text-emerald-400 hover:underline">
           My jobs
         </Link>
@@ -118,7 +119,9 @@ export function InterviewPrepBoard() {
                     <p className="font-semibold text-white">
                       {row.title} <span className="text-zinc-500">· {row.company}</span>
                     </p>
-                    <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500">{row.status}</p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Status: <span className="font-medium text-zinc-400">{jobStageLabel(row.status)}</span>
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -132,9 +135,9 @@ export function InterviewPrepBoard() {
                         Generating…
                       </span>
                     ) : prep ? (
-                      "Regenerate prep"
+                      "Refresh questions"
                     ) : (
-                      "Generate prep pack"
+                      "Get practice questions"
                     )}
                   </button>
                 </div>

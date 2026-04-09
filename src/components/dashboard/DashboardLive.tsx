@@ -91,7 +91,7 @@ export function DashboardLive() {
         if (!msg && typeof j.error === "string" && j.error.trim()) {
           msg = j.error.trim();
         }
-        setAppsError(msg ?? `Applications ${r.status}`);
+        setAppsError(msg ?? "We couldn’t load your jobs. Try refreshing the page.");
         setApplications([]);
         return;
       }
@@ -103,7 +103,7 @@ export function DashboardLive() {
         })),
       );
     } catch {
-      setAppsError("Could not load applications");
+      setAppsError("We couldn’t reach Daubo. Check your connection and try again.");
       setApplications([]);
     } finally {
       setAppsLoading(false);
@@ -138,11 +138,11 @@ export function DashboardLive() {
       </div>
       {stats && !stats.has_resume ? (
         <p className="rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-sm text-zinc-400">
-          Add your resume in{" "}
+          Add your résumé in{" "}
           <a href="/dashboard/resume" className="font-semibold text-emerald-400 hover:underline">
-            Resume
+            My résumé
           </a>{" "}
-          so Daubo can tailor applications to each role.
+          so Daubo can tailor suggestions to each role.
         </p>
       ) : null}
       <AutopilotCard

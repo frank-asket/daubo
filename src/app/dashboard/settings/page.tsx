@@ -10,8 +10,7 @@ export default function SettingsPage() {
         Settings
       </h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        Your Daubo account, security, and subscription live in the profile below—update
-        payment method, plan, or sign-in methods in one place.
+        Connect Gmail for drafts, and manage your account, security, and subscription in one place.
       </p>
       <Link
         href="/pricing"
@@ -24,7 +23,7 @@ export default function SettingsPage() {
         <Suspense
           fallback={
             <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6 text-sm text-zinc-500">
-              Loading integrations…
+              Loading settings…
             </div>
           }
         >
@@ -37,7 +36,7 @@ export default function SettingsPage() {
         href="/dashboard"
         className="mt-10 inline-flex text-sm font-semibold text-zinc-500 hover:text-zinc-300"
       >
-        ← Back to overview
+        ← Back to home
       </Link>
     </div>
   );

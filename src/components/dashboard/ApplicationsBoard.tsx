@@ -59,7 +59,7 @@ export function ApplicationsBoard() {
         })),
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
+      setError(e instanceof Error ? e.message : "We couldn’t load your jobs. Try again.");
     } finally {
       setLoading(false);
     }
@@ -281,7 +281,7 @@ export function ApplicationsBoard() {
                       className="rounded-lg border border-zinc-800 bg-black px-2 py-1.5 text-xs text-white"
                       value={row.status}
                       onChange={(e) => updateStatus(row.id, e.target.value)}
-                      aria-label="Stage"
+                      aria-label="Job status"
                     >
                       {JOB_STAGE_VALUES.map((s) => (
                         <option key={s} value={s}>
@@ -318,7 +318,7 @@ export function ApplicationsBoard() {
                   <tr>
                     <th className="px-4 py-3 font-medium">Role</th>
                     <th className="px-4 py-3 font-medium">Company</th>
-                    <th className="px-4 py-3 font-medium">Stage</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Updated</th>
                     <th className="px-4 py-3 font-medium">Apply</th>
                     <th className="px-4 py-3 font-medium" />

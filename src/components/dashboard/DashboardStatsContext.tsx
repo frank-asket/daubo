@@ -59,13 +59,13 @@ export function DashboardStatsProvider({ children }: { children: React.ReactNode
           msg = j.error.trim();
         }
         setStats(null);
-        setError(msg ?? `Stats ${r.status}`);
+        setError(msg ?? "We couldn’t load your overview. Try refreshing.");
         return;
       }
       setStats((await r.json()) as MeStats);
     } catch {
       setStats(null);
-      setError("Could not load dashboard stats");
+      setError("We couldn’t load your overview. Check your connection and try again.");
     } finally {
       setStatsReady(true);
     }

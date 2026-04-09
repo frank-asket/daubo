@@ -30,7 +30,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             {!isLoaded ? "…" : inbox ?? "—"}
           </p>
           <p className="mt-1.5 text-[10px] text-zinc-600">
-            Clerk sign-in. Gmail connect is separate (Settings).
+            Sign-in email for your account. Gmail drafts use a separate connection in Settings.
           </p>
         </div>
 

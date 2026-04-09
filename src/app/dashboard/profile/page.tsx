@@ -15,7 +15,7 @@ export default function ProfilePage() {
         href="/dashboard"
         className="mt-10 inline-flex text-sm font-semibold text-emerald-400 hover:underline"
       >
-        ← Back to overview
+        ← Back to home
       </Link>
     </div>
   );
