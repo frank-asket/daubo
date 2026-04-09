@@ -4,6 +4,8 @@ import { UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { Bell, Search } from "lucide-react";
 import { DauboSidebar } from "@/components/daubo/DauboSidebar";
+import { OnboardingWalkthrough } from "@/components/dashboard/OnboardingWalkthrough";
+import { ResumeNudgeBanner } from "@/components/dashboard/ResumeNudgeBanner";
 
 const pathToActive: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -21,8 +23,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-black text-zinc-50">
+      <OnboardingWalkthrough />
       <DauboSidebar active={active} />
       <div className="flex min-w-0 flex-1 flex-col bg-[#050505]">
+        <ResumeNudgeBanner />
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/90 px-5 py-4">
           <div>
             <p className="text-[11px] text-zinc-500">Workspace / Dashboard</p>
