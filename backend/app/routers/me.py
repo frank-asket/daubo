@@ -108,6 +108,11 @@ async def me_stats(
             + by_status.get("shortlisted", 0)
         )
         in_play = by_status.get("applied", 0) + by_status.get("interview", 0)
+        gmail_count = await session.scalar(
+            select(func.count())
+            .select_from(UserGmailCredentials)
+            .where(UserGmailCredentials.clerk_user_id == user_id)
+        )
     except SQLAlchemyError:
         logger.exception("me_stats database error (tables missing, connection, or SSL?)")
         raise HTTPException(
@@ -120,14 +125,23 @@ async def me_stats(
             status_code=503,
             detail="Could not load your dashboard. Please try again.",
         ) from None
+    n_apps = int(app_count or 0)
+    has_resume = bool(resume_count)
+    gmail_connected = bool(gmail_count)
     return {
-        "application_count": int(app_count or 0),
-        "has_resume": bool(resume_count),
+        "application_count": n_apps,
+        "has_resume": has_resume,
         "career": {
             "ready_to_submit": ready,
             "package_ready": package_ready,
             "exploring": exploring,
             "applied_or_interview": in_play,
+        },
+        "onboarding": {
+            "resume_added": has_resume,
+            "job_saved": n_apps > 0,
+            "gmail_connected": gmail_connected,
+            "setup_complete": has_resume and n_apps > 0,
         },
     }
 

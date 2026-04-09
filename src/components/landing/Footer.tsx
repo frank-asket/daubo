@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { FooterLegalLinks } from "@/components/landing/FooterLegalLinks";
+import { productName } from "@/lib/customer-config";
 
 export function FooterCTA() {
   return (
@@ -26,7 +28,7 @@ export function FooterCTA() {
 export function Footer() {
   return (
     <footer className="border-t border-zinc-800 bg-black pb-12 pt-10">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-5 lg:px-8">
         <div className="sm:col-span-2 lg:col-span-1">
           <Logo href="/" />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
@@ -64,9 +66,15 @@ export function Footer() {
             </li>
             <li>
               <Link href="/dashboard" className="hover:text-zinc-300">
-                Dashboard
+                Open app
               </Link>
             </li>
+          </ul>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white">Legal &amp; support</p>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-500">
+            <FooterLegalLinks />
           </ul>
         </div>
         <div>
@@ -91,7 +99,7 @@ export function Footer() {
         </div>
       </div>
       <p className="mt-12 text-center text-xs text-zinc-600">
-        © {new Date().getFullYear()} Daubo. All rights reserved.
+        © {new Date().getFullYear()} {productName()}. All rights reserved.
       </p>
     </footer>
   );

@@ -17,10 +17,18 @@ export type CareerStats = {
   applied_or_interview: number;
 };
 
+export type OnboardingStats = {
+  resume_added: boolean;
+  job_saved: boolean;
+  gmail_connected: boolean;
+  setup_complete: boolean;
+};
+
 export type MeStats = {
   application_count: number;
   has_resume: boolean;
   career?: CareerStats;
+  onboarding?: OnboardingStats;
 };
 
 type DashboardStatsContextValue = {

@@ -12,7 +12,7 @@ export default function DashboardLayout({
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-black text-sm text-zinc-500">
-          Loading workspace…
+          Loading your account…
         </div>
       }
     >

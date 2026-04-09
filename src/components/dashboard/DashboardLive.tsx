@@ -11,6 +11,7 @@ import {
 import { RepartitionCard } from "@/components/daubo/RepartitionCard";
 import { AutopilotCard } from "@/components/dashboard/AutopilotCard";
 import { CareerNextStepsCard } from "@/components/dashboard/CareerNextStepsCard";
+import { GettingStartedCard } from "@/components/dashboard/GettingStartedCard";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
@@ -122,6 +123,7 @@ export function DashboardLive() {
   return (
     <div className="space-y-4">
       <DashboardOverview hasResume={stats?.has_resume ?? null} />
+      <GettingStartedCard />
       <CareerNextStepsCard />
       {statsError ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
