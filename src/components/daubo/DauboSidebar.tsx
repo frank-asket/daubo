@@ -29,17 +29,34 @@ const secondary = [
   { href: "/dashboard/support", label: "Support", icon: LifeBuoy },
 ];
 
+function mergeClassNames(...parts: (string | undefined)[]) {
+  return parts.filter(Boolean).join(" ");
+}
+
 export function DauboSidebar({
   active = "Dashboard",
+  logoHref = "/",
+  className,
+  onNavLinkClick,
 }: {
   active?: string;
+  /** Dashboard uses `/dashboard` so the logo returns to the workspace home, not marketing. */
+  logoHref?: string;
+  className?: string;
+  onNavLinkClick?: () => void;
 }) {
   return (
-    <aside className="flex w-[220px] shrink-0 flex-col border-r border-zinc-800/90 bg-[#0a0a0a]">
+    <aside
+      id="dashboard-sidebar-nav"
+      className={mergeClassNames(
+        "flex w-[min(260px,88vw)] shrink-0 flex-col border-r border-zinc-800/90 bg-[#0a0a0a] lg:w-[220px]",
+        className,
+      )}
+    >
       <div className="flex h-14 items-center border-b border-zinc-800/90 px-4">
-        <Logo href="/" />
+        <Logo href={logoHref} />
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Dashboard">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="Dashboard">
         {main.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.label;
@@ -47,6 +64,7 @@ export function DauboSidebar({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavLinkClick}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
                   ? "bg-zinc-800/90 text-white"
@@ -72,6 +90,7 @@ export function DauboSidebar({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onNavLinkClick}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-500 transition hover:bg-zinc-900 hover:text-zinc-200"
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />

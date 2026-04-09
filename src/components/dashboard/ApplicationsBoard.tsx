@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type Application = {
@@ -18,9 +19,14 @@ type Application = {
 const STATUSES = ["draft", "ready", "applied", "interview", "offer", "closed"];
 
 export function ApplicationsBoard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qFromUrl = searchParams.get("q") ?? "";
+
   const [items, setItems] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterText, setFilterText] = useState(qFromUrl);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [location, setLocation] = useState("");
@@ -47,6 +53,38 @@ export function ApplicationsBoard() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setFilterText(qFromUrl);
+  }, [qFromUrl]);
+
+  const filteredItems = useMemo(() => {
+    const needle = filterText.trim().toLowerCase();
+    if (!needle) return items;
+    return items.filter(
+      (row) =>
+        row.title.toLowerCase().includes(needle) ||
+        row.company.toLowerCase().includes(needle) ||
+        (row.location ?? "").toLowerCase().includes(needle) ||
+        (row.notes ?? "").toLowerCase().includes(needle),
+    );
+  }, [items, filterText]);
+
+  useEffect(() => {
+    const q = filterText.trim();
+    const t = window.setTimeout(() => {
+      const prev = (new URLSearchParams(window.location.search).get("q") ?? "").trim();
+      if (q === prev) return;
+      const params = new URLSearchParams(window.location.search);
+      if (q) params.set("q", q);
+      else params.delete("q");
+      const tail = params.toString();
+      router.replace(tail ? `/dashboard/applications?${tail}` : "/dashboard/applications", {
+        scroll: false,
+      });
+    }, 320);
+    return () => window.clearTimeout(t);
+  }, [filterText, router]);
 
   async function addApplication(e: React.FormEvent) {
     e.preventDefault();
@@ -148,7 +186,21 @@ export function ApplicationsBoard() {
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
       <div>
-        <h2 className="text-sm font-semibold text-white">Your pipeline</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="text-sm font-semibold text-white">Your pipeline</h2>
+          {items.length > 0 ? (
+            <label className="block w-full sm:max-w-xs">
+              <span className="sr-only">Filter pipeline</span>
+              <input
+                type="search"
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                placeholder="Filter…"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600"
+              />
+            </label>
+          ) : null}
+        </div>
         {loading ? (
           <div className="mt-4 flex items-center gap-2 text-zinc-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -159,67 +211,133 @@ export function ApplicationsBoard() {
             No applications yet. Add one above, or let agents populate matches from your resume as
             they run.
           </p>
+        ) : filteredItems.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-500">
+            No rows match &ldquo;{filterText.trim()}&rdquo;.{" "}
+            <button
+              type="button"
+              className="font-medium text-emerald-400 hover:underline"
+              onClick={() => {
+                setFilterText("");
+                router.replace("/dashboard/applications", { scroll: false });
+              }}
+            >
+              Clear filter
+            </button>
+          </p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-zinc-800">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="border-b border-zinc-800 text-[11px] uppercase tracking-wide text-zinc-500">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium">Company</th>
-                  <th className="px-4 py-3 font-medium">Stage</th>
-                  <th className="px-4 py-3 font-medium">Updated</th>
-                  <th className="px-4 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody className="text-zinc-300">
-                {items.map((row) => (
-                  <tr key={row.id} className="border-b border-zinc-800/80 last:border-0">
-                    <td className="px-4 py-3 font-medium text-white">
-                      {row.job_url ? (
-                        <a
-                          href={row.job_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-emerald-400 hover:underline"
-                        >
-                          {row.title}
-                        </a>
-                      ) : (
-                        row.title
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400">{row.company}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        className="rounded-lg border border-zinc-800 bg-black px-2 py-1 text-xs text-white"
-                        value={row.status}
-                        onChange={(e) => updateStatus(row.id, e.target.value)}
+          <>
+            <div className="mt-4 space-y-3 md:hidden">
+              {filteredItems.map((row) => (
+                <div
+                  key={row.id}
+                  className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-4 text-sm"
+                >
+                  <div className="font-medium text-white">
+                    {row.job_url ? (
+                      <a
+                        href={row.job_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-emerald-400 hover:underline"
                       >
-                        {STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500">
+                        {row.title}
+                      </a>
+                    ) : (
+                      row.title
+                    )}
+                  </div>
+                  <p className="mt-1 text-zinc-400">{row.company}</p>
+                  {row.location ? <p className="mt-0.5 text-xs text-zinc-500">{row.location}</p> : null}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <select
+                      className="rounded-lg border border-zinc-800 bg-black px-2 py-1.5 text-xs text-white"
+                      value={row.status}
+                      onChange={(e) => updateStatus(row.id, e.target.value)}
+                      aria-label="Stage"
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-zinc-500">
                       {new Date(row.updated_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => remove(row.id)}
-                        className="inline-flex rounded-lg border border-zinc-800 p-2 text-zinc-500 hover:border-red-500/50 hover:text-red-400"
-                        aria-label="Remove"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => remove(row.id)}
+                      className="ml-auto inline-flex rounded-lg border border-zinc-800 p-2 text-zinc-500 hover:border-red-500/50 hover:text-red-400"
+                      aria-label="Remove"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-zinc-800 md:block">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b border-zinc-800 text-[11px] uppercase tracking-wide text-zinc-500">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Role</th>
+                    <th className="px-4 py-3 font-medium">Company</th>
+                    <th className="px-4 py-3 font-medium">Stage</th>
+                    <th className="px-4 py-3 font-medium">Updated</th>
+                    <th className="px-4 py-3 font-medium" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="text-zinc-300">
+                  {filteredItems.map((row) => (
+                    <tr key={row.id} className="border-b border-zinc-800/80 last:border-0">
+                      <td className="px-4 py-3 font-medium text-white">
+                        {row.job_url ? (
+                          <a
+                            href={row.job_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-emerald-400 hover:underline"
+                          >
+                            {row.title}
+                          </a>
+                        ) : (
+                          row.title
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">{row.company}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          className="rounded-lg border border-zinc-800 bg-black px-2 py-1 text-xs text-white"
+                          value={row.status}
+                          onChange={(e) => updateStatus(row.id, e.target.value)}
+                        >
+                          {STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-zinc-500">
+                        {new Date(row.updated_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => remove(row.id)}
+                          className="inline-flex rounded-lg border border-zinc-800 p-2 text-zinc-500 hover:border-red-500/50 hover:text-red-400"
+                          aria-label="Remove"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
