@@ -1,7 +1,9 @@
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
@@ -16,6 +18,7 @@ from app.schemas.me import (
 )
 
 router = APIRouter(tags=["me"])
+logger = logging.getLogger("daubo")
 
 
 @router.get("/me/stats")
@@ -23,16 +26,25 @@ async def me_stats(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ) -> dict:
-    app_count = await session.scalar(
-        select(func.count())
-        .select_from(JobApplication)
-        .where(JobApplication.clerk_user_id == user_id)
-    )
-    resume_count = await session.scalar(
-        select(func.count())
-        .select_from(UserResume)
-        .where(UserResume.clerk_user_id == user_id)
-    )
+    try:
+        app_count = await session.scalar(
+            select(func.count())
+            .select_from(JobApplication)
+            .where(JobApplication.clerk_user_id == user_id)
+        )
+        resume_count = await session.scalar(
+            select(func.count())
+            .select_from(UserResume)
+            .where(UserResume.clerk_user_id == user_id)
+        )
+    except SQLAlchemyError:
+        logger.exception("me_stats database error (tables missing, connection, or SSL?)")
+        raise HTTPException(
+            status_code=503,
+            detail="Database unavailable or not initialized. Check Railway API logs for "
+            '"Database initialized" vs "Database initialization failed", DATABASE_URL, '
+            "and pgvector.",
+        ) from None
     return {
         "application_count": int(app_count or 0),
         "has_resume": bool(resume_count),

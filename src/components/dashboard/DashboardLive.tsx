@@ -34,8 +34,17 @@ export function DashboardLive() {
     try {
       const r = await fetch(dauboBffUrl("v1/me/stats"), { credentials: "same-origin" });
       if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        setErr((j as { detail?: string }).detail ?? `Stats ${r.status}`);
+        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
+        const detail = j.detail;
+        const msg =
+          typeof detail === "string"
+            ? detail
+            : Array.isArray(detail)
+              ? JSON.stringify(detail)
+              : detail != null
+                ? String(detail)
+                : null;
+        setErr(msg ?? `Stats ${r.status}`);
         return;
       }
       setStats((await r.json()) as Stats);
