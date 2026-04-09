@@ -11,7 +11,12 @@ type DiscoverResult = {
     example_search_queries: string[];
     filters_to_apply: string[];
     regulatory_reminders: string;
-    parsed_listings: { title: string; employer: string | null; location: string | null }[];
+    parsed_listings: {
+      title: string;
+      employer: string | null;
+      location: string | null;
+      source_url?: string | null;
+    }[];
   };
   notice: string;
 };
@@ -106,7 +111,8 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
       <p className="mt-1 text-xs text-zinc-500">
         When you save or upload a resume, agents automatically infer geography and roles, then draft a
         sourcing plan in the background—no extra clicks. Use the fields below to refine or re-run
-        manually; optional paste pulls real ads into pipeline rows.
+        manually. With Adzuna keys on the API, live postings from that country are merged in; optional
+        paste still extracts extra ads into rows.
       </p>
       {autoPlanAt ? (
         <p className="mt-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-100/90">
@@ -177,7 +183,7 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
           {data.result.parsed_listings.length > 0 ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                From your paste
+                Roles for your pipeline
               </p>
               <ul className="mt-2 space-y-2 text-zinc-300">
                 {data.result.parsed_listings.map((l, i) => (
@@ -188,6 +194,16 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
                     ) : null}
                     {l.location ? (
                       <span className="text-zinc-500"> · {l.location}</span>
+                    ) : null}
+                    {l.source_url ? (
+                      <a
+                        href={l.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 block truncate text-[11px] text-emerald-400/90 hover:underline"
+                      >
+                        Open posting
+                      </a>
                     ) : null}
                   </li>
                 ))}

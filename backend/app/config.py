@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     jina_embedding_model: str = "jina-embeddings-v3"
     jina_embedding_dimension: int = 1024
 
+    adzuna_app_id: str = ""
+    adzuna_app_key: str = ""
+
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
     backend_cors_origins: str = "http://localhost:3000"

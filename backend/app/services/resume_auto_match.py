@@ -13,7 +13,7 @@ from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.models import AgentMatchRun, JobApplication, UserResume
 from app.schemas.jobs import JobDiscoverParams, JobDiscoverResponse, ResumeSearchInference
-from app.services.job_discovery import run_job_discovery
+from app.services.job_discover_live import run_job_discovery_with_optional_adzuna
 from app.services.llm import chat_llm
 
 logger = logging.getLogger("daubo")
@@ -100,6 +100,8 @@ async def _persist_applications_from_parsed(
         if pl.excerpt:
             notes_parts.append(pl.excerpt)
         notes = "\n".join(notes_parts) if notes_parts else None
+        url = getattr(pl, "source_url", None)
+        job_url = url.strip()[:2000] if isinstance(url, str) and url.strip() else None
         session.add(
             JobApplication(
                 clerk_user_id=clerk_user_id,
@@ -108,7 +110,7 @@ async def _persist_applications_from_parsed(
                 location=(pl.location.strip()[:300] if pl.location else None),
                 status="draft",
                 notes=notes[:50_000] if notes else None,
-                job_url=None,
+                job_url=job_url,
             )
         )
 
@@ -146,7 +148,7 @@ async def run_resume_auto_match_for_user(clerk_user_id: str) -> None:
     params = await _infer_params(settings, resume_text)
 
     try:
-        result = await run_job_discovery(settings, params)
+        result = await run_job_discovery_with_optional_adzuna(settings, params)
     except Exception:
         logger.exception("resume auto-match discovery failed for user=%s", clerk_user_id[:12])
         return

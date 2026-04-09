@@ -36,6 +36,11 @@ class ParsedListing(BaseModel):
     location: str | None = None
     contract_type: str | None = None
     excerpt: str | None = None
+    source_url: str | None = Field(
+        default=None,
+        max_length=2000,
+        description="Original posting URL when supplied (e.g. live feed or pasted ad).",
+    )
 
 
 class PortalGuide(BaseModel):
@@ -73,5 +78,5 @@ class JobDiscoverResponse(BaseModel):
     result: JobDiscoverLLMOut
     notice: str = (
         "Guidance is AI-generated from your parameters and any pasted text. "
-        "It is not a live crawl of every opening worldwide—connect job feeds later for freshness."
+        "When Adzuna API keys are configured, live listings from that region are merged into suggestions."
     )

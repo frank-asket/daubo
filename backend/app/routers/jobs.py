@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.config import Settings, get_settings
 from app.schemas.jobs import JobDiscoverParams, JobDiscoverResponse
-from app.services.job_discovery import run_job_discovery
+from app.services.job_discover_live import run_job_discovery_with_optional_adzuna
 
 router = APIRouter(tags=["jobs"])
 
@@ -15,7 +15,7 @@ async def discover_jobs(
     if not settings.openrouter_api_key:
         raise HTTPException(status_code=503, detail="OPENROUTER_API_KEY is not configured")
     try:
-        result = await run_job_discovery(settings, body)
+        result = await run_job_discovery_with_optional_adzuna(settings, body)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return JobDiscoverResponse(
