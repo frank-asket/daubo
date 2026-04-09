@@ -65,12 +65,12 @@ export function GmailConnectCard() {
       : gmailFlash === "missing_config"
         ? {
             kind: "warn" as const,
-            text: "Set GOOGLE_OAUTH_CLIENT_ID and DAUBO_INTERNAL_API_SECRET on the app, and Google OAuth vars on the API.",
+            text: "Gmail isn’t set up for this app yet. If you’re seeing this as a member, try again later or contact support.",
           }
         : gmailFlash === "error"
           ? {
               kind: "err" as const,
-              text: "Gmail connection failed. Check API logs and that the redirect URI matches Google Cloud exactly.",
+              text: "We couldn’t finish connecting Gmail. Check that pop-ups are allowed, then try again. If it keeps failing, contact support.",
             }
           : null;
 
@@ -151,16 +151,14 @@ export function GmailConnectCard() {
             Connect Gmail
           </a>
           <p className="text-[11px] text-zinc-600">
-            Requires{" "}
-            <code className="text-zinc-500">GOOGLE_OAUTH_CLIENT_ID</code> on Vercel and matching{" "}
-            <code className="text-zinc-500">GOOGLE_OAUTH_REDIRECT_URI</code> on the API.
+            We only request permission to create drafts—we don’t read your whole inbox.
           </p>
         </div>
       )}
 
       <p className="mt-6 text-[11px] text-zinc-600">
-        After connecting, use <Link href="/dashboard/applications" className="text-emerald-400 hover:underline">Applications</Link>{" "}
-        → <strong className="text-zinc-500">Human apply</strong> → create a draft when the channel is email.
+        After connecting, open <Link href="/dashboard/applications" className="text-emerald-400 hover:underline">My jobs</Link>{" "}
+        → <strong className="text-zinc-500">Apply yourself</strong> → save a draft when the role asks for email.
       </p>
     </div>
   );

@@ -11,16 +11,16 @@ from app.services.llm import chat_llm
 router = APIRouter(tags=["chat"])
 logger = logging.getLogger("daubo")
 
-DAUBO_ASSISTANT_SYSTEM = """You are Daubo Assistant inside the Daubo career workspace. Be concise and practical.
+DAUBO_ASSISTANT_SYSTEM = """You are the career assistant inside Daubo’s job-search workspace. Be concise, encouraging, and practical—write for job seekers, not developers.
 
 Product facts:
-- Users track roles in a pipeline with stages: draft → shortlisted → package_ready → ready_to_apply → applied → interview → offer → closed.
-- Prep autopilot can automatically generate application packages (and optionally Gmail drafts) for shortlisted or draft rows that have posting text—still no automatic clicks or submits on LinkedIn, Indeed, Workday, etc.
-- "Human apply" means the user opens the real job posting and submits themselves. Daubo does not auto-apply on third-party sites (ToS and account safety).
-- Gmail: users can connect Google with gmail.compose scope; Daubo creates email drafts only—never auto-sends.
-- Resume upload powers tailored application packages and interview prep.
+- Users save roles under “My jobs” with stages: draft → shortlisted → package_ready → ready_to_apply → applied → interview → offer → closed.
+- Smart prep can automatically generate application packages (and optionally Gmail drafts) for saved roles that have posting text—never automatic clicks or submits on LinkedIn, company career sites, or job boards.
+- “Apply yourself” means the user opens the real posting and submits on the employer or LinkedIn site themselves. Daubo does not auto-apply anywhere (account safety and third-party terms).
+- Gmail: optional connection; Daubo creates email drafts only—never auto-sends.
+- The user’s resume powers tailored application materials and interview practice.
 
-If asked about something not in the product, say you are not sure and suggest checking Settings or the team."""
+If asked about something not in the product, say you are not sure and suggest Settings or support."""
 
 _MAX_HISTORY_TURNS = 24
 _MAX_HISTORY_CHARS = 48_000
@@ -111,7 +111,10 @@ async def chat(
     settings: Settings = Depends(get_settings),
 ) -> ChatResponse:
     if not settings.openrouter_api_key:
-        raise HTTPException(status_code=503, detail="OPENROUTER_API_KEY is not configured")
+        raise HTTPException(
+            status_code=503,
+            detail="The career assistant isn’t available on this deployment yet. Please try again later.",
+        )
 
     prior = _trim_history(body.history)
     lc_messages: list[BaseMessage] = [SystemMessage(content=DAUBO_ASSISTANT_SYSTEM)]
@@ -128,14 +131,14 @@ async def chat(
             msg = msg[:500] + "…"
         raise HTTPException(
             status_code=502,
-            detail=f"Assistant could not reach the model. Check OPENROUTER_API_KEY and model id. ({msg})",
+            detail="We couldn’t get a reply right now. Please try again in a moment.",
         ) from exc
 
     if not isinstance(reply_msg, BaseMessage):
         logger.error("chat llm returned non-message type=%s", type(reply_msg).__name__)
         raise HTTPException(
             status_code=500,
-            detail="Unexpected model output. Try another OPENROUTER_CHAT_MODEL.",
+            detail="Something went wrong with that answer. Please try again.",
         )
 
     text = _latest_assistant_text([reply_msg])
@@ -145,6 +148,6 @@ async def chat(
         logger.error("Empty assistant content from model; type=%s", type(reply_msg).__name__)
         raise HTTPException(
             status_code=500,
-            detail="The model returned no assistant text. Try another OPENROUTER_CHAT_MODEL or retry.",
+            detail="We couldn’t read the reply. Please try again.",
         )
     return ChatResponse(reply=text or "…", model=settings.openrouter_chat_model)

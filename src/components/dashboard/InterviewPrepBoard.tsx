@@ -82,7 +82,7 @@ export function InterviewPrepBoard() {
         <strong className="text-zinc-300">applied</strong> or{" "}
         <strong className="text-zinc-300">interview</strong>. Update stages in{" "}
         <Link href="/dashboard/applications" className="text-emerald-400 hover:underline">
-          Applications
+          My jobs
         </Link>
         .
       </p>
@@ -96,7 +96,7 @@ export function InterviewPrepBoard() {
         </div>
       ) : items.length === 0 ? (
         <p className="text-sm text-zinc-500">
-          No active prep targets yet. Mark a role as applied or interview in Applications first.
+          No active prep targets yet. Mark a role as applied or interview in My jobs first.
         </p>
       ) : (
         <ul className="space-y-4">

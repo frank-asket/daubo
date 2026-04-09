@@ -85,7 +85,7 @@ export function JobDiscoverPanel({
       }
       onAddedToPipeline?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not add to pipeline");
+      setError(e instanceof Error ? e.message : "Could not add this role");
     } finally {
       setAddingId(null);
     }
@@ -239,7 +239,7 @@ export function JobDiscoverPanel({
           {data.result.parsed_listings.length > 0 ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Roles for your pipeline
+                Roles to save
               </p>
               <ul className="mt-2 space-y-2 text-zinc-300">
                 {data.result.parsed_listings.map((l, i) => (
@@ -272,7 +272,7 @@ export function JobDiscoverPanel({
                       onClick={() => void addListingToPipeline(l, i)}
                       className="shrink-0 rounded-full border border-zinc-700 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-50"
                     >
-                      {addingId === `${l.title}-${i}` ? "Adding…" : "Add to pipeline"}
+                      {addingId === `${l.title}-${i}` ? "Saving…" : "Save to my jobs"}
                     </button>
                   </li>
                 ))}

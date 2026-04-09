@@ -161,7 +161,7 @@ export function ApplicationsBoard() {
   );
 
   async function remove(id: string) {
-    if (!confirm("Remove this application from your pipeline?")) return;
+    if (!confirm("Remove this job from your list?")) return;
     const r = await fetch(dauboBffUrl(`v1/me/applications/${id}`), {
       method: "DELETE",
       credentials: "same-origin",
@@ -183,7 +183,7 @@ export function ApplicationsBoard() {
         onSubmit={addApplication}
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6"
       >
-        <h2 className="text-sm font-semibold text-white">Add to pipeline</h2>
+        <h2 className="text-sm font-semibold text-white">Add a job</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <input
             required
@@ -217,7 +217,7 @@ export function ApplicationsBoard() {
           disabled={saving}
           className="mt-4 rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save application"}
+          {saving ? "Saving…" : "Save to my jobs"}
         </button>
       </form>
 
@@ -225,10 +225,10 @@ export function ApplicationsBoard() {
 
       <div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="text-sm font-semibold text-white">Your pipeline</h2>
+          <h2 className="text-sm font-semibold text-white">Your jobs</h2>
           {items.length > 0 ? (
             <label className="block w-full sm:max-w-xs">
-              <span className="sr-only">Filter pipeline</span>
+              <span className="sr-only">Filter jobs</span>
               <input
                 type="search"
                 value={filterText}
@@ -246,8 +246,7 @@ export function ApplicationsBoard() {
           </div>
         ) : items.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">
-            No applications yet. Add one above, or let agents populate matches from your resume as
-            they run.
+            No jobs saved yet. Add one above, or save roles from Discover on the home dashboard.
           </p>
         ) : filteredItems.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-500">
@@ -306,7 +305,7 @@ export function ApplicationsBoard() {
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-[11px] font-medium text-emerald-300"
                     >
                       <ExternalLink className="h-3 w-3" />
-                      Human apply
+                      Apply yourself
                     </button>
                     <span className="text-xs text-zinc-500">
                       {new Date(row.updated_at).toLocaleDateString()}
@@ -376,7 +375,7 @@ export function ApplicationsBoard() {
                           className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-[11px] font-medium text-emerald-300"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Handoff
+                          Apply yourself
                         </button>
                       </td>
                       <td className="px-4 py-3 text-right">

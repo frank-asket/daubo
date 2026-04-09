@@ -24,7 +24,7 @@ export function RepartitionCard({
           <div className="h-full w-full rounded-lg bg-zinc-900/50" aria-hidden />
         ) : data.length === 0 ? (
           <p className="px-4 text-center text-xs text-zinc-500">
-            Stages appear here once you have applications in your pipeline.
+            Stages appear here once you save jobs under My jobs.
           </p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">

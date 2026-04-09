@@ -95,23 +95,40 @@ async def me_stats(
             .select_from(UserResume)
             .where(UserResume.clerk_user_id == user_id)
         )
+        status_rows = await session.execute(
+            select(JobApplication.status, func.count())
+            .where(JobApplication.clerk_user_id == user_id)
+            .group_by(JobApplication.status)
+        )
+        by_status = {row[0]: int(row[1]) for row in status_rows.all()}
+        ready = by_status.get("ready_to_apply", 0) + by_status.get("ready", 0)
+        package_ready = by_status.get("package_ready", 0)
+        exploring = (
+            by_status.get("draft", 0)
+            + by_status.get("shortlisted", 0)
+        )
+        in_play = by_status.get("applied", 0) + by_status.get("interview", 0)
     except SQLAlchemyError:
         logger.exception("me_stats database error (tables missing, connection, or SSL?)")
         raise HTTPException(
             status_code=503,
-            detail="Database unavailable or not initialized. Check Railway API logs for "
-            '"Database initialized" vs "Database initialization failed", DATABASE_URL, '
-            "and pgvector.",
+            detail="Daubo is temporarily unavailable. Please try again in a moment.",
         ) from None
     except Exception:
         logger.exception("me_stats unexpected error (returning 503 to avoid opaque 500)")
         raise HTTPException(
             status_code=503,
-            detail="Could not load dashboard stats. Retry in a moment or check API logs.",
+            detail="Could not load your dashboard. Please try again.",
         ) from None
     return {
         "application_count": int(app_count or 0),
         "has_resume": bool(resume_count),
+        "career": {
+            "ready_to_submit": ready,
+            "package_ready": package_ready,
+            "exploring": exploring,
+            "applied_or_interview": in_play,
+        },
     }
 
 

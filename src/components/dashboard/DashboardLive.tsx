@@ -10,6 +10,7 @@ import {
 } from "@/components/daubo/AssetsTableCard";
 import { RepartitionCard } from "@/components/daubo/RepartitionCard";
 import { AutopilotCard } from "@/components/dashboard/AutopilotCard";
+import { CareerNextStepsCard } from "@/components/dashboard/CareerNextStepsCard";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
@@ -58,27 +59,27 @@ function BottomRow() {
         href="/dashboard/applications"
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
-        <span className="block text-emerald-400/90">Pipeline</span>
+        <span className="block text-emerald-400/90">My jobs</span>
         <span className="mt-1 block font-normal text-zinc-500">
-          Human apply · stages · Gmail draft from handoff
+          Track stages, review drafts, apply on real sites
         </span>
       </Link>
       <Link
         href="/dashboard/settings"
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
-        <span className="block text-emerald-400/90">Connect Gmail</span>
+        <span className="block text-emerald-400/90">Gmail drafts</span>
         <span className="mt-1 block font-normal text-zinc-500">
-          OAuth · drafts only · you send from your inbox
+          Save application emails as drafts—you send when ready
         </span>
       </Link>
       <Link
         href="/dashboard/interviews"
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
-        <span className="block text-emerald-400/90">Interview prep</span>
+        <span className="block text-emerald-400/90">Interview practice</span>
         <span className="mt-1 block font-normal text-zinc-500">
-          LLM-generated questions after you apply
+          Questions tailored to jobs you’ve applied for
         </span>
       </Link>
     </div>
@@ -142,6 +143,7 @@ export function DashboardLive() {
   return (
     <div className="space-y-4">
       <DashboardOverview hasResume={stats?.has_resume ?? null} />
+      <CareerNextStepsCard />
       {statsError ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
           {statsError}

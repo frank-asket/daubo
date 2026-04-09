@@ -12,10 +12,10 @@ import { OnboardingWalkthrough } from "@/components/dashboard/OnboardingWalkthro
 import { ResumeNudgeBanner } from "@/components/dashboard/ResumeNudgeBanner";
 
 const pathToActive: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/dashboard/applications": "Applications",
-  "/dashboard/resume": "Resume",
-  "/dashboard/interviews": "Interview prep",
+  "/dashboard": "Home",
+  "/dashboard/applications": "My jobs",
+  "/dashboard/resume": "My resume",
+  "/dashboard/interviews": "Interview practice",
   "/dashboard/settings": "Settings",
   "/dashboard/profile": "Profile",
   "/dashboard/support": "Support",
@@ -25,7 +25,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? "/dashboard";
   const router = useRouter();
   const searchParams = useSearchParams();
-  const active = pathToActive[path] ?? "Dashboard";
+  const active = pathToActive[path] ?? "Home";
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -127,7 +127,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {mobileNavOpen ? <X className="h-5 w-5" strokeWidth={1.75} /> : <Menu className="h-5 w-5" strokeWidth={1.75} />}
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-zinc-500 sm:text-[11px]">Workspace · {active}</p>
+                  <p className="text-[10px] text-zinc-500 sm:text-[11px]">Daubo · {active}</p>
                   <h2 className="truncate text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl">
                     {active}
                   </h2>
@@ -147,10 +147,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     name="q"
                     value={searchDraft}
                     onChange={(e) => setSearchDraft(e.target.value)}
-                    placeholder="Search pipeline… ( / to focus )"
+                    placeholder="Search my jobs… ( / to focus )"
                     className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none"
                     autoComplete="off"
-                    aria-label="Search applications pipeline"
+                    aria-label="Search my jobs"
                   />
                   <button
                     type="submit"

@@ -13,23 +13,23 @@ import {
 const STEPS = [
   {
     title: "Welcome to Daubo",
-    body: "You’re in the workspace where multi-agent matching, tailored resumes, and applications come together—your resume drives worldwide fit, not manual job hunting.",
+    body: "This is your career workspace: find roles, shape tailored application materials, and practice interviews—all grounded in the story on your resume.",
   },
   {
     title: "Start with your resume",
-    body: "Add your base resume once (paste text on the Resume page). Daubo uses it as the source of truth—we don’t invent employers, dates, or credentials.",
+    body: "Add your resume once (on the My resume page). We use it as the source of truth so suggestions stay honest—no made-up jobs, dates, or titles.",
   },
   {
-    title: "Match & personalize",
-    body: "Agents match your resume to relevant offers worldwide and draft each package against that job's requirements—resume variant plus application copy per listing.",
+    title: "Find roles that fit",
+    body: "Discover openings and save the ones you like. We’ll help you adapt your materials to each posting’s wording and requirements.",
   },
   {
-    title: "Apply as you",
-    body: "Applications are assembled to meet each posting's requirements. When your inbox is connected, outreach can go from your address so threads and replies stay yours.",
+    title: "Apply on your terms",
+    body: "You submit applications on the company or LinkedIn site yourself. When Gmail is connected, we can save outreach as drafts in your inbox—you press send.",
   },
   {
     title: "You’re set",
-    body: "Add your resume to unlock fully personalized packages. You can explore the dashboard anytime—this intro won’t show again once you continue.",
+    body: "Add your resume to unlock personalized packages. Explore the dashboard anytime; this tour won’t show again after you continue.",
   },
 ] as const;
 
@@ -147,7 +147,7 @@ export function OnboardingWalkthrough() {
                   onClick={finishTour}
                   className="rounded-full border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-200 hover:border-zinc-400"
                 >
-                  Explore workspace
+                  Explore my dashboard
                 </button>
               </div>
             )}

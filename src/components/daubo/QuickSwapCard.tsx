@@ -14,7 +14,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-      <p className="text-sm font-semibold text-white">Apply flow</p>
+      <p className="text-sm font-semibold text-white">How applying works</p>
       <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
         Daubo generates packages; you submit on the real site. For email-style roles, connect Gmail
         in Settings to drop a <strong className="font-medium text-zinc-400">draft</strong> in your
@@ -37,11 +37,12 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wide text-emerald-400/90">
             <Sparkles className="h-3 w-3" strokeWidth={1.75} />
-            LLM in the workspace
+            Built-in help
           </div>
           <p className="mt-1 text-[11px] leading-snug text-zinc-400">
-            Matching plan, application text, interview prep, and the <strong className="text-zinc-300">Assistant</strong> chat use
-            the same API when OpenRouter is configured.
+            Role ideas, application wording, interview practice, and the bottom-right{" "}
+            <strong className="text-zinc-300">Coach</strong> all use the same personalized context from
+            your resume and saved jobs.
           </p>
         </div>
 
@@ -51,7 +52,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             Gmail drafts
           </div>
           <p className="mt-1 text-[11px] text-zinc-500">
-            From <strong className="text-zinc-400">Applications</strong> → Human apply → Create
+            From <strong className="text-zinc-400">My jobs</strong> → Apply yourself → Save a
             draft in Gmail (after you connect in Settings).
           </p>
         </div>
@@ -63,7 +64,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             href="/dashboard/applications"
             className="rounded-xl border border-zinc-700 py-2.5 text-center text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:text-white"
           >
-            Open applications
+            Open my jobs
           </Link>
           <Link
             href="/dashboard/settings"
@@ -77,7 +78,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
           href="/dashboard/applications"
           className="mt-auto rounded-xl border border-zinc-800 py-2.5 text-center text-xs font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
         >
-          Human apply →
+          Apply yourself →
         </Link>
       )}
     </div>

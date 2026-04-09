@@ -88,7 +88,7 @@ export function AutopilotCard({
       setRunResult((await r.json()) as RunResult);
       onAutopilotComplete?.();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Autopilot failed");
+      setError(e instanceof Error ? e.message : "Smart prep failed");
     } finally {
       setRunning(false);
     }
@@ -101,13 +101,13 @@ export function AutopilotCard({
           <Rocket className="h-5 w-5" strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-white">Prep autopilot (agents)</h3>
+          <h3 className="text-sm font-semibold text-white">Smart prep</h3>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Automatically generates <strong className="text-zinc-400">application packages</strong> for
-            shortlisted roles (and drafts with a job description). Optional: create matching{" "}
-            <strong className="text-zinc-400">Gmail drafts</strong>.{" "}
+            When you save roles from discover, we can automatically prepare{" "}
+            <strong className="text-zinc-400">tailored application materials</strong> (and optional{" "}
+            <strong className="text-zinc-400">Gmail drafts</strong> when Gmail is connected).{" "}
             <span className="text-zinc-600">
-              Daubo never auto-submits on LinkedIn or employer sites—that step stays yours.
+              You still apply on LinkedIn and company sites yourself—we never auto-submit there.
             </span>
           </p>
         </div>
@@ -127,8 +127,7 @@ export function AutopilotCard({
               }
               className="rounded border-zinc-600 bg-black"
             />
-            After I add roles from discover, run prep automatically (adds to queue; still bounded per
-            run)
+            After I save roles from discover, run prep automatically (queued; limited per run)
           </label>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
             <input
@@ -140,7 +139,7 @@ export function AutopilotCard({
               }
               className="rounded border-zinc-600 bg-black"
             />
-            When prep autopilot runs, also create Gmail drafts (connect Gmail in Settings)
+            When Smart prep runs, also create Gmail drafts (connect Gmail in Settings)
           </label>
           <div className="flex flex-wrap gap-2">
             <button
@@ -150,7 +149,7 @@ export function AutopilotCard({
               className="inline-flex items-center gap-2 rounded-full bg-amber-500/90 px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
             >
               {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Run prep autopilot now
+              Run Smart prep now
             </button>
             <button
               type="button"

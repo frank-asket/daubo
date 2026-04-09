@@ -10,7 +10,18 @@ import {
 } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
-export type MeStats = { application_count: number; has_resume: boolean };
+export type CareerStats = {
+  ready_to_submit: number;
+  package_ready: number;
+  exploring: number;
+  applied_or_interview: number;
+};
+
+export type MeStats = {
+  application_count: number;
+  has_resume: boolean;
+  career?: CareerStats;
+};
 
 type DashboardStatsContextValue = {
   stats: MeStats | null;

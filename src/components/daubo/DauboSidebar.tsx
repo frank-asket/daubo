@@ -20,12 +20,12 @@ type MainNavItem = {
 };
 
 const main: MainNavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/applications", label: "Applications", icon: Briefcase },
-  { href: "/dashboard/resume", label: "Resume", icon: FileText },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard/applications", label: "My jobs", icon: Briefcase },
+  { href: "/dashboard/resume", label: "My resume", icon: FileText },
   {
     href: "/dashboard/interviews",
-    label: "Interview prep",
+    label: "Interview practice",
     icon: MessageSquare,
   },
 ];

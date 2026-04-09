@@ -5,17 +5,17 @@ import { ApplicationsBoard } from "@/components/dashboard/ApplicationsBoard";
 export default function ApplicationsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-10">
-      <h1 className="text-xl font-semibold tracking-tight text-zinc-50 sm:text-2xl">Applications</h1>
+      <h1 className="text-xl font-semibold tracking-tight text-zinc-50 sm:text-2xl">My jobs</h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        Track stages from discovery through apply. Use <strong className="font-medium text-zinc-400">Human apply</strong> to
-        open drafts and complete submissions on the employer&apos;s or LinkedIn&apos;s official site—nothing
-        sends without your action.
+        Track each role from interest to applied. Use <strong className="font-medium text-zinc-400">Apply yourself</strong> to
+        open the real posting and submit on the company or LinkedIn site—Daubo never clicks
+        &ldquo;submit&rdquo; for you.
       </p>
       <div className="mt-8 sm:mt-10">
         <Suspense
           fallback={
             <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-8 text-sm text-zinc-500">
-              Loading pipeline…
+              Loading your jobs…
             </div>
           }
         >
@@ -26,7 +26,7 @@ export default function ApplicationsPage() {
         href="/dashboard"
         className="mt-10 inline-flex text-sm font-semibold text-emerald-400 hover:underline"
       >
-        ← Back to overview
+        ← Back to home
       </Link>
     </div>
   );
