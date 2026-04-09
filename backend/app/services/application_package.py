@@ -15,6 +15,7 @@ logger = logging.getLogger("daubo")
 
 _MAX_RESUME = 14_000
 _MAX_JD = 24_000
+_MAX_SUPPLEMENTARY = 10_000
 
 
 class ApplicationPackageLLM(BaseModel):
@@ -81,12 +82,14 @@ async def generate_application_package(
     location: str | None,
     job_description: str | None,
     apply_channel: str | None,
+    supplementary_profile: str | None = None,
 ) -> dict[str, Any]:
     if not settings.openrouter_api_key:
         raise ValueError("OPENROUTER_API_KEY is not configured")
 
     resume = _trim(resume_text, _MAX_RESUME)
     jd = _trim(job_description, _MAX_JD)
+    extra = _trim(supplementary_profile, _MAX_SUPPLEMENTARY)
     loc = (location or "").strip()
     channel = (apply_channel or "infer").strip()
 
@@ -103,6 +106,9 @@ Job description (may be partial):
 
 Candidate resume (excerpt):
 {resume}
+
+Additional credentials and education (from uploaded certificates or diplomas; may reinforce qualifications):
+{extra or "None provided."}
 
 Return structured fields:
 - cover_letter: ready-to-paste email body (greeting, 2–3 short paragraphs, sign-off). No placeholders like [Your Name] unless unavoidable.
@@ -134,6 +140,7 @@ async def generate_interview_prep(
     company: str,
     job_description: str | None,
     package_summary: str | None = None,
+    supplementary_profile: str | None = None,
 ) -> dict[str, Any]:
     if not settings.openrouter_api_key:
         raise ValueError("OPENROUTER_API_KEY is not configured")
@@ -141,6 +148,7 @@ async def generate_interview_prep(
     resume = _trim(resume_text, _MAX_RESUME)
     jd = _trim(job_description, _MAX_JD)
     extra = _trim(package_summary, 4000)
+    creds = _trim(supplementary_profile, _MAX_SUPPLEMENTARY)
 
     prompt = f"""Prepare the candidate for an upcoming interview. Use Global English. Ground questions in the role and description.
 
@@ -152,6 +160,9 @@ Job description:
 
 Resume excerpt:
 {resume}
+
+Uploaded credentials / education (certificates, degrees):
+{creds or "None."}
 
 Optional context from application drafts:
 {extra or "None."}

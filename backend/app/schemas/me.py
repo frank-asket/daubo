@@ -26,6 +26,22 @@ class ResumeUploadOut(ResumeOut):
     agent_reply: str | None = None
 
 
+PROFILE_DOC_KINDS = frozenset({"certification", "degree", "other"})
+
+
+class ProfileDocumentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    clerk_user_id: str
+    doc_kind: str = Field(..., max_length=32)
+    label: str | None = Field(default=None, max_length=300)
+    file_name: str | None = Field(default=None, max_length=512)
+    content_text: str = Field(..., max_length=500_000)
+    created_at: datetime
+    updated_at: datetime
+
+
 class ApplicationCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
     company: str = Field(..., min_length=1, max_length=500)

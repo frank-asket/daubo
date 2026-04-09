@@ -3,7 +3,7 @@ import logging
 from io import StringIO
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -17,10 +17,12 @@ from app.models import (
     AgentMatchRun,
     JobApplication,
     UserGmailCredentials,
+    UserProfileDocument,
     UserResume,
     UserWorkspaceSettings,
 )
 from app.schemas.me import (
+    PROFILE_DOC_KINDS,
     ApplicationCreate,
     ApplicationOut,
     ApplicationPackageRequest,
@@ -31,6 +33,7 @@ from app.schemas.me import (
     GmailOAuthCompleteIn,
     GmailOAuthCompleteOut,
     GmailStatusOut,
+    ProfileDocumentOut,
     ResumeIn,
     ResumeOut,
     ResumeUploadOut,
@@ -50,6 +53,7 @@ from app.services.gmail_integration import (
     fetch_google_email,
     gmail_oauth_configured,
 )
+from app.services.profile_documents_context import profile_documents_prompt_block
 from app.services.resume_auto_match import schedule_resume_auto_match
 from app.services.resume_ingest import extract_resume_text
 from app.services.resume_kickoff import agent_ack_after_resume_upload
@@ -58,6 +62,16 @@ router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
 
 _AUTODISCOVER_KIND = "resume_autodiscover"
+
+
+def _normalize_profile_doc_kind(raw: str) -> str:
+    k = (raw or "").strip().lower()
+    if k not in PROFILE_DOC_KINDS:
+        raise HTTPException(
+            status_code=400,
+            detail="doc_kind must be one of: certification, degree, other.",
+        )
+    return k
 
 
 async def _get_or_create_workspace_settings(
@@ -260,6 +274,78 @@ async def upload_resume_file(
     )
 
 
+@router.get("/me/profile-documents", response_model=list[ProfileDocumentOut])
+async def list_profile_documents(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> list[UserProfileDocument]:
+    result = await session.execute(
+        select(UserProfileDocument)
+        .where(UserProfileDocument.clerk_user_id == user_id)
+        .order_by(UserProfileDocument.updated_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+@router.post("/me/profile-documents/upload", response_model=ProfileDocumentOut)
+async def upload_profile_document(
+    file: UploadFile = File(...),
+    doc_kind: str = Form(...),
+    label: str | None = Form(None),
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> UserProfileDocument:
+    kind = _normalize_profile_doc_kind(doc_kind)
+    raw = await file.read()
+    name = (file.filename or "document").strip() or "document"
+    try:
+        content_text = await extract_resume_text(raw, name, file.content_type, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        logger.exception("profile document ingest failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not process this file. Try PDF, Word, or paste-friendly formats.",
+        ) from None
+
+    if len(content_text) > 500_000:
+        content_text = content_text[:500_000]
+
+    label_clean = (label or "").strip()[:300] or None
+    row = UserProfileDocument(
+        clerk_user_id=user_id,
+        doc_kind=kind,
+        label=label_clean,
+        file_name=name[:512],
+        content_text=content_text,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+@router.delete("/me/profile-documents/{document_id}", status_code=204)
+async def delete_profile_document(
+    document_id: UUID,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    result = await session.execute(
+        select(UserProfileDocument).where(
+            UserProfileDocument.id == document_id,
+            UserProfileDocument.clerk_user_id == user_id,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Document not found")
+    await session.delete(row)
+    await session.commit()
+
+
 @router.get("/me/applications", response_model=list[ApplicationOut])
 async def list_applications(
     user_id: str = Depends(get_clerk_user_id),
@@ -446,6 +532,7 @@ async def build_application_package(
         row.apply_channel = req.apply_channel
     jd = row.job_description
     channel = row.apply_channel
+    supplementary = await profile_documents_prompt_block(session, user_id)
 
     try:
         package = await generate_application_package(
@@ -456,6 +543,7 @@ async def build_application_package(
             location=row.location,
             job_description=jd,
             apply_channel=channel,
+            supplementary_profile=supplementary or None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -501,6 +589,7 @@ async def build_interview_prep(
         raise HTTPException(status_code=404, detail="Application not found")
 
     summary = package_summary_text(row.package_draft)
+    supplementary = await profile_documents_prompt_block(session, user_id)
     try:
         prep = await generate_interview_prep(
             settings,
@@ -509,6 +598,7 @@ async def build_interview_prep(
             company=row.company,
             job_description=row.job_description,
             package_summary=summary,
+            supplementary_profile=supplementary or None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
