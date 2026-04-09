@@ -31,11 +31,19 @@ async function handle(req: NextRequest, segments: string[]): Promise<NextRespons
   const pathKey = segments.join("/");
   let clerkUserId: string | null = null;
   if (!isPublicProxy(req.method, pathKey)) {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+      const { userId } = await auth();
+      if (!userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      clerkUserId = userId;
+    } catch (err) {
+      console.error("[daubo proxy] Clerk auth() failed:", err);
+      return NextResponse.json(
+        { detail: "Authentication could not be verified. Check Clerk env vars on the server." },
+        { status: 503 },
+      );
     }
-    clerkUserId = userId;
   }
 
   const secret = process.env.DAUBO_INTERNAL_API_SECRET;

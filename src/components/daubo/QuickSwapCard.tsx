@@ -1,13 +1,20 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { Paperclip, ChevronDown } from "lucide-react";
 
 export function QuickSwapCard({ compact }: { compact?: boolean }) {
+  const { user, isLoaded } = useUser();
+  const inbox =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses?.[0]?.emailAddress ??
+    null;
+
   return (
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
       <p className="text-sm font-semibold text-white">Apply package</p>
       <p className="mt-0.5 text-[11px] text-zinc-500">
-        Personalized resume + email, sent from your address after approval
+        Preview — personalized resume + email, sent from your address after approval
       </p>
       <div className="mt-4 space-y-2">
         <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
@@ -16,7 +23,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
           </p>
           <div className="mt-1 flex items-center justify-between gap-2">
             <span className="truncate font-mono text-sm text-white">
-              alex.chen@email.com
+              {!isLoaded ? "…" : inbox ?? "Add an email in your Clerk account"}
             </span>
             <button
               type="button"
@@ -33,7 +40,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             Attached resume
           </div>
           <p className="mt-1 truncate text-sm text-white">
-            Resume_Alex_<span className="text-emerald-400">MetroHealth_ICUNurse</span>.pdf
+            Tailored_resume<span className="text-emerald-400">_role_company</span>.pdf
           </p>
           {!compact ? (
             <p className="mt-2 text-[11px] text-zinc-500">
@@ -46,7 +53,7 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
             Subject
           </p>
           <p className="mt-1 line-clamp-2 text-xs text-zinc-300">
-            Application — ICU Nurse — Alex Chen
+            Application — [role] — [your name]
           </p>
         </div>
       </div>

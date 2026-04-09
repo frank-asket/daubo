@@ -2,9 +2,9 @@
 
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import { dauboBffUrl } from "@/lib/daubo-api";
+import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import {
   isOnboardingDone,
   setOnboardingDone,
@@ -36,31 +36,10 @@ const STEPS = [
 export function OnboardingWalkthrough() {
   const { user, isLoaded } = useUser();
   const userId = user?.id;
-  const [statsLoaded, setStatsLoaded] = useState(false);
-  const [hasResume, setHasResume] = useState<boolean | null>(null);
+  const { stats, statsReady } = useDashboardStats();
+  const hasResume = !statsReady ? null : stats ? Boolean(stats.has_resume) : null;
   const [step, setStep] = useState(0);
   const [open, setOpen] = useState(false);
-
-  const loadStats = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const r = await fetch(dauboBffUrl("v1/me/stats"), { credentials: "same-origin" });
-      if (!r.ok) {
-        setHasResume(null);
-        return;
-      }
-      const j = (await r.json()) as { has_resume?: boolean };
-      setHasResume(Boolean(j.has_resume));
-    } catch {
-      setHasResume(null);
-    } finally {
-      setStatsLoaded(true);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    loadStats();
-  }, [loadStats]);
 
   useEffect(() => {
     if (userId && hasResume === true) {
@@ -70,7 +49,7 @@ export function OnboardingWalkthrough() {
   }, [userId, hasResume]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || !statsLoaded) return;
+    if (!isLoaded || !userId || !statsReady) return;
     if (hasResume === true) {
       setOpen(false);
       return;
@@ -79,7 +58,7 @@ export function OnboardingWalkthrough() {
       setOpen(true);
       setStep(0);
     }
-  }, [isLoaded, userId, statsLoaded, hasResume]);
+  }, [isLoaded, userId, statsReady, hasResume]);
 
   function finishTour() {
     if (userId) setOnboardingDone(userId);

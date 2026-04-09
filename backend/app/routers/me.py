@@ -45,6 +45,12 @@ async def me_stats(
             '"Database initialized" vs "Database initialization failed", DATABASE_URL, '
             "and pgvector.",
         ) from None
+    except Exception:
+        logger.exception("me_stats unexpected error (returning 503 to avoid opaque 500)")
+        raise HTTPException(
+            status_code=503,
+            detail="Could not load dashboard stats. Retry in a moment or check API logs.",
+        ) from None
     return {
         "application_count": int(app_count or 0),
         "has_resume": bool(resume_count),

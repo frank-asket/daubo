@@ -3,9 +3,8 @@
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
 import { FileText } from "lucide-react";
-import { dauboBffUrl } from "@/lib/daubo-api";
+import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import {
   isOnboardingDone,
 } from "@/components/dashboard/onboarding/onboarding-storage";
@@ -14,23 +13,8 @@ export function ResumeNudgeBanner() {
   const { user, isLoaded } = useUser();
   const userId = user?.id;
   const pathname = usePathname();
-  const [hasResume, setHasResume] = useState<boolean | null>(null);
-
-  const load = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const r = await fetch(dauboBffUrl("v1/me/stats"), { credentials: "same-origin" });
-      if (!r.ok) return;
-      const j = (await r.json()) as { has_resume?: boolean };
-      setHasResume(Boolean(j.has_resume));
-    } catch {
-      /* keep previous */
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    load();
-  }, [load, pathname]);
+  const { stats, statsReady } = useDashboardStats();
+  const hasResume = !statsReady ? null : stats ? Boolean(stats.has_resume) : null;
 
   if (!isLoaded || !userId) return null;
   if (pathname?.startsWith("/dashboard/resume")) return null;

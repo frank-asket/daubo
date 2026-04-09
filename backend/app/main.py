@@ -46,14 +46,11 @@ async def lifespan(app: FastAPI):
     # A blocking await init_db() before yield prevents the server from accepting connections
     # until Postgres is reachable — healthchecks then see "service unavailable" indefinitely.
     async def _init_db_task():
-        try:
-            await init_db()
+        await init_db()
+        from app.db import db_init_ok
+
+        if db_init_ok:
             logger.info("Database initialized")
-        except Exception:
-            logger.exception(
-                "Database initialization failed — verify DATABASE_URL on the service, network access "
-                "to Postgres, and that the database allows the pgvector extension"
-            )
 
     init_task = asyncio.create_task(_init_db_task())
     try:

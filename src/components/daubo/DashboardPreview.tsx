@@ -2,8 +2,47 @@ import { Bell, Search } from "lucide-react";
 import { DauboSidebar } from "@/components/daubo/DauboSidebar";
 import { BalanceChart } from "@/components/daubo/BalanceChart";
 import { QuickSwapCard } from "@/components/daubo/QuickSwapCard";
-import { AssetsTableCard } from "@/components/daubo/AssetsTableCard";
+import {
+  AssetsTableCard,
+  type ApplicationSummary,
+} from "@/components/daubo/AssetsTableCard";
 import { RepartitionCard } from "@/components/daubo/RepartitionCard";
+
+const previewApplications: ApplicationSummary[] = [
+  {
+    id: "preview-1",
+    title: "ICU Nurse",
+    company: "Metro Health",
+    location: "Ohio",
+    status: "ready",
+    job_url: null,
+    updated_at: new Date(Date.now() - 3600_000).toISOString(),
+  },
+  {
+    id: "preview-2",
+    title: "Warehouse Supervisor",
+    company: "Continental Line",
+    location: null,
+    status: "draft",
+    job_url: null,
+    updated_at: new Date(Date.now() - 86400_000).toISOString(),
+  },
+  {
+    id: "preview-3",
+    title: "Secondary Math Teacher",
+    company: "Northfield District",
+    location: "UK",
+    status: "applied",
+    job_url: null,
+    updated_at: new Date(Date.now() - 172800_000).toISOString(),
+  },
+];
+
+const previewSegments = [
+  { name: "Draft", value: 1 },
+  { name: "Ready for review", value: 1 },
+  { name: "Applied", value: 1 },
+];
 
 function BottomRow() {
   return (
@@ -65,10 +104,10 @@ export function DashboardPreview() {
               </div>
               <div className="grid gap-4 lg:grid-cols-5">
                 <div className="lg:col-span-3">
-                  <AssetsTableCard />
+                  <AssetsTableCard applications={previewApplications} />
                 </div>
                 <div className="lg:col-span-2">
-                  <RepartitionCard />
+                  <RepartitionCard segments={previewSegments} />
                 </div>
               </div>
               <BottomRow />
