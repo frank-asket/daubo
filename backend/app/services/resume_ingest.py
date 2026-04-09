@@ -76,8 +76,10 @@ async def _vision_resume_text(settings: Settings, image_bytes: bytes, mime: str)
             "Upload PDF/DOCX, or paste text instead."
         )
     b64 = base64.standard_b64encode(image_bytes).decode("ascii")
-    payload = {
+    payload: dict = {
         "model": settings.openrouter_vision_model,
+        "temperature": settings.openrouter_temperature,
+        "top_p": settings.openrouter_top_p,
         "messages": [
             {
                 "role": "user",
@@ -95,6 +97,8 @@ async def _vision_resume_text(settings: Settings, image_bytes: bytes, mime: str)
             }
         ],
     }
+    if settings.openrouter_top_k is not None:
+        payload["top_k"] = settings.openrouter_top_k
     headers = {
         "Authorization": f"Bearer {settings.openrouter_api_key}",
         "HTTP-Referer": settings.openrouter_http_referer,

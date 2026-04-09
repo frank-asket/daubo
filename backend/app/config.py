@@ -63,6 +63,28 @@ class Settings(BaseSettings):
     openrouter_http_referer: str = "http://localhost:3000"
     openrouter_app_title: str = "Daubo"
 
+    openrouter_temperature: float = Field(
+        default=0.35,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature for chat + vision via OpenRouter. Lower ≈ more deterministic.",
+    )
+    openrouter_top_p: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Nucleus sampling (0–1). 1.0 leaves tail mass unconstrained for most providers.",
+    )
+    openrouter_top_k: int | None = Field(
+        default=None,
+        ge=1,
+        le=500,
+        description=(
+            "If set, sent to the provider (model-dependent; omit in env to disable). "
+            "Some models ignore top_k."
+        ),
+    )
+
     jina_api_key: str = ""
     jina_embedding_model: str = "jina-embeddings-v3"
     jina_embedding_dimension: int = 1024
