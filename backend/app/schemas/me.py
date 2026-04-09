@@ -19,6 +19,12 @@ class ResumeOut(BaseModel):
     updated_at: datetime
 
 
+class ResumeUploadOut(ResumeOut):
+    """Saved resume plus optional one-shot agent acknowledgement after ingest."""
+
+    agent_reply: str | None = None
+
+
 class ApplicationCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
     company: str = Field(..., min_length=1, max_length=500)

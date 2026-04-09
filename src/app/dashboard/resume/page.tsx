@@ -6,7 +6,8 @@ export default function ResumePage() {
     <div className="p-6 lg:p-10">
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Resume</h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        Your master profile in Daubo—paste once, then tailor per job from the same source.
+        Your master profile: upload PDF, Word, images, or paste text. Ingest triggers the agent
+        layer so matching and tailoring use this source of truth.
       </p>
       <div className="mt-8">
         <ResumeWorkspace />

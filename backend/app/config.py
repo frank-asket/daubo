@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     openrouter_api_key: str = ""
     openrouter_chat_model: str = "anthropic/claude-3.5-sonnet"
+    openrouter_vision_model: str = Field(
+        default="openai/gpt-4o-mini",
+        description="Vision-capable model on OpenRouter for resume images (PNG/JPEG/WebP).",
+    )
     openrouter_http_referer: str = "http://localhost:3000"
     openrouter_app_title: str = "Daubo"
 

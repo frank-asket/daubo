@@ -1,11 +1,12 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import Settings, get_settings
 from app.db import get_db
 from app.deps.users import get_clerk_user_id
 from app.models import JobApplication, UserResume
@@ -15,7 +16,10 @@ from app.schemas.me import (
     ApplicationUpdate,
     ResumeIn,
     ResumeOut,
+    ResumeUploadOut,
 )
+from app.services.resume_ingest import extract_resume_text
+from app.services.resume_kickoff import agent_ack_after_resume_upload
 
 router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
@@ -87,6 +91,55 @@ async def upsert_resume(
     await session.commit()
     await session.refresh(row)
     return row
+
+
+@router.post("/me/resume/upload", response_model=ResumeUploadOut)
+async def upload_resume_file(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> ResumeUploadOut:
+    raw = await file.read()
+    name = (file.filename or "resume").strip() or "resume"
+    try:
+        content_text = await extract_resume_text(raw, name, file.content_type, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        logger.exception("resume ingest failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not process this file. Try another format or paste the text.",
+        ) from None
+
+    if len(content_text) > 500_000:
+        content_text = content_text[:500_000]
+
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    row = result.scalar_one_or_none()
+    if row:
+        row.content_text = content_text
+        row.file_name = name[:512]
+    else:
+        row = UserResume(
+            clerk_user_id=user_id,
+            content_text=content_text,
+            file_name=name[:512],
+        )
+        session.add(row)
+    await session.commit()
+    await session.refresh(row)
+
+    agent_reply = await agent_ack_after_resume_upload(settings)
+    return ResumeUploadOut(
+        id=row.id,
+        clerk_user_id=row.clerk_user_id,
+        content_text=row.content_text,
+        file_name=row.file_name,
+        updated_at=row.updated_at,
+        agent_reply=agent_reply,
+    )
 
 
 @router.get("/me/applications", response_model=list[ApplicationOut])
