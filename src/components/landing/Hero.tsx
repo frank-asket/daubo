@@ -7,18 +7,17 @@ export function Hero() {
     <section className="border-b border-zinc-800">
       <div className="mx-auto max-w-6xl px-4 pb-6 pt-14 text-center sm:px-6 sm:pt-20 lg:px-8 lg:pt-24">
         <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-          Take control of your career pipeline
+          A calmer way to move your career forward
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-          Daubo&apos;s multi-agent system works{" "}
-          <span className="text-zinc-200">any sector, anywhere</span>—from nursing and
-          trades to finance, education, logistics, tech, and beyond. It{" "}
-          <span className="text-zinc-200">matches your resume to openings worldwide</span>{" "}
-          (no hunting listings by hand), builds a{" "}
-          <span className="text-zinc-200">tailored resume and application per offer</span>{" "}
-          aligned to each employer&apos;s requirements, and can{" "}
-          <span className="text-zinc-200">apply on your behalf from your own address</span>{" "}
-          when your inbox is connected. Interview prep reuses the same context.
+          Daubo helps people in{" "}
+          <span className="text-zinc-200">any line of work—care, trades, office, clinical roles,</span> and
+          beyond—<span className="text-zinc-200">organize roles they care about</span>, get{" "}
+          <span className="text-zinc-200">clear, tailored application wording</span> grounded in their real
+          résumé, and <span className="text-zinc-200">practice interviews</span> in the same place. You
+          always <span className="text-zinc-200">apply on the employer&apos;s or LinkedIn&apos;s own site</span>;
+          with Gmail connected we can save <span className="text-zinc-200">draft emails</span> for you to
+          review and send—nothing goes out without you.
         </p>
         <Link
           href="/dashboard"

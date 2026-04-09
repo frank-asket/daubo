@@ -96,7 +96,7 @@ export function CareerNextStepsCard() {
       title: "You’re on track",
       hint: "Keep adding roles and use Smart prep when you want Daubo to draft application materials for you.",
       href: "/dashboard",
-      cta: "Dashboard",
+      cta: "Home",
     });
   }
 

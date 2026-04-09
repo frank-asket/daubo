@@ -2,23 +2,23 @@ import { FileUser, Mail, BadgeCheck, LayoutGrid } from "lucide-react";
 
 const items = [
   {
-    title: "Resume tailored per offer",
-    body: "Agents rewrite and structure your resume for each listing—skills, bullets, and emphasis aligned to that job—not one generic PDF for everyone.",
+    title: "Per-job wording from your résumé",
+    body: "Get ideas for bullets, letters, and notes aligned to each listing—not one generic CV blast for every employer.",
     icon: FileUser,
   },
   {
-    title: "Apply from your inbox",
-    body: "Connect your email so requirement-aligned applications go out as you: employers see your address, and replies land in your thread (included on Pro).",
+    title: "Optional Gmail drafts",
+    body: "Connect Google if you want application emails saved as drafts. You review and send; employers see your address.",
     icon: Mail,
   },
   {
-    title: "Built for each posting",
-    body: "Agents don't reuse one generic draft—every application reflects that employer's requirements, keywords, and tone.",
+    title: "Honest to each posting",
+    body: "Suggestions reflect that employer’s requirements and tone. You adjust everything before you use it.",
     icon: BadgeCheck,
   },
   {
-    title: "One continuous workspace",
-    body: "Agent matching, packages, outbound status, and interview prep share the same job + profile context end to end.",
+    title: "One calm workspace",
+    body: "Saved jobs, application prep, and interview practice share the same context—less context-switching.",
     icon: LayoutGrid,
   },
 ];
@@ -31,10 +31,9 @@ export function Benefits() {
           Why choose Daubo?
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
-          Built for <span className="text-zinc-300">global labour markets</span>: nurses,
-          drivers, teachers, builders, accountants, baristas, engineers—any title you
-          chase. Personalized resumes per offer and sends from your own email, with
-          you approving every message.
+          Built for <span className="text-zinc-300">people in any field</span>: care, trades,
+          office work, clinical roles, hospitality, technology—any title you’re pursuing. You
+          keep control of applying; we help with preparation and clarity.
         </p>
 
         <div className="mt-14 grid border-l border-t border-zinc-800 sm:grid-cols-2 lg:grid-cols-4">

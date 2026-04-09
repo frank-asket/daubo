@@ -18,18 +18,18 @@ function Initial({ name }: { name: string }) {
 
 export function PipelineShowcase() {
   return (
-    <section id="pipeline" className="border-b border-zinc-800 bg-black py-20">
+    <section id="product" className="border-b border-zinc-800 bg-black py-20">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             Every sector, matched worldwide
           </h2>
           <p className="mt-4 text-lg text-zinc-400">
-            Skilled trades, care work, retail, office roles, tech—agents surface relevant
-            openings from global sources and line them up in your pipeline. Each role gets its
-            own <span className="text-zinc-300">resume variant</span> and{" "}
-            <span className="text-zinc-300">application package</span> aligned to that
-            employer&apos;s requirements, ready to go out from your inbox when connected.
+            Nurses, teachers, drivers, clinicians, accountants, technicians—Daubo is for anyone
+            updating their career. Save roles you find (or ideas from our search helper), then get{" "}
+            <span className="text-zinc-300">tailored wording</span> and a clear path to{" "}
+            <span className="text-zinc-300">apply on the real site</span>. Connect Gmail if you want
+            application emails saved as <span className="text-zinc-300">drafts</span> to edit and send.
           </p>
           <Link
             href="/dashboard"

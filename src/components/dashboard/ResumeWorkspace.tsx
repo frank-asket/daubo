@@ -82,7 +82,7 @@ export function ResumeWorkspace() {
       }
       const body = await r.json();
       setUpdated((body as ResumeBody).updated_at ?? null);
-      setOk("Resume saved to Daubo");
+      setOk("Résumé saved");
       await reloadStats();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
@@ -119,7 +119,7 @@ export function ResumeWorkspace() {
       setText(String(body.content_text ?? ""));
       setFileName(String(body.file_name ?? file.name));
       setUpdated(body.updated_at ?? null);
-      setOk("Resume imported. Multi-agent matching will use this profile.");
+      setOk("Résumé imported. Daubo will use this text for suggestions and tailoring.");
       if (body.agent_reply?.trim()) {
         setAgentReply(body.agent_reply.trim());
       }
@@ -156,11 +156,13 @@ export function ResumeWorkspace() {
   return (
     <div className="space-y-4">
       <p className="max-w-2xl text-sm text-zinc-500">
-        Upload <span className="text-zinc-300">PDF, Word (.docx), plain text,</span> or{" "}
-        <span className="text-zinc-300">images</span> (PNG, JPEG, WebP, etc.). Daubo extracts
-        the text, saves your profile, then runs the agent stack to acknowledge and start using it
-        for worldwide matching. Images use your OpenRouter vision model; you can still edit the text
-        below before saving manually.
+        Upload a <span className="text-zinc-300">PDF, Word (.docx),</span> or{" "}
+        <span className="text-zinc-300">picture of a document</span>—or paste text below. We pull out
+        the wording so Daubo can mirror your real roles and dates.{" "}
+        <span className="text-zinc-400">
+          Always skim the result: formatting can be imperfect, especially from scans or photos.
+        </span>{" "}
+        Edit the text, then tap Save.
       </p>
       {updated ? (
         <p className="text-xs text-zinc-500">Last updated: {new Date(updated).toLocaleString()}</p>
@@ -203,7 +205,7 @@ export function ResumeWorkspace() {
         {uploading ? (
           <p className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-400">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Extracting &amp; ingesting…
+            Reading your file…
           </p>
         ) : null}
       </div>
@@ -211,7 +213,7 @@ export function ResumeWorkspace() {
       {agentReply ? (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100/95">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-400/90">
-            Agents
+            Quick note
           </p>
           <p className="mt-1 leading-relaxed">{agentReply}</p>
         </div>
@@ -219,7 +221,7 @@ export function ResumeWorkspace() {
 
       <label className="block">
         <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-          Source label (optional)
+          File name (optional)
         </span>
         <input
           className="mt-1 w-full max-w-md rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white"
@@ -230,7 +232,7 @@ export function ResumeWorkspace() {
       </label>
       <label className="block">
         <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-          Resume text (editable)
+          Your résumé text (edit freely)
         </span>
         <textarea
           className="mt-1 min-h-[320px] w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 font-mono text-sm leading-relaxed text-zinc-200 outline-none focus:border-zinc-600"
@@ -246,7 +248,7 @@ export function ResumeWorkspace() {
           disabled={saving || uploading}
           className="rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save to Daubo"}
+          {saving ? "Saving…" : "Save résumé"}
         </button>
         <button
           type="button"

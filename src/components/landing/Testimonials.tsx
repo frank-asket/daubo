@@ -5,7 +5,7 @@ import { useState } from "react";
 
 const quotes = [
   {
-    text: "Each posting gets its own resume PDF and email draft—I tweak, approve, and it actually sends from my inbox. Replies don’t land in some random relay.",
+    text: "Each posting gets tailored wording and a Gmail draft I can edit—I send when I’m ready, from my own inbox.",
     name: "Alex M.",
     role: "Registered nurse · Toronto",
     initials: "A",
@@ -17,7 +17,7 @@ const quotes = [
     initials: "J",
   },
   {
-    text: "We use Daubo with our cohorts—health, logistics, office, tech. The pipeline view makes what’s next obvious.",
+    text: "We use Daubo with our cohorts—health, logistics, office, tech. The clear stages make what’s next obvious.",
     name: "Samira L.",
     role: "Career coach",
     initials: "S",

@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Daubo — Multi-agent resume matching & applications worldwide",
+  title: "Daubo — Career workspace for tailored applications & interview practice",
   description:
-    "Daubo's agents match your resume to job offers worldwide—not manual searching—then tailor resumes and applications to each posting's requirements. Interview prep lives in the same workspace.",
+    "Save jobs, refine your materials from your real résumé, apply on official sites yourself, and practice interviews—with optional Gmail drafts you send when ready. Built for any sector.",
 };
 
 export default function RootLayout({

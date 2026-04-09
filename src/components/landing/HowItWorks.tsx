@@ -4,20 +4,20 @@ import { ChevronDown } from "lucide-react";
 const steps = [
   {
     n: "1",
-    title: "Connect profile & inbox",
-    body: "Sign in to Daubo, upload your resume PDF, and connect your inbox when you want sends to go from your address.",
+    title: "Add your résumé (and Gmail if you like)",
+    body: "Sign in, upload or paste your experience, and optionally connect Gmail so application emails can be saved as drafts you review and send yourself.",
     mock: "signup",
   },
   {
     n: "2",
-    title: "Worldwide match & tailor",
-    body: "Multi-agent matching pairs your resume with relevant offers globally, scores fit, then drafts a resume variant and application package tuned to that job's posted requirements—not a one-size-fits-all PDF.",
+    title: "Shape materials for each role",
+    body: "Save jobs you find, then get wording tuned to what each posting asks for—grounded in your real résumé, not a generic blast.",
     mock: "fund",
   },
   {
     n: "3",
-    title: "Apply as you",
-    body: "Outbound email and attachments are prepared to satisfy each posting; when your inbox is connected, sends can go from your address so employers always see you.",
+    title: "Apply on the real site",
+    body: "You open the employer or LinkedIn posting and submit there yourself. For email applications, start from a Gmail draft if you created one—Daubo never auto-submits.",
     mock: "trade",
   },
 ] as const;
@@ -60,7 +60,7 @@ function MockTrade() {
       </div>
       <div className="flex items-center justify-between rounded-lg bg-zinc-900/50 px-2 py-2 text-[11px]">
         <span className="text-zinc-400">Status</span>
-        <span className="text-emerald-400">Ready to send</span>
+        <span className="text-emerald-400">Draft ready</span>
       </div>
     </div>
   );
@@ -76,10 +76,9 @@ export function HowItWorks() {
               How it works
             </h2>
             <p className="mt-4 max-w-xl text-lg text-zinc-400">
-              From your resume to{" "}
-              <span className="text-zinc-300">agent-matched offers worldwide</span> to a{" "}
-              <span className="text-zinc-300">requirement-aligned package per job</span>—
-              without you manually searching boards for each role.
+              From your résumé to <span className="text-zinc-300">saved roles</span> to{" "}
+              <span className="text-zinc-300">clear application materials per job</span>—with you
+              choosing when and where to hit submit.
             </p>
           </div>
           <Link

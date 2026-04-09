@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Logo } from "@/components/Logo";
 
 const nav = [
-  { href: "#pipeline", label: "Pipeline" },
+  { href: "#product", label: "Product" },
   { href: "#how", label: "How it works" },
   { href: "#testimonials", label: "Testimonials" },
   { href: "#pricing", label: "Pricing" },

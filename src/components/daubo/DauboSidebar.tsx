@@ -41,7 +41,7 @@ function mergeClassNames(...parts: (string | undefined)[]) {
 }
 
 export function DauboSidebar({
-  active = "Dashboard",
+  active = "Home",
   logoHref = "/",
   className,
   onNavLinkClick,
@@ -109,11 +109,11 @@ export function DauboSidebar({
         <div className="mt-3 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
             <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            Assistant
+            Coach
           </div>
           <p className="mt-1 text-[11px] leading-snug text-zinc-500">
-            Open the floating <strong className="font-medium text-zinc-400">Assistant</strong> on
-            any dashboard page—same LLM stack as your packages and prep.
+            Tap the floating <strong className="font-medium text-zinc-400">Coach</strong> on any page
+            for quick answers about using Daubo.
           </p>
         </div>
       </div>

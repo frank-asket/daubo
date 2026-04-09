@@ -126,7 +126,7 @@ export function JobDiscoverPanel({
     setData(null);
     setAutoPlanAt(null);
     if (!country.trim()) {
-      setError("Add a country so agents can focus the matching plan.");
+      setError("Add a country so we can focus role ideas for you.");
       return;
     }
     setLoading(true);
@@ -149,13 +149,13 @@ export function JobDiscoverPanel({
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setError((j as { detail?: string }).detail ?? `Matching plan failed (${r.status})`);
+        setError((j as { detail?: string }).detail ?? `Could not refresh role ideas (${r.status})`);
         return;
       }
       setData((await r.json()) as DiscoverResult);
       onDiscoveryComplete?.();
     } catch {
-      setError("Network error running matching planner");
+      setError("Connection problem—check your network and try again.");
     } finally {
       setLoading(false);
     }
@@ -163,18 +163,18 @@ export function JobDiscoverPanel({
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-      <h3 className="text-sm font-semibold text-white">Matching scope (country &amp; sector)</h3>
+      <h3 className="text-sm font-semibold text-white">Find role ideas</h3>
       <p className="mt-1 text-xs text-zinc-500">
-        When you save or upload a resume, agents automatically infer geography and roles, then draft a
-        sourcing plan in the background—no extra clicks. Use the fields below to refine or re-run
-        manually. With Adzuna keys on the API, live postings from that country are merged in; optional
-        paste still extracts extra ads into rows.
+        Tell us where you want to work and what you do. Daubo suggests search angles and example roles;
+        you can also paste text from real job ads to add them to your list. Ideas are starting points—
+        always open the employer’s own site to confirm details. Some regions show more live listings than
+        others.
       </p>
       {autoPlanAt ? (
         <p className="mt-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-100/90">
-          Last auto-plan from your resume
-          {autoPlanAt ? `: ${new Date(autoPlanAt).toLocaleString()}` : ""}. Plans can take ~30–60s
-          after a resume update—refresh if this block is still empty.
+          Last suggestions from your résumé
+          {autoPlanAt ? `: ${new Date(autoPlanAt).toLocaleString()}` : ""}. This can take about a minute
+          after you save your résumé—refresh the page if this area stays blank.
         </p>
       ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -229,7 +229,7 @@ export function JobDiscoverPanel({
         disabled={loading}
         className="mt-4 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
       >
-        {loading ? "Running…" : "Generate matching plan"}
+        {loading ? "Working…" : "Get role ideas"}
       </button>
       {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
       {data ? (
@@ -282,7 +282,7 @@ export function JobDiscoverPanel({
           {data.result.example_search_queries.length > 0 ? (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Example source queries (for feeds &amp; integrations)
+                Example searches to try
               </p>
               <ul className="mt-2 list-inside list-disc text-zinc-400">
                 {data.result.example_search_queries.slice(0, 8).map((q) => (

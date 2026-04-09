@@ -18,7 +18,7 @@ export default function PricingPage() {
             href="/dashboard"
             className="text-sm font-medium text-emerald-400 hover:text-emerald-300"
           >
-            Dashboard
+            Home
           </Link>
         </div>
       </header>
@@ -28,8 +28,9 @@ export default function PricingPage() {
           Plans &amp; subscription
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-zinc-400">
-          Pick the Daubo tier that fits how aggressively you want agents to match and apply on
-          your behalf. Subscribe from your account settings, change or cancel when you need to.
+          Choose how much room you need for saved jobs, AI-assisted drafting, and Gmail drafts.
+          You still apply on employer sites yourself—plans reflect usage limits, not “auto-apply.”
+          Manage billing from your account settings anytime.
         </p>
 
         <div className="mt-10 rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6 sm:p-8">

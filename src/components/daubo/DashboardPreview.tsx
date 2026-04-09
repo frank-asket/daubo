@@ -39,15 +39,15 @@ const previewApplications: ApplicationSummary[] = [
 ];
 
 const previewSegments = [
-  { name: "Draft", value: 1 },
-  { name: "Ready for review", value: 1 },
+  { name: "Exploring", value: 1 },
+  { name: "Ready to apply", value: 1 },
   { name: "Applied", value: 1 },
 ];
 
 function BottomRow() {
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      {["Pipeline", "Matching", "Support"].map((t) => (
+      {["My jobs", "Help", "Support"].map((t) => (
         <div
           key={t}
           className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-400"
@@ -70,13 +70,13 @@ export function DashboardPreview() {
         }}
       >
         <div className="flex min-h-[420px] flex-col md:min-h-[480px] md:flex-row">
-          <DauboSidebar active="Dashboard" />
+          <DauboSidebar active="Home" logoHref="/" />
           <div className="flex min-w-0 flex-1 flex-col bg-[#050505]">
             <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/90 px-5 py-4">
               <div>
-                <p className="text-[11px] text-zinc-500">Workspace / Dashboard</p>
+                <p className="text-[11px] text-zinc-500">Daubo · Home</p>
                 <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
-                  Main Dashboard
+                  Your career workspace
                 </h2>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
@@ -89,7 +89,7 @@ export function DashboardPreview() {
                 </button>
                 <div className="hidden items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 sm:flex">
                   <Search className="h-4 w-4 text-zinc-500" strokeWidth={1.75} />
-                  <span className="text-xs text-zinc-500">Multi-agent matching · pipeline</span>
+                  <span className="text-xs text-zinc-500">Search my jobs…</span>
                 </div>
               </div>
             </header>

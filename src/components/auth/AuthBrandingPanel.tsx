@@ -3,9 +3,9 @@ import { Check } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const highlights = [
-  "Agents match your resume to offers worldwide",
-  "Each package follows that job's posted requirements",
-  "Same workspace for applications & interview prep",
+  "One place for jobs you’re pursuing",
+  "Suggestions tied to each posting’s wording",
+  "Interview practice from the same context",
 ];
 
 export function AuthBrandingPanel() {
@@ -22,11 +22,11 @@ export function AuthBrandingPanel() {
       <div className="relative">
         <Logo href="/" />
         <p className="mt-10 text-2xl font-semibold leading-snug tracking-tight text-white sm:text-3xl">
-          Your pipeline—agents find the fit, you bring the truth.
+          Your experience stays yours—we help you show it clearly.
         </p>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500">
-          Sign in so multi-agent matching can pair your resume with global openings and build
-          requirement-aware applications without you combing every board by hand.
+          Sign in to track roles, get application wording that matches what employers ask for, and prep
+          for interviews. You stay in control: real sites for applying, drafts—not auto-send—for email.
         </p>
         <ul className="mt-10 space-y-3">
           {highlights.map((line) => (

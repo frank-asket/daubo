@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
 import { dauboBffUrl } from "@/lib/daubo-api";
+import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
 
 type Application = {
   id: string;
@@ -20,17 +21,6 @@ type Application = {
   interview_prep: Record<string, unknown> | null;
   updated_at: string;
 };
-
-const STATUSES = [
-  "draft",
-  "shortlisted",
-  "package_ready",
-  "ready_to_apply",
-  "applied",
-  "interview",
-  "offer",
-  "closed",
-];
 
 export function ApplicationsBoard() {
   const router = useRouter();
@@ -293,9 +283,9 @@ export function ApplicationsBoard() {
                       onChange={(e) => updateStatus(row.id, e.target.value)}
                       aria-label="Stage"
                     >
-                      {STATUSES.map((s) => (
+                      {JOB_STAGE_VALUES.map((s) => (
                         <option key={s} value={s}>
-                          {s}
+                          {jobStageLabel(s)}
                         </option>
                       ))}
                     </select>
@@ -358,9 +348,9 @@ export function ApplicationsBoard() {
                           value={row.status}
                           onChange={(e) => updateStatus(row.id, e.target.value)}
                         >
-                          {STATUSES.map((s) => (
+                          {JOB_STAGE_VALUES.map((s) => (
                             <option key={s} value={s}>
-                              {s}
+                              {jobStageLabel(s)}
                             </option>
                           ))}
                         </select>

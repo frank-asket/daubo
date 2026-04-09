@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { jobStageLabel } from "@/lib/job-stages";
 
 export type ApplicationSummary = {
   id: string;
@@ -11,22 +12,6 @@ export type ApplicationSummary = {
   job_url: string | null;
   updated_at: string;
 };
-
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  shortlisted: "Shortlisted",
-  package_ready: "Package ready",
-  ready_to_apply: "Ready to apply",
-  ready: "Ready to apply",
-  applied: "Applied",
-  interview: "Interview",
-  offer: "Offer",
-  closed: "Closed",
-};
-
-function stageLabel(status: string): string {
-  return STATUS_LABEL[status] ?? status;
-}
 
 function formatUpdated(iso: string): string {
   const d = new Date(iso);
@@ -74,17 +59,16 @@ export function AssetsTableCard({
                 <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
                   <span className="inline-flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading applications…
+                    Loading jobs…
                   </span>
                 </td>
               </tr>
             ) : applications.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-zinc-500">
-                  No applications yet. Agents will add matched roles here as packages progress—
-                  or add one manually on{" "}
+                  No jobs saved yet. Add roles from Discover or manually on{" "}
                   <a href="/dashboard/applications" className="text-emerald-400 hover:underline">
-                    Applications
+                    My jobs
                   </a>
                   .
                 </td>
@@ -108,7 +92,7 @@ export function AssetsTableCard({
                   </td>
                   <td className="px-4 py-3 text-zinc-400">{r.company}</td>
                   <td className="px-4 py-3 text-zinc-500">{r.location ?? "—"}</td>
-                  <td className="px-4 py-3 text-zinc-400">{stageLabel(r.status)}</td>
+                  <td className="px-4 py-3 text-zinc-400">{jobStageLabel(r.status)}</td>
                   <td className="px-4 py-3 text-zinc-500">{formatUpdated(r.updated_at)}</td>
                 </tr>
               ))

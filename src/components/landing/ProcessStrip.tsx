@@ -1,15 +1,15 @@
 const cols = [
   {
-    title: "Profile in, truth preserved",
-    body: "Upload your base resume so agents match you to offers worldwide without inventing employers, dates, or credentials.",
+    title: "Your real experience, first",
+    body: "Upload or paste your résumé once. Daubo uses what you provide—no invented employers, dates, or credentials.",
   },
   {
-    title: "Matched & requirement-aware",
-    body: "Each matched role gets a fresh resume variant plus application copy shaped to that posting's stated requirements—no generic blast.",
+    title: "Materials that fit each posting",
+    body: "For each saved role, get suggestions shaped to that job’s wording and requirements—not one copy-paste for everyone.",
   },
   {
-    title: "Send as yourself",
-    body: "Approved applications go out through your connected email—the hiring team always sees the candidate they expect: you.",
+    title: "You stay in the sender’s seat",
+    body: "Apply on official career sites yourself. With Gmail, use drafts you edit and send from your own address.",
   },
 ];
 

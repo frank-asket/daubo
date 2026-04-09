@@ -15,39 +15,18 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
-
-const STATUS_ORDER = [
-  "draft",
-  "shortlisted",
-  "package_ready",
-  "ready_to_apply",
-  "applied",
-  "interview",
-  "offer",
-  "closed",
-] as const;
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  shortlisted: "Shortlisted",
-  package_ready: "Package ready",
-  ready_to_apply: "Ready to apply",
-  ready: "Ready to apply",
-  applied: "Applied",
-  interview: "Interview",
-  offer: "Offer",
-  closed: "Closed",
-};
+import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
 
 function repartitionFromApplications(apps: ApplicationSummary[]): { name: string; value: number }[] {
   const counts = new Map<string, number>();
-  for (const s of STATUS_ORDER) counts.set(s, 0);
+  for (const s of JOB_STAGE_VALUES) counts.set(s, 0);
   for (const a of apps) {
     const st = a.status === "ready" ? "ready_to_apply" : a.status;
-    const key = (STATUS_ORDER as readonly string[]).includes(st) ? st : "draft";
+    const key = (JOB_STAGE_VALUES as readonly string[]).includes(st) ? st : "draft";
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return STATUS_ORDER.map((s) => ({
-    name: STATUS_LABEL[s],
+  return JOB_STAGE_VALUES.map((s) => ({
+    name: jobStageLabel(s),
     value: counts.get(s) ?? 0,
   }));
 }

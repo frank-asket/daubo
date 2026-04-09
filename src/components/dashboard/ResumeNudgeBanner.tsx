@@ -35,7 +35,7 @@ export function ResumeNudgeBanner() {
           href="/dashboard/resume"
           className="shrink-0 rounded-full bg-amber-400 px-4 py-1.5 text-xs font-semibold text-black hover:bg-amber-300"
         >
-          Go to Resume
+          My résumé
         </Link>
       </div>
     </div>
