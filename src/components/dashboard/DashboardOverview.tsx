@@ -14,6 +14,9 @@ export function DashboardOverview({ hasResume }: { hasResume: boolean | null }) 
           <h1 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
             Move forward on your job search—with help that keeps you in charge
           </h1>
+          <p className="mt-2 text-sm font-medium text-emerald-400/90">
+            Daubo prepares you to apply—you still click Apply.
+          </p>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
             Daubo helps you <strong className="font-medium text-zinc-400">find roles</strong>,{" "}
             <strong className="font-medium text-zinc-400">shape stronger applications</strong>, and{" "}

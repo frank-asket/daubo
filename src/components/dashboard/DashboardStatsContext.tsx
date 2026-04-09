@@ -24,11 +24,17 @@ export type OnboardingStats = {
   setup_complete: boolean;
 };
 
+export type UsageLimits = {
+  max_tracked_jobs: number | null;
+  tracked_jobs: number;
+};
+
 export type MeStats = {
   application_count: number;
   has_resume: boolean;
   career?: CareerStats;
   onboarding?: OnboardingStats;
+  limits?: UsageLimits;
 };
 
 type DashboardStatsContextValue = {

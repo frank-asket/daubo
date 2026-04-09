@@ -9,6 +9,9 @@ export function Hero() {
         <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
           A calmer way to move your career forward
         </h1>
+        <p className="mx-auto mt-4 max-w-xl text-sm font-medium leading-snug text-emerald-400/95 sm:text-base">
+          Daubo prepares you to apply—you still click Apply.
+        </p>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
           Daubo helps people in{" "}
           <span className="text-zinc-200">any line of work—care, trades, office, clinical roles,</span> and

@@ -1,9 +1,10 @@
 "use client";
 
-import { ExternalLink, Loader2, Trash2 } from "lucide-react";
+import { Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
+import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
 
@@ -26,10 +27,12 @@ export function ApplicationsBoard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const qFromUrl = searchParams.get("q") ?? "";
+  const { stats, reload: reloadStats } = useDashboardStats();
 
   const [items, setItems] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [filterText, setFilterText] = useState(qFromUrl);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -62,6 +65,34 @@ export function ApplicationsBoard() {
       setError(e instanceof Error ? e.message : "We couldn’t load your jobs. Try again.");
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const exportCsv = useCallback(async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/applications/export"), {
+        credentials: "same-origin",
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error((j as { detail?: string }).detail ?? "Could not export");
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "daubo-my-jobs.csv";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
     }
   }, []);
 
@@ -128,6 +159,7 @@ export function ApplicationsBoard() {
       setLocation("");
       setJobUrl("");
       await load();
+      void reloadStats();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -142,7 +174,10 @@ export function ApplicationsBoard() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (r.ok) await load();
+    if (r.ok) {
+      await load();
+      void reloadStats();
+    }
   }
 
   const handoffApplication = useMemo(
@@ -156,7 +191,10 @@ export function ApplicationsBoard() {
       method: "DELETE",
       credentials: "same-origin",
     });
-    if (r.ok) await load();
+    if (r.ok) {
+      await load();
+      void reloadStats();
+    }
   }
 
   return (
@@ -169,6 +207,24 @@ export function ApplicationsBoard() {
           await updateStatus(id, status);
         }}
       />
+      {stats?.limits?.max_tracked_jobs != null &&
+      stats.limits.tracked_jobs >= stats.limits.max_tracked_jobs ? (
+        <p
+          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100"
+          role="status"
+        >
+          You&apos;ve reached the maximum number of saved jobs for your current plan (
+          {stats.limits.max_tracked_jobs}). Remove a job below to add another, or contact support about
+          upgrading.
+        </p>
+      ) : stats?.limits?.max_tracked_jobs != null &&
+        stats.limits.max_tracked_jobs > 0 &&
+        stats.limits.tracked_jobs === stats.limits.max_tracked_jobs - 1 ? (
+        <p className="rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-400">
+          You can save <strong className="text-zinc-300">one</strong> more job on your current plan (
+          {stats.limits.tracked_jobs}/{stats.limits.max_tracked_jobs}).
+        </p>
+      ) : null}
       <form
         onSubmit={addApplication}
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6"
@@ -204,7 +260,11 @@ export function ApplicationsBoard() {
         </div>
         <button
           type="submit"
-          disabled={saving}
+          disabled={
+            saving ||
+            (stats?.limits?.max_tracked_jobs != null &&
+              stats.limits.tracked_jobs >= stats.limits.max_tracked_jobs)
+          }
           className="mt-4 rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save to my jobs"}
@@ -216,18 +276,31 @@ export function ApplicationsBoard() {
       <div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="text-sm font-semibold text-white">Your jobs</h2>
-          {items.length > 0 ? (
-            <label className="block w-full sm:max-w-xs">
-              <span className="sr-only">Filter jobs</span>
-              <input
-                type="search"
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                placeholder="Filter…"
-                className="w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600"
-              />
-            </label>
-          ) : null}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+            {items.length > 0 ? (
+              <>
+                <button
+                  type="button"
+                  disabled={exporting}
+                  onClick={() => void exportCsv()}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-600 px-4 py-2 text-xs font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white disabled:opacity-50"
+                >
+                  {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  Export CSV
+                </button>
+                <label className="block w-full sm:max-w-xs sm:min-w-[12rem]">
+                  <span className="sr-only">Filter jobs</span>
+                  <input
+                    type="search"
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    placeholder="Filter…"
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600"
+                  />
+                </label>
+              </>
+            ) : null}
+          </div>
         </div>
         {loading ? (
           <div className="mt-4 flex items-center gap-2 text-zinc-500">

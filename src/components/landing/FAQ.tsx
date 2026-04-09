@@ -19,7 +19,11 @@ const faqs = [
   },
   {
     q: "Does Daubo apply for me?",
-    a: "No. You submit applications on the company career site or LinkedIn yourself. That keeps your accounts safe and respects how employers expect to receive applications.",
+    a: "No—and that’s intentional. Daubo prepares materials and drafts; you submit on the employer or LinkedIn site yourself (you still click Apply). That protects your accounts and matches how hiring is meant to work.",
+  },
+  {
+    q: "Can I export my saved jobs?",
+    a: "Yes. On My jobs, use Export CSV to download a spreadsheet you can open in Excel or Google Sheets for your own tracking.",
   },
   {
     q: "How fast is it?",

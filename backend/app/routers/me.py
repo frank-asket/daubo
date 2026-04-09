@@ -1,7 +1,10 @@
+import csv
 import logging
+from io import StringIO
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -83,6 +86,7 @@ class AgentMatchLatestResponse(BaseModel):
 async def me_stats(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ) -> dict:
     try:
         app_count = await session.scalar(
@@ -128,6 +132,7 @@ async def me_stats(
     n_apps = int(app_count or 0)
     has_resume = bool(resume_count)
     gmail_connected = bool(gmail_count)
+    cap = settings.daubo_max_job_applications_per_user
     return {
         "application_count": n_apps,
         "has_resume": has_resume,
@@ -142,6 +147,10 @@ async def me_stats(
             "job_saved": n_apps > 0,
             "gmail_connected": gmail_connected,
             "setup_complete": has_resume and n_apps > 0,
+        },
+        "limits": {
+            "max_tracked_jobs": cap if cap > 0 else None,
+            "tracked_jobs": n_apps,
         },
     }
 
@@ -264,12 +273,80 @@ async def list_applications(
     return list(result.scalars().all())
 
 
+@router.get("/me/applications/export")
+async def export_applications_csv(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    """UTF-8 CSV of saved jobs for spreadsheets (Google Sheets, Excel)."""
+    result = await session.execute(
+        select(JobApplication)
+        .where(JobApplication.clerk_user_id == user_id)
+        .order_by(JobApplication.updated_at.desc())
+    )
+    rows = list(result.scalars().all())
+    buf = StringIO()
+    w = csv.writer(buf)
+    w.writerow(
+        [
+            "id",
+            "title",
+            "company",
+            "location",
+            "status",
+            "job_url",
+            "notes",
+            "apply_channel",
+            "updated_at",
+        ],
+    )
+    for r in rows:
+        notes = (r.notes or "").replace("\r", " ").replace("\n", " ").strip()[:2000]
+        w.writerow(
+            [
+                str(r.id),
+                r.title,
+                r.company,
+                r.location or "",
+                r.status,
+                r.job_url or "",
+                notes,
+                r.apply_channel or "",
+                r.updated_at.isoformat() if r.updated_at else "",
+            ],
+        )
+    body = "\ufeff" + buf.getvalue()
+    return Response(
+        content=body.encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="daubo-my-jobs.csv"',
+        },
+    )
+
+
 @router.post("/me/applications", response_model=ApplicationOut)
 async def create_application(
     body: ApplicationCreate,
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ) -> JobApplication:
+    cap = settings.daubo_max_job_applications_per_user
+    if cap > 0:
+        current = await session.scalar(
+            select(func.count())
+            .select_from(JobApplication)
+            .where(JobApplication.clerk_user_id == user_id)
+        )
+        if int(current or 0) >= cap:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    f"You’ve saved the maximum number of jobs for your current plan ({cap}). "
+                    "Remove a job from My jobs to add another, or contact support about upgrading."
+                ),
+            )
     row = JobApplication(
         clerk_user_id=user_id,
         title=body.title,

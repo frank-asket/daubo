@@ -87,6 +87,8 @@ async function handle(req: NextRequest, segments: string[]): Promise<NextRespons
   if (rid) out.headers.set("x-request-id", rid);
   const resCt = upstream.headers.get("content-type");
   if (resCt) out.headers.set("content-type", resCt);
+  const cd = upstream.headers.get("content-disposition");
+  if (cd) out.headers.set("content-disposition", cd);
   return out;
 }
 

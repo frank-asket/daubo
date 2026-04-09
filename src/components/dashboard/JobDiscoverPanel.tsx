@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
@@ -168,7 +169,11 @@ export function JobDiscoverPanel({
         Tell us where you want to work and what you do. Daubo suggests search angles and example roles;
         you can also paste text from real job ads to add them to your list. Ideas are starting points—
         always open the employer’s own site to confirm details. Some regions show more live listings than
-        others.
+        others. Found a role elsewhere? Add it under{" "}
+        <Link href="/dashboard/applications" className="font-semibold text-emerald-400/90 hover:underline">
+          My jobs
+        </Link>{" "}
+        with the posting URL so everything stays in one place.
       </p>
       {autoPlanAt ? (
         <p className="mt-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-100/90">

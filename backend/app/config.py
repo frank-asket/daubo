@@ -102,6 +102,15 @@ class Settings(BaseSettings):
         description="If set, requires X-Daubo-Internal-Key on protected routes (use with Vercel BFF proxy).",
     )
 
+    daubo_max_job_applications_per_user: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Max saved jobs per Clerk user (POST /me/applications). 0 = unlimited. "
+            "Use for free-tier caps in production."
+        ),
+    )
+
     trusted_hosts: str = Field(
         default="",
         description="Comma-separated hosts for X-Forwarded-* (production). Empty disables TrustedHostMiddleware.",
