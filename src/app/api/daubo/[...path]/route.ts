@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INTERNAL = "X-Daubo-Internal-Key";
+const USER_ID = "X-Daubo-User-Id";
 
 function targetUrl(base: string, segments: string[], search: string): string {
   const root = base.replace(/\/+$/, "");
@@ -28,11 +29,13 @@ async function handle(req: NextRequest, segments: string[]): Promise<NextRespons
   }
 
   const pathKey = segments.join("/");
+  let clerkUserId: string | null = null;
   if (!isPublicProxy(req.method, pathKey)) {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    clerkUserId = userId;
   }
 
   const secret = process.env.DAUBO_INTERNAL_API_SECRET;
@@ -44,6 +47,7 @@ async function handle(req: NextRequest, segments: string[]): Promise<NextRespons
   const accept = req.headers.get("accept");
   if (accept) headers.set("accept", accept);
   if (secret) headers.set(INTERNAL, secret);
+  if (clerkUserId) headers.set(USER_ID, clerkUserId);
 
   const init: RequestInit = {
     method: req.method,

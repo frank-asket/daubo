@@ -42,7 +42,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <Search className="h-4 w-4 text-zinc-500" strokeWidth={1.75} />
               <span className="text-xs text-zinc-500">Search by country · role</span>
             </div>
-            <UserButton afterSignOutUrl="/" />
+            <UserButton />
           </div>
         </header>
         <div className="flex-1 overflow-auto">{children}</div>

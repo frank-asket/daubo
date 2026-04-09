@@ -12,7 +12,7 @@ from app.config import get_settings
 from app.db import engine, init_db
 from app.deps.security import require_internal_api_key
 from app.middleware.request_context import RequestContextMiddleware
-from app.routers import chat, chunks, embeddings, health, jobs
+from app.routers import chat, chunks, embeddings, health, jobs, me
 
 logger = logging.getLogger("daubo")
 
@@ -68,7 +68,13 @@ def create_app() -> FastAPI:
         allow_origins=s.cors_origin_list(),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Daubo-Internal-Key"],
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "X-Request-ID",
+            "X-Daubo-Internal-Key",
+            "X-Daubo-User-Id",
+        ],
         expose_headers=["X-Request-ID"],
     )
 
@@ -122,6 +128,7 @@ def create_app() -> FastAPI:
     app.include_router(embeddings.router, prefix="/v1", dependencies=protected)
     app.include_router(chunks.router, prefix="/v1", dependencies=protected)
     app.include_router(jobs.router, prefix="/v1", dependencies=protected)
+    app.include_router(me.router, prefix="/v1", dependencies=protected)
 
     return app
 

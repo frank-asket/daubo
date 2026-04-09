@@ -17,7 +17,14 @@ const makeData = () =>
     v: 48 + Math.sin(i / 3) * 8 + i * 1.2,
   }));
 
-export function BalanceChart({ compact }: { compact?: boolean }) {
+export function BalanceChart({
+  compact,
+  trackedRoles,
+}: {
+  compact?: boolean;
+  /** Live count from Daubo API; chart curve stays illustrative until historic metrics exist */
+  trackedRoles?: number | null;
+}) {
   const [range, setRange] = useState("1Y");
   const data = makeData();
   const h = compact ? 160 : 220;
@@ -30,9 +37,14 @@ export function BalanceChart({ compact }: { compact?: boolean }) {
           <p className="text-xs font-medium text-zinc-500">Pipeline</p>
           <div className="mt-1 flex flex-wrap items-baseline gap-3">
             <span className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              24 roles
+              {trackedRoles != null ? `${trackedRoles} roles` : "24 roles"}
             </span>
-            <span className="text-sm font-semibold text-emerald-400">+18%</span>
+            <span
+              className={`text-sm font-semibold ${trackedRoles != null ? "text-zinc-500" : "text-emerald-400"}`}
+              title={trackedRoles != null ? "Trend when history is wired" : undefined}
+            >
+              {trackedRoles != null ? "tracked" : "+18%"}
+            </span>
           </div>
         </div>
         <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5">

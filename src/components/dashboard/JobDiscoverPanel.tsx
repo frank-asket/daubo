@@ -1,0 +1,168 @@
+"use client";
+
+import { useState } from "react";
+import { dauboBffUrl } from "@/lib/daubo-api";
+
+type DiscoverResult = {
+  country: string;
+  result: {
+    executive_summary: string;
+    portals: { name: string; kind: string; how_to_use: string }[];
+    example_search_queries: string[];
+    filters_to_apply: string[];
+    regulatory_reminders: string;
+    parsed_listings: { title: string; employer: string | null; location: string | null }[];
+  };
+  notice: string;
+};
+
+export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?: () => void }) {
+  const [country, setCountry] = useState("");
+  const [roleFocus, setRoleFocus] = useState("");
+  const [industries, setIndustries] = useState("");
+  const [pasted, setPasted] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DiscoverResult | null>(null);
+
+  async function runDiscover() {
+    setError(null);
+    setData(null);
+    if (!country.trim()) {
+      setError("Add a country to focus the search plan.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const body = {
+        country: country.trim(),
+        industries: industries
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        role_focus: roleFocus.trim() || null,
+        pasted_listings: pasted.trim() || null,
+        locale: "en",
+      };
+      const r = await fetch(dauboBffUrl("v1/jobs/discover"), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        setError((j as { detail?: string }).detail ?? `Discover failed (${r.status})`);
+        return;
+      }
+      setData((await r.json()) as DiscoverResult);
+      onDiscoveryComplete?.();
+    } catch {
+      setError("Network error running discovery");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
+      <h3 className="text-sm font-semibold text-white">Job discovery (country &amp; sector)</h3>
+      <p className="mt-1 text-xs text-zinc-500">
+        Daubo drafts where to search and how to query—paste ads below to extract structured rows.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            Country
+          </span>
+          <input
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-zinc-600"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            placeholder="e.g. France"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            Role focus
+          </span>
+          <input
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-zinc-600"
+            value={roleFocus}
+            onChange={(e) => setRoleFocus(e.target.value)}
+            placeholder="e.g. ward nurse, warehouse lead"
+          />
+        </label>
+      </div>
+      <label className="mt-3 block">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+          Industries (comma-separated)
+        </span>
+        <input
+          className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-zinc-600"
+          value={industries}
+          onChange={(e) => setIndustries(e.target.value)}
+          placeholder="healthcare, logistics, …"
+        />
+      </label>
+      <label className="mt-3 block">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+          Pasted listings (optional)
+        </span>
+        <textarea
+          className="mt-1 min-h-[88px] w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-zinc-600"
+          value={pasted}
+          onChange={(e) => setPasted(e.target.value)}
+          placeholder="Paste job ad text to extract titles and employers…"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={runDiscover}
+        disabled={loading}
+        className="mt-4 rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
+      >
+        {loading ? "Running…" : "Run discovery"}
+      </button>
+      {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
+      {data ? (
+        <div className="mt-6 space-y-4 border-t border-zinc-800 pt-6 text-sm">
+          <p className="text-xs text-zinc-500">{data.notice}</p>
+          <p className="leading-relaxed text-zinc-300">{data.result.executive_summary}</p>
+          {data.result.parsed_listings.length > 0 ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                From your paste
+              </p>
+              <ul className="mt-2 space-y-2 text-zinc-300">
+                {data.result.parsed_listings.map((l, i) => (
+                  <li key={`${l.title}-${i}`} className="rounded-lg border border-zinc-800 px-3 py-2">
+                    <span className="font-medium text-white">{l.title}</span>
+                    {l.employer ? (
+                      <span className="text-zinc-500"> · {l.employer}</span>
+                    ) : null}
+                    {l.location ? (
+                      <span className="text-zinc-500"> · {l.location}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {data.result.example_search_queries.length > 0 ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Example searches
+              </p>
+              <ul className="mt-2 list-inside list-disc text-zinc-400">
+                {data.result.example_search_queries.slice(0, 8).map((q) => (
+                  <li key={q}>{q}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

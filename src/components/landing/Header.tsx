@@ -63,7 +63,6 @@ export function Header() {
           </SignedOut>
           <SignedIn>
             <UserButton
-              afterSignOutUrl="/"
               appearance={{
                 elements: {
                   userButtonAvatarBox: "h-9 w-9 ring-2 ring-zinc-700",
@@ -110,7 +109,7 @@ export function Header() {
               </SignedOut>
               <SignedIn>
                 <div className="flex justify-center py-2">
-                  <UserButton afterSignOutUrl="/" />
+                  <UserButton />
                 </div>
               </SignedIn>
             </div>
