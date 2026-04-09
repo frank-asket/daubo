@@ -15,13 +15,20 @@ type DiscoverResult = {
       title: string;
       employer: string | null;
       location: string | null;
+      excerpt?: string | null;
       source_url?: string | null;
     }[];
   };
   notice: string;
 };
 
-export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?: () => void }) {
+export function JobDiscoverPanel({
+  onDiscoveryComplete,
+  onAddedToPipeline,
+}: {
+  onDiscoveryComplete?: () => void;
+  onAddedToPipeline?: () => void;
+}) {
   const onCompleteRef = useRef(onDiscoveryComplete);
   onCompleteRef.current = onDiscoveryComplete;
 
@@ -34,6 +41,37 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
   const [data, setData] = useState<DiscoverResult | null>(null);
   const [autoPlanAt, setAutoPlanAt] = useState<string | null>(null);
   const lastFetchedCreatedAt = useRef<string | null>(null);
+  const [addingId, setAddingId] = useState<string | null>(null);
+
+  async function addListingToPipeline(l: DiscoverResult["result"]["parsed_listings"][number], idx: number) {
+    const key = `${l.title}-${idx}`;
+    setAddingId(key);
+    setError(null);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/applications"), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: l.title.trim(),
+          company: (l.employer ?? "Unknown employer").trim(),
+          location: l.location?.trim() || null,
+          job_url: l.source_url?.trim() || null,
+          status: "shortlisted",
+          job_description: l.excerpt?.trim() || null,
+        }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+      }
+      onAddedToPipeline?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not add to pipeline");
+    } finally {
+      setAddingId(null);
+    }
+  }
 
   const fetchLatestPlan = useCallback(async () => {
     try {
@@ -187,24 +225,37 @@ export function JobDiscoverPanel({ onDiscoveryComplete }: { onDiscoveryComplete?
               </p>
               <ul className="mt-2 space-y-2 text-zinc-300">
                 {data.result.parsed_listings.map((l, i) => (
-                  <li key={`${l.title}-${i}`} className="rounded-lg border border-zinc-800 px-3 py-2">
-                    <span className="font-medium text-white">{l.title}</span>
-                    {l.employer ? (
-                      <span className="text-zinc-500"> · {l.employer}</span>
-                    ) : null}
-                    {l.location ? (
-                      <span className="text-zinc-500"> · {l.location}</span>
-                    ) : null}
-                    {l.source_url ? (
-                      <a
-                        href={l.source_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 block truncate text-[11px] text-emerald-400/90 hover:underline"
-                      >
-                        Open posting
-                      </a>
-                    ) : null}
+                  <li
+                    key={`${l.title}-${i}`}
+                    className="flex flex-col gap-2 rounded-lg border border-zinc-800 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-white">{l.title}</span>
+                      {l.employer ? (
+                        <span className="text-zinc-500"> · {l.employer}</span>
+                      ) : null}
+                      {l.location ? (
+                        <span className="text-zinc-500"> · {l.location}</span>
+                      ) : null}
+                      {l.source_url ? (
+                        <a
+                          href={l.source_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 block truncate text-[11px] text-emerald-400/90 hover:underline"
+                        >
+                          Open posting
+                        </a>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={addingId !== null}
+                      onClick={() => void addListingToPipeline(l, i)}
+                      className="shrink-0 rounded-full border border-zinc-700 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-50"
+                    >
+                      {addingId === `${l.title}-${i}` ? "Adding…" : "Add to pipeline"}
+                    </button>
                   </li>
                 ))}
               </ul>

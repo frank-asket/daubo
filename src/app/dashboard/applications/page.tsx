@@ -7,8 +7,9 @@ export default function ApplicationsPage() {
     <div className="p-4 sm:p-6 lg:p-10">
       <h1 className="text-xl font-semibold tracking-tight text-zinc-50 sm:text-2xl">Applications</h1>
       <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-        Your Daubo pipeline: track every role, stage, and link in one place. Data is stored per
-        account on the Daubo API.
+        Track stages from discovery through apply. Use <strong className="font-medium text-zinc-400">Human apply</strong> to
+        open drafts and complete submissions on the employer&apos;s or LinkedIn&apos;s official site—nothing
+        sends without your action.
       </p>
       <div className="mt-8 sm:mt-10">
         <Suspense

@@ -10,14 +10,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.deps.users import get_clerk_user_id
-from app.models import AgentMatchRun, JobApplication, UserResume
+from app.models import AgentMatchRun, JobApplication, UserGmailCredentials, UserResume
 from app.schemas.me import (
     ApplicationCreate,
     ApplicationOut,
+    ApplicationPackageRequest,
     ApplicationUpdate,
+    GmailDraftOut,
+    GmailOAuthCompleteIn,
+    GmailOAuthCompleteOut,
+    GmailStatusOut,
     ResumeIn,
     ResumeOut,
     ResumeUploadOut,
+)
+from app.services.application_package import (
+    generate_application_package,
+    generate_interview_prep,
+    package_summary_text,
+)
+from app.services.gmail_integration import (
+    create_draft_plain,
+    exchange_authorization_code,
+    fetch_google_email,
+    gmail_oauth_configured,
 )
 from app.services.resume_auto_match import schedule_resume_auto_match
 from app.services.resume_ingest import extract_resume_text
@@ -202,6 +218,8 @@ async def create_application(
         status=body.status,
         notes=body.notes,
         job_url=body.job_url,
+        apply_channel=body.apply_channel,
+        job_description=body.job_description,
     )
     session.add(row)
     await session.commit()
@@ -250,3 +268,291 @@ async def delete_application(
         raise HTTPException(status_code=404, detail="Application not found")
     await session.delete(row)
     await session.commit()
+
+
+@router.post(
+    "/me/applications/{application_id}/application-package",
+    response_model=ApplicationOut,
+)
+async def build_application_package(
+    application_id: UUID,
+    body: ApplicationPackageRequest | None = None,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> JobApplication:
+    if not settings.openrouter_api_key:
+        raise HTTPException(status_code=503, detail="OPENROUTER_API_KEY is not configured")
+
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    resume_row = result.scalar_one_or_none()
+    if not resume_row or not (resume_row.content_text or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Upload or save a resume first so Daubo can tailor your application package.",
+        )
+
+    result = await session.execute(
+        select(JobApplication).where(
+            JobApplication.id == application_id,
+            JobApplication.clerk_user_id == user_id,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    req = body or ApplicationPackageRequest()
+    if req.job_description is not None:
+        row.job_description = req.job_description
+    if req.apply_channel is not None:
+        row.apply_channel = req.apply_channel
+    jd = row.job_description
+    channel = row.apply_channel
+
+    try:
+        package = await generate_application_package(
+            settings,
+            resume_text=resume_row.content_text,
+            title=row.title,
+            company=row.company,
+            location=row.location,
+            job_description=jd,
+            apply_channel=channel,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("build_application_package failed")
+        raise HTTPException(status_code=502, detail="Could not generate application package") from exc
+
+    row.package_draft = package
+    frozen = {"applied", "interview", "offer", "closed"}
+    if row.status not in frozen:
+        row.status = "package_ready"
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+@router.post("/me/applications/{application_id}/interview-prep", response_model=ApplicationOut)
+async def build_interview_prep(
+    application_id: UUID,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> JobApplication:
+    if not settings.openrouter_api_key:
+        raise HTTPException(status_code=503, detail="OPENROUTER_API_KEY is not configured")
+
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    resume_row = result.scalar_one_or_none()
+    if not resume_row or not (resume_row.content_text or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Upload or save a resume first so interview prep can use your profile.",
+        )
+
+    result = await session.execute(
+        select(JobApplication).where(
+            JobApplication.id == application_id,
+            JobApplication.clerk_user_id == user_id,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    summary = package_summary_text(row.package_draft)
+    try:
+        prep = await generate_interview_prep(
+            settings,
+            resume_text=resume_row.content_text,
+            title=row.title,
+            company=row.company,
+            job_description=row.job_description,
+            package_summary=summary,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("build_interview_prep failed")
+        raise HTTPException(status_code=502, detail="Could not generate interview prep") from exc
+
+    row.interview_prep = prep
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+@router.get("/me/integrations/gmail/status", response_model=GmailStatusOut)
+async def gmail_connection_status(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> GmailStatusOut:
+    configured = gmail_oauth_configured(settings)
+    if not configured:
+        return GmailStatusOut(configured=False, connected=False, google_email=None)
+    result = await session.execute(
+        select(UserGmailCredentials).where(UserGmailCredentials.clerk_user_id == user_id)
+    )
+    row = result.scalar_one_or_none()
+    return GmailStatusOut(
+        configured=configured,
+        connected=row is not None,
+        google_email=row.google_email if row else None,
+    )
+
+
+@router.post("/me/integrations/gmail/oauth-complete", response_model=GmailOAuthCompleteOut)
+async def gmail_oauth_complete(
+    body: GmailOAuthCompleteIn,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> GmailOAuthCompleteOut:
+    if not gmail_oauth_configured(settings):
+        raise HTTPException(
+            status_code=503,
+            detail="Google OAuth is not configured on the API (set GOOGLE_OAUTH_*).",
+        )
+    try:
+        token_payload = await exchange_authorization_code(settings, body.code)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("gmail oauth code exchange failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not complete Google sign-in. Try again or check redirect URI matches.",
+        ) from exc
+
+    refresh = token_payload.get("refresh_token")
+    if not isinstance(refresh, str) or not refresh.strip():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Google did not return a refresh token. In Google Account → Security → Third-party "
+                "access, remove Daubo for this app, then connect again (we request offline access)."
+            ),
+        )
+
+    access = token_payload.get("access_token")
+    email: str | None = None
+    if isinstance(access, str):
+        try:
+            email = await fetch_google_email(access)
+        except Exception:
+            logger.exception("fetch google email after oauth")
+
+    result = await session.execute(
+        select(UserGmailCredentials).where(UserGmailCredentials.clerk_user_id == user_id)
+    )
+    row = result.scalar_one_or_none()
+    if row:
+        row.refresh_token = refresh.strip()
+        row.google_email = email
+    else:
+        row = UserGmailCredentials(
+            clerk_user_id=user_id,
+            refresh_token=refresh.strip(),
+            google_email=email,
+        )
+        session.add(row)
+    await session.commit()
+    return GmailOAuthCompleteOut(connected=True, google_email=email)
+
+
+@router.delete("/me/integrations/gmail", status_code=204)
+async def gmail_disconnect(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> None:
+    result = await session.execute(
+        select(UserGmailCredentials).where(UserGmailCredentials.clerk_user_id == user_id)
+    )
+    row = result.scalar_one_or_none()
+    if row:
+        await session.delete(row)
+        await session.commit()
+
+
+@router.post("/me/applications/{application_id}/gmail-draft", response_model=GmailDraftOut)
+async def create_gmail_draft_for_application(
+    application_id: UUID,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> GmailDraftOut:
+    if not gmail_oauth_configured(settings):
+        raise HTTPException(
+            status_code=503,
+            detail="Google OAuth is not configured on the API.",
+        )
+    result = await session.execute(
+        select(UserGmailCredentials).where(UserGmailCredentials.clerk_user_id == user_id)
+    )
+    creds = result.scalar_one_or_none()
+    if not creds:
+        raise HTTPException(
+            status_code=400,
+            detail="Connect Gmail under Settings before creating a draft.",
+        )
+
+    result = await session.execute(
+        select(JobApplication).where(
+            JobApplication.id == application_id,
+            JobApplication.clerk_user_id == user_id,
+        )
+    )
+    app_row = result.scalar_one_or_none()
+    if not app_row:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    pkg = app_row.package_draft
+    if not isinstance(pkg, dict):
+        pkg = {}
+
+    cover = pkg.get("cover_letter")
+    body_text = cover.strip() if isinstance(cover, str) else ""
+    if not body_text:
+        note = pkg.get("linkedin_note")
+        if isinstance(note, str) and note.strip():
+            body_text = note.strip()
+    if not body_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Generate an application package with email/cover text first.",
+        )
+
+    checklist = pkg.get("checklist")
+    if isinstance(checklist, list) and checklist:
+        lines = "\n".join(f"- {x}" for x in checklist if isinstance(x, str))
+        if lines:
+            body_text = f"{body_text}\n\n---\nNext steps:\n{lines}"
+
+    subject = f"Application: {app_row.title} — {app_row.company}"
+    if app_row.job_url and isinstance(app_row.job_url, str):
+        body_text = f"{body_text}\n\nPosting: {app_row.job_url.strip()[:2000]}"
+
+    try:
+        draft_resp = await create_draft_plain(
+            settings,
+            creds.refresh_token,
+            subject=subject,
+            body=body_text,
+            to=None,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("gmail draft creation failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Gmail refused the draft. Reconnect Gmail under Settings or try again.",
+        ) from exc
+
+    draft_id = draft_resp.get("id")
+    if not isinstance(draft_id, str):
+        draft_id = ""
+    return GmailDraftOut(
+        draft_id=draft_id,
+        gmail_web_url="https://mail.google.com/mail/u/0/#drafts",
+    )

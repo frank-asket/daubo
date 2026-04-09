@@ -1,8 +1,9 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
+import { ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type Application = {
@@ -13,10 +14,23 @@ type Application = {
   status: string;
   notes: string | null;
   job_url: string | null;
+  apply_channel: string | null;
+  job_description: string | null;
+  package_draft: PackageDraft;
+  interview_prep: Record<string, unknown> | null;
   updated_at: string;
 };
 
-const STATUSES = ["draft", "ready", "applied", "interview", "offer", "closed"];
+const STATUSES = [
+  "draft",
+  "shortlisted",
+  "package_ready",
+  "ready_to_apply",
+  "applied",
+  "interview",
+  "offer",
+  "closed",
+];
 
 export function ApplicationsBoard() {
   const router = useRouter();
@@ -32,6 +46,7 @@ export function ApplicationsBoard() {
   const [location, setLocation] = useState("");
   const [jobUrl, setJobUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [handoffId, setHandoffId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -42,7 +57,17 @@ export function ApplicationsBoard() {
         const j = await r.json().catch(() => ({}));
         throw new Error((j as { detail?: string }).detail ?? r.statusText);
       }
-      setItems((await r.json()) as Application[]);
+      const raw = (await r.json()) as Application[];
+      setItems(
+        raw.map((row) => ({
+          ...row,
+          status: row.status === "ready" ? "ready_to_apply" : row.status,
+          apply_channel: row.apply_channel ?? null,
+          job_description: row.job_description ?? null,
+          package_draft: row.package_draft ?? null,
+          interview_prep: row.interview_prep ?? null,
+        })),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -130,6 +155,11 @@ export function ApplicationsBoard() {
     if (r.ok) await load();
   }
 
+  const handoffApplication = useMemo(
+    () => (handoffId ? (items.find((r) => r.id === handoffId) ?? null) : null),
+    [handoffId, items],
+  );
+
   async function remove(id: string) {
     if (!confirm("Remove this application from your pipeline?")) return;
     const r = await fetch(dauboBffUrl(`v1/me/applications/${id}`), {
@@ -141,6 +171,14 @@ export function ApplicationsBoard() {
 
   return (
     <div className="space-y-8">
+      <ApplyHandoffPanel
+        application={handoffApplication}
+        onClose={() => setHandoffId(null)}
+        onRefresh={load}
+        onStatusChange={async (id, status) => {
+          await updateStatus(id, status);
+        }}
+      />
       <form
         onSubmit={addApplication}
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6"
@@ -262,6 +300,14 @@ export function ApplicationsBoard() {
                         </option>
                       ))}
                     </select>
+                    <button
+                      type="button"
+                      onClick={() => setHandoffId(row.id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-[11px] font-medium text-emerald-300"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Human apply
+                    </button>
                     <span className="text-xs text-zinc-500">
                       {new Date(row.updated_at).toLocaleDateString()}
                     </span>
@@ -285,6 +331,7 @@ export function ApplicationsBoard() {
                     <th className="px-4 py-3 font-medium">Company</th>
                     <th className="px-4 py-3 font-medium">Stage</th>
                     <th className="px-4 py-3 font-medium">Updated</th>
+                    <th className="px-4 py-3 font-medium">Apply</th>
                     <th className="px-4 py-3 font-medium" />
                   </tr>
                 </thead>
@@ -321,6 +368,16 @@ export function ApplicationsBoard() {
                       </td>
                       <td className="px-4 py-3 text-xs text-zinc-500">
                         {new Date(row.updated_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setHandoffId(row.id)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-[11px] font-medium text-emerald-300"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Handoff
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button

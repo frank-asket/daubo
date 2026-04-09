@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AccountProfilePanel } from "@/components/dashboard/AccountProfilePanel";
+import { GmailConnectCard } from "@/components/dashboard/GmailConnectCard";
 
 export default function SettingsPage() {
   return (
@@ -18,7 +20,16 @@ export default function SettingsPage() {
         About Daubo plans →
       </Link>
 
-      <div className="mt-10">
+      <div className="mt-10 space-y-8">
+        <Suspense
+          fallback={
+            <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6 text-sm text-zinc-500">
+              Loading integrations…
+            </div>
+          }
+        >
+          <GmailConnectCard />
+        </Suspense>
         <AccountProfilePanel />
       </div>
 

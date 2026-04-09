@@ -33,6 +33,32 @@ async def init_db() -> None:
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             await conn.run_sync(Base.metadata.create_all)
+            # Idempotent column adds for existing deployments (create_all does not ALTER).
+            await conn.execute(
+                text(
+                    "ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS apply_channel VARCHAR(32)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS job_description TEXT"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS package_draft JSONB"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS interview_prep JSONB"
+                )
+            )
+            await conn.execute(
+                text(
+                    "UPDATE job_applications SET status = 'ready_to_apply' WHERE status = 'ready'"
+                )
+            )
         db_init_ok = True
     except Exception:
         logger.exception(

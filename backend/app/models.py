@@ -49,6 +49,22 @@ class AgentMatchRun(Base):
     )
 
 
+class UserGmailCredentials(Base):
+    """Refresh token for Gmail API (drafts only — gmail.compose scope)."""
+
+    __tablename__ = "user_gmail_credentials"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), unique=True, index=True)
+    refresh_token: Mapped[str] = mapped_column(Text, nullable=False)
+    google_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
 class JobApplication(Base):
     """Tracked job / application row for pipeline UI."""
 
@@ -62,6 +78,14 @@ class JobApplication(Base):
     status: Mapped[str] = mapped_column(String(64), default="draft")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     job_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    # Human-in-the-loop apply: optional channel hint (linkedin | email | web).
+    apply_channel: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Job description excerpt or full text used to tailor drafts.
+    job_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # LLM-generated cover letter, LinkedIn note, checklist, etc. (JSON object).
+    package_draft: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Saved interview prep (questions, topics) after user runs prep workflow.
+    interview_prep: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

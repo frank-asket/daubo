@@ -50,6 +50,22 @@ class Settings(BaseSettings):
         ),
     )
 
+    google_oauth_client_id: str = Field(
+        default="",
+        description="Google Cloud OAuth 2.0 Web client ID for Gmail compose (drafts).",
+    )
+    google_oauth_client_secret: str = Field(
+        default="",
+        description="Google Cloud OAuth client secret — server-side only.",
+    )
+    google_oauth_redirect_uri: str = Field(
+        default="",
+        description=(
+            "Authorized redirect URI registered in Google Cloud, e.g. "
+            "https://your-app.vercel.app/api/gmail/oauth/callback (must match Next route exactly)."
+        ),
+    )
+
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
     backend_cors_origins: str = "http://localhost:3000"

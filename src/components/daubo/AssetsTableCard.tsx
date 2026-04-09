@@ -14,7 +14,10 @@ export type ApplicationSummary = {
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
-  ready: "Ready for review",
+  shortlisted: "Shortlisted",
+  package_ready: "Package ready",
+  ready_to_apply: "Ready to apply",
+  ready: "Ready to apply",
   applied: "Applied",
   interview: "Interview",
   offer: "Offer",

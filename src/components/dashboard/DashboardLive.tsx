@@ -13,10 +13,22 @@ import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
-const STATUS_ORDER = ["draft", "ready", "applied", "interview", "offer", "closed"] as const;
+const STATUS_ORDER = [
+  "draft",
+  "shortlisted",
+  "package_ready",
+  "ready_to_apply",
+  "applied",
+  "interview",
+  "offer",
+  "closed",
+] as const;
 const STATUS_LABEL: Record<string, string> = {
   draft: "Draft",
-  ready: "Ready for review",
+  shortlisted: "Shortlisted",
+  package_ready: "Package ready",
+  ready_to_apply: "Ready to apply",
+  ready: "Ready to apply",
   applied: "Applied",
   interview: "Interview",
   offer: "Offer",
@@ -27,7 +39,8 @@ function repartitionFromApplications(apps: ApplicationSummary[]): { name: string
   const counts = new Map<string, number>();
   for (const s of STATUS_ORDER) counts.set(s, 0);
   for (const a of apps) {
-    const key = (STATUS_ORDER as readonly string[]).includes(a.status) ? a.status : "draft";
+    const st = a.status === "ready" ? "ready_to_apply" : a.status;
+    const key = (STATUS_ORDER as readonly string[]).includes(st) ? st : "draft";
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return STATUS_ORDER.map((s) => ({
@@ -91,7 +104,13 @@ export function DashboardLive() {
         setApplications([]);
         return;
       }
-      setApplications((await r.json()) as ApplicationSummary[]);
+      const list = (await r.json()) as ApplicationSummary[];
+      setApplications(
+        list.map((a) => ({
+          ...a,
+          status: a.status === "ready" ? "ready_to_apply" : a.status,
+        })),
+      );
     } catch {
       setAppsError("Could not load applications");
       setApplications([]);
@@ -135,6 +154,10 @@ export function DashboardLive() {
       ) : null}
       <JobDiscoverPanel
         onDiscoveryComplete={() => {
+          reloadStats();
+          loadApplications();
+        }}
+        onAddedToPipeline={() => {
           reloadStats();
           loadApplications();
         }}
