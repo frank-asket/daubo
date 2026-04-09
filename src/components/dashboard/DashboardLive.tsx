@@ -9,6 +9,7 @@ import {
   type ApplicationSummary,
 } from "@/components/daubo/AssetsTableCard";
 import { RepartitionCard } from "@/components/daubo/RepartitionCard";
+import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
@@ -54,21 +55,30 @@ function BottomRow() {
     <div className="grid gap-4 md:grid-cols-3">
       <Link
         href="/dashboard/applications"
-        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
-        Recent applications → manage pipeline
+        <span className="block text-emerald-400/90">Pipeline</span>
+        <span className="mt-1 block font-normal text-zinc-500">
+          Human apply · stages · Gmail draft from handoff
+        </span>
       </Link>
       <Link
-        href="/dashboard"
-        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+        href="/dashboard/settings"
+        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
-        Dashboard → adjust matching scope for agents
+        <span className="block text-emerald-400/90">Connect Gmail</span>
+        <span className="mt-1 block font-normal text-zinc-500">
+          OAuth · drafts only · you send from your inbox
+        </span>
       </Link>
       <Link
-        href="/dashboard/support"
-        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+        href="/dashboard/interviews"
+        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
-        Help & resources → support
+        <span className="block text-emerald-400/90">Interview prep</span>
+        <span className="mt-1 block font-normal text-zinc-500">
+          LLM-generated questions after you apply
+        </span>
       </Link>
     </div>
   );
@@ -130,6 +140,7 @@ export function DashboardLive() {
 
   return (
     <div className="space-y-4">
+      <DashboardOverview hasResume={stats?.has_resume ?? null} />
       {statsError ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
           {statsError}

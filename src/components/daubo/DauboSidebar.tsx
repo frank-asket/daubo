@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -11,7 +12,14 @@ import {
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 
-const main = [
+type MainNavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: string;
+};
+
+const main: MainNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/applications", label: "Applications", icon: Briefcase },
   { href: "/dashboard/resume", label: "Resume", icon: FileText },
@@ -19,7 +27,6 @@ const main = [
     href: "/dashboard/interviews",
     label: "Interview prep",
     icon: MessageSquare,
-    badge: "New",
   },
 ];
 
@@ -102,10 +109,11 @@ export function DauboSidebar({
         <div className="mt-3 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
             <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            Daubo Pro
+            Assistant
           </div>
           <p className="mt-1 text-[11px] leading-snug text-zinc-500">
-            Tailored resumes per job, apply from your inbox, prep included
+            Open the floating <strong className="font-medium text-zinc-400">Assistant</strong> on
+            any dashboard page—same LLM stack as your packages and prep.
           </p>
         </div>
       </div>

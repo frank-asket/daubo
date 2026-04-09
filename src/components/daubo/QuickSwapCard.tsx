@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { Paperclip, ChevronDown } from "lucide-react";
+import { Mail, Sparkles } from "lucide-react";
 
+/** Side card on the dashboard: aligns with human-in-the-loop apply and Gmail drafts. */
 export function QuickSwapCard({ compact }: { compact?: boolean }) {
   const { user, isLoaded } = useUser();
   const inbox =
@@ -12,57 +14,72 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
 
   return (
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-      <p className="text-sm font-semibold text-white">Apply package</p>
-      <p className="mt-0.5 text-[11px] text-zinc-500">
-        Preview — personalized resume + email, sent from your address after approval
+      <p className="text-sm font-semibold text-white">Apply flow</p>
+      <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
+        Daubo generates packages; you submit on the real site. For email-style roles, connect Gmail
+        in Settings to drop a <strong className="font-medium text-zinc-400">draft</strong> in your
+        inbox—nothing sends automatically.
       </p>
+
       <div className="mt-4 space-y-2">
         <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
           <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-            From (your inbox)
+            Your account email
           </p>
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <span className="truncate font-mono text-sm text-white">
-              {!isLoaded ? "…" : inbox ?? "Add an email in your Clerk account"}
-            </span>
-            <button
-              type="button"
-              className="flex shrink-0 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900/60 px-2 py-1 text-[10px] font-semibold text-zinc-200"
-            >
-              Account
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-          </div>
+          <p className="mt-1 truncate font-mono text-sm text-white">
+            {!isLoaded ? "…" : inbox ?? "—"}
+          </p>
+          <p className="mt-1.5 text-[10px] text-zinc-600">
+            Clerk sign-in. Gmail connect is separate (Settings).
+          </p>
         </div>
+
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wide text-emerald-400/90">
+            <Sparkles className="h-3 w-3" strokeWidth={1.75} />
+            LLM in the workspace
+          </div>
+          <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+            Matching plan, application text, interview prep, and the <strong className="text-zinc-300">Assistant</strong> chat use
+            the same API when OpenRouter is configured.
+          </p>
+        </div>
+
         <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-            <Paperclip className="h-3 w-3" />
-            Attached resume
+            <Mail className="h-3 w-3" strokeWidth={1.75} />
+            Gmail drafts
           </div>
-          <p className="mt-1 truncate text-sm text-white">
-            Tailored_resume<span className="text-emerald-400">_role_company</span>.pdf
-          </p>
-          {!compact ? (
-            <p className="mt-2 text-[11px] text-zinc-500">
-              Generated for this job posting · matches JD keywords &amp; level
-            </p>
-          ) : null}
-        </div>
-        <div className="rounded-xl border border-zinc-800 bg-black/50 p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-            Subject
-          </p>
-          <p className="mt-1 line-clamp-2 text-xs text-zinc-300">
-            Application — [role] — [your name]
+          <p className="mt-1 text-[11px] text-zinc-500">
+            From <strong className="text-zinc-400">Applications</strong> → Human apply → Create
+            draft in Gmail (after you connect in Settings).
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        className="mt-auto rounded-xl border border-emerald-500/40 bg-emerald-500/10 py-2.5 text-sm font-semibold text-emerald-400 transition hover:border-emerald-400/60 hover:bg-emerald-500/15"
-      >
-        Approve &amp; send from inbox
-      </button>
+
+      {!compact ? (
+        <div className="mt-4 flex flex-col gap-2">
+          <Link
+            href="/dashboard/applications"
+            className="rounded-xl border border-zinc-700 py-2.5 text-center text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+          >
+            Open applications
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 py-2.5 text-center text-sm font-semibold text-emerald-300 transition hover:border-emerald-500/55"
+          >
+            Gmail &amp; Settings
+          </Link>
+        </div>
+      ) : (
+        <Link
+          href="/dashboard/applications"
+          className="mt-auto rounded-xl border border-zinc-800 py-2.5 text-center text-xs font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+        >
+          Human apply →
+        </Link>
+      )}
     </div>
   );
 }

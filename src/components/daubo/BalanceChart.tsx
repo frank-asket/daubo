@@ -38,7 +38,7 @@ export function BalanceChart({
       <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-zinc-500">Pipeline</p>
+            <p className="text-xs font-medium text-zinc-500">Applications tracked</p>
             <p className="mt-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               {trackedRoles != null ? `${trackedRoles} roles` : "—"}
             </p>
@@ -53,7 +53,7 @@ export function BalanceChart({
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-zinc-500">Pipeline</p>
+          <p className="text-xs font-medium text-zinc-500">Applications tracked</p>
           <div className="mt-1 flex flex-wrap items-baseline gap-3">
             <span className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               {trackedRoles != null ? `${trackedRoles} roles` : "24 roles"}

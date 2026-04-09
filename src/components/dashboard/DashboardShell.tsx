@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DauboSidebar } from "@/components/daubo/DauboSidebar";
 import { DashboardStatsProvider } from "@/components/dashboard/DashboardStatsContext";
+import { DauboAssistantPanel } from "@/components/dashboard/DauboAssistantPanel";
 import { OnboardingWalkthrough } from "@/components/dashboard/OnboardingWalkthrough";
 import { ResumeNudgeBanner } from "@/components/dashboard/ResumeNudgeBanner";
 
@@ -183,15 +184,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       >
                         <p className="text-xs font-semibold text-white">Notifications</p>
                         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                          You&apos;re caught up. Agent and resume alerts will show here when we wire
-                          delivery (email &amp; in-app).
+                          Pipeline updates and Gmail handoff reminders can appear here as we wire push
+                          delivery. For now, use <strong className="text-zinc-400">Assistant</strong>{" "}
+                          (bottom-right) for guidance.
                         </p>
                         <Link
                           href="/dashboard/settings"
                           className="mt-3 inline-block text-[11px] font-medium text-emerald-400 hover:underline"
                           onClick={closeNotif}
                         >
-                          Notification settings →
+                          Settings &amp; Gmail →
                         </Link>
                       </div>
                     ) : null}
@@ -209,6 +211,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
           <div className="flex-1 overflow-auto pb-[env(safe-area-inset-bottom)]">{children}</div>
+          <DauboAssistantPanel />
         </div>
       </div>
     </DashboardStatsProvider>
