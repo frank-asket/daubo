@@ -73,11 +73,21 @@ export function DashboardLive() {
     try {
       const r = await fetch(dauboBffUrl("v1/me/applications"), { credentials: "same-origin" });
       if (!r.ok) {
-        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
+        const j = (await r.json().catch(() => ({}))) as {
+          detail?: unknown;
+          error?: string;
+        };
         const d = j.detail;
-        const msg =
-          typeof d === "string" ? d : d != null ? JSON.stringify(d) : `Applications ${r.status}`;
-        setAppsError(msg);
+        let msg: string | null =
+          typeof d === "string"
+            ? d.trim() || null
+            : d != null
+              ? JSON.stringify(d)
+              : null;
+        if (!msg && typeof j.error === "string" && j.error.trim()) {
+          msg = j.error.trim();
+        }
+        setAppsError(msg ?? `Applications ${r.status}`);
         setApplications([]);
         return;
       }

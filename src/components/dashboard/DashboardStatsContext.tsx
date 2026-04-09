@@ -36,14 +36,17 @@ export function DashboardStatsProvider({ children }: { children: React.ReactNode
           error?: string;
         };
         const detail = j.detail;
-        const msg =
+        let msg: string | null =
           typeof detail === "string"
-            ? detail
+            ? detail.trim() || null
             : Array.isArray(detail)
               ? JSON.stringify(detail)
               : detail != null
-                ? String(detail)
-                : j.error ?? null;
+                ? String(detail).trim() || null
+                : null;
+        if (!msg && typeof j.error === "string" && j.error.trim()) {
+          msg = j.error.trim();
+        }
         setStats(null);
         setError(msg ?? `Stats ${r.status}`);
         return;
