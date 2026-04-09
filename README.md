@@ -121,7 +121,9 @@ npm start
    | `TRUSTED_HOSTS` | Optional; comma-separated hostnames of your Railway **public** API URL (see Railway networking docs if you use a custom domain). |
    | `OPENROUTER_API_KEY`, `JINA_API_KEY`, etc. | As needed for chat/embeddings. |
 
-5. Generate a **public URL** (or attach a custom domain) for the API. Health check: `GET /health` (used by [`backend/railway.toml`](backend/railway.toml)).
+5. Generate a **public URL** (or attach a custom domain) for the API. Health check: `GET /health` (used by [`backend/railway.toml`](backend/railway.toml)). The Docker image binds Gunicorn to **`$PORT`** (Railway sets this); a fixed port like `8000` alone will fail the healthcheck.
+
+6. If the replica stays unhealthy, open **Deploy logs**: verify **`DATABASE_URL`** on the API service, Postgres is up, and the DB allows the **`vector`** extension (or use an external pgvector-capable URL).
 
 **2 — Vercel (Next.js UI)**
 

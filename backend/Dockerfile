@@ -17,7 +17,10 @@ COPY app ./app
 
 RUN pip install --upgrade pip && pip install .
 
+# Local default; Railway overwrites PORT at runtime — must bind to $PORT there.
+ENV PORT=8000
 EXPOSE 8000
 
 # Workers: tune per CPU; 2 is a safe default for small APIs
-CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-", "--capture-output"]
+# Use shell so ${PORT} expands. Without this, healthchecks fail (proxy ≠ port 8000).
+CMD ["/bin/sh", "-c", "exec gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} --workers 2 --access-logfile - --error-logfile - --capture-output"]
