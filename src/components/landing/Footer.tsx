@@ -1,0 +1,97 @@
+import Link from "next/link";
+import { Logo } from "@/components/Logo";
+
+export function FooterCTA() {
+  return (
+    <section className="bg-black px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl rounded-2xl border border-cyan-500/50 bg-black px-8 py-14 text-center sm:px-12 sm:py-16">
+        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Ready to run a calmer, higher-signal search?
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-400">
+          Ship a stronger resume for every role and land in recruiters’ inboxes
+          from the address they already expect—yours.
+        </p>
+        <Link
+          href="/dashboard"
+          className="mt-8 inline-flex rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 px-9 py-3.5 text-sm font-semibold text-zinc-950 shadow-[0_0_48px_-8px_rgba(52,211,153,0.55)] transition hover:opacity-95"
+        >
+          Get started now
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+export function Footer() {
+  return (
+    <footer className="border-t border-zinc-800 bg-black pb-12 pt-10">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        <div className="sm:col-span-2 lg:col-span-1">
+          <Logo href="/" />
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
+            Daubo — multi-agent job search: personalized resumes per offer,
+            applications through your email after approval. UI inspired by the{" "}
+            <a
+              href="https://www.framer.com/marketplace/templates/cryptix/"
+              className="text-zinc-400 hover:text-zinc-300"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Cryptix
+            </a>{" "}
+            Framer template (dark fintech layout).
+          </p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white">Navigation</p>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-500">
+            <li>
+              <a href="#why" className="hover:text-zinc-300">
+                Why Daubo?
+              </a>
+            </li>
+            <li>
+              <a href="#pipeline" className="hover:text-zinc-300">
+                Pipeline
+              </a>
+            </li>
+            <li>
+              <a href="#how" className="hover:text-zinc-300">
+                How it works
+              </a>
+            </li>
+            <li>
+              <a href="#faq" className="hover:text-zinc-300">
+                FAQ
+              </a>
+            </li>
+            <li>
+              <Link href="/dashboard" className="hover:text-zinc-300">
+                Dashboard
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white">Socials</p>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-500">
+            <li>
+              <a href="#" className="hover:text-zinc-300">
+                Twitter (X)
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-zinc-300">
+                LinkedIn
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <p className="mt-12 text-center text-xs text-zinc-600">
+        © {new Date().getFullYear()} Daubo. All rights reserved.
+      </p>
+    </footer>
+  );
+}

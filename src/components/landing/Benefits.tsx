@@ -1,51 +1,61 @@
+import { FileUser, Mail, BadgeCheck, LayoutGrid } from "lucide-react";
+
 const items = [
   {
-    title: "Maximum clarity",
-    body: "Every match comes with reasons you can verify—not a black-box score.",
+    title: "Resume tailored per offer",
+    body: "Agents rewrite and structure your resume for each listing—skills, bullets, and emphasis aligned to that job—not one generic PDF for everyone.",
+    icon: FileUser,
   },
   {
-    title: "Fast packaging",
-    body: "Generate drafts, answers, and resume variants aligned to each listing.",
+    title: "Apply from your inbox",
+    body: "Connect your email so applications send as you: employers see your address, and replies land in your thread (Gmail path on Pro).",
+    icon: Mail,
   },
   {
-    title: "Sender identity",
-    body: "Optional Gmail path keeps threads and replies on the address you own.",
+    title: "You approve every send",
+    body: "Multi-agent drafting stops before the wire. Review the package, then one tap to send from your account—no silent autopilot.",
+    icon: BadgeCheck,
   },
   {
-    title: "Premium flow",
-    body: "Dark, focused UI that stays out of your way during high-stakes searches.",
+    title: "One continuous workspace",
+    body: "Matching, packages, outbound status, and interview prep share the same job + profile context end to end.",
+    icon: LayoutGrid,
   },
 ];
 
 export function Benefits() {
   return (
-    <section id="why" className="border-b border-zinc-800/80 bg-[#050505] py-20 sm:py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl">
-          <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
-            Why choose Daubo?
-          </h2>
-          <p className="mt-4 text-lg text-zinc-400">
-            Benefits shaped for a seamless, cautious, and scalable job search—
-            multi-agent power with human gates at the moments that matter.
-          </p>
-        </div>
+    <section id="why" className="border-b border-zinc-800 bg-black">
+      <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Why choose Daubo?
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
+          Serious job seekers use multi-agent leverage for personalized resumes per
+          offer and authentic outreach from their own email—without giving up
+          control of what gets sent.
+        </p>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-6 transition hover:border-zinc-700"
-            >
-              <div className="mb-4 h-1 w-10 rounded-full bg-[var(--mint)]" />
-              <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold text-zinc-100">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                {item.body}
-              </p>
-            </article>
-          ))}
+        <div className="mt-14 grid border-l border-t border-zinc-800 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article
+                key={item.title}
+                className="border-b border-r border-zinc-800 p-8 text-left sm:p-10"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-700 text-zinc-200">
+                  <Icon className="h-5 w-5" strokeWidth={1.5} />
+                </div>
+                <h3 className="mt-5 text-lg font-semibold text-white">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                  {item.body}
+                </p>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

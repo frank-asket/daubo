@@ -1,36 +1,175 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+<!-- Animated hero: cycles taglines (readme-typing-svg) -->
+<a href="#-daubo">
+  <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=26&duration=4000&pause=1200&color=4ADE80&center=true&vCenter=true&multiline=true&width=900&height=120&lines=Daubo;Multi-agent+job+search+%26+resume+orchestration;Personalized+resume+per+offer+%C2%B7+Apply+from+your+email;Human+approval+before+every+send" alt="Daubo — animated tagline" />
+</a>
 
-First, run the development server:
+<br />
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+<!-- Stack & status badges -->
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
+<br />
+
+[![Node](https://img.shields.io/badge/node-%E2%89%A520.9%20recommended-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/license-Private-111?style=flat-square)](LICENSE)
+
+**Daubo** is a multi-agent career assistant: it matches roles to your profile, generates a **job-specific resume** and application package, and—after you connect Gmail and **approve**—sends from **your address** so threads and replies stay yours. Interview prep reuses the same context.
+
+[Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Scripts](#-scripts) · [Structure](#-project-structure)
+
+</div>
+
+---
+
+## ✨ Features
+
+| | Capability |
+|--|------------|
+| 🤖 | **Orchestrated agents** — Match, tailor, QA, and packaging steps with structured outputs (LangGraph-ready). |
+| 📄 | **Resume per offer** — Tailored PDF/text variant aligned to each job description, not one static CV for everyone. |
+| ✉️ | **Your inbox** — Gmail OAuth path to send applications *as you*, with personalized attachment + body. |
+| ✅ | **Approval gates** — Nothing mails without explicit sign-off per application. |
+| 📊 | **Pipeline dashboard** — Dark, high-clarity UI: pipeline trend, apply package preview, applications table, stage mix. |
+| 🎨 | **Premium shell** — Marketing + app chrome inspired by the [Cryptix](https://www.framer.com/marketplace/templates/cryptix/) Framer template (layout & rhythm). |
+
+---
+
+## 🏗 Architecture
+
+High-level flow from profile to send:
+
+```mermaid
+%%{init: { "theme": "dark", "themeVariables": { "primaryColor": "#4ade80", "primaryTextColor": "#0a0a0a", "lineColor": "#71717a" }}}%%
+flowchart TB
+  subgraph ingest["📥 Ingest"]
+    R[Resume PDF + preferences]
+    J[Job listings]
+  end
+
+  subgraph agents["🤖 Multi-agent layer"]
+    M[Match + explanations]
+    T[Tailor resume + email]
+    Q[QA / policy checks]
+  end
+
+  subgraph human["👤 Human gate"]
+    A[Review & edit package]
+    P[Approve send]
+  end
+
+  subgraph outbound["✉️ Outbound"]
+    G[Gmail API — user's address]
+  end
+
+  R --> M
+  J --> M
+  M --> T --> Q --> A --> P --> G
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Principle:** probabilistic models sit behind a deterministic product layer—schemas, statuses, idempotency, and audit-friendly events (implementation roadmap).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Quick start
 
-## Learn More
+### Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+- **Node.js** `>= 20.9` recommended (Next 14 + toolchain); `20.1` may work with warnings.
+- **npm** (or swap commands for `pnpm` / `yarn`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Install & run
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git clone <your-repo-url> daubo
+cd daubo
+npm install
+npm run dev
+```
 
-## Deploy on Vercel
+Open **[http://localhost:3000](http://localhost:3000)** — marketing site.  
+Open **[http://localhost:3000/dashboard](http://localhost:3000/dashboard)** — workspace preview.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Production build
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+npm start
+```
+
+---
+
+## 📜 Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server ([localhost:3000](http://localhost:3000)) |
+| `npm run build` | Production build + typecheck |
+| `npm run start` | Serve production build |
+| `npm run lint` | ESLint (`next/core-web-vitals`) |
+
+---
+
+## 🧭 Project structure
+
+```
+daubo/
+├── src/
+│   ├── app/                 # App Router — pages & layouts
+│   │   ├── page.tsx         # Marketing landing
+│   │   ├── layout.tsx       # Root layout + metadata
+│   │   └── dashboard/       # Authenticated workspace (shell + stubs)
+│   ├── components/
+│   │   ├── daubo/           # Dashboard widgets, sidebar, preview
+│   │   ├── landing/         # Landing sections
+│   │   ├── dashboard/       # App shell (sidebar routing)
+│   │   └── Logo.tsx
+│   └── ...
+├── public/
+├── package.json
+├── tailwind.config.ts
+├── next.config.mjs
+└── README.md
+```
+
+---
+
+## 🔌 Roadmap (backend & integrations)
+
+Planned wiring (not all implemented in this UI repo):
+
+- **Auth** — [Clerk](https://clerk.com/) (or similar) for accounts.
+- **Billing** — Stripe + entitlements for Free / Pro / Business.
+- **Gmail** — OAuth `gmail.send` (+ optional `gmail.readonly` for replies).
+- **Agents** — LangGraph / LangChain for match → tailor → QA graphs.
+- **Storage** — Resume blobs + generated PDFs; encrypted refresh tokens.
+
+Environment variables will be documented here as services are connected.
+
+---
+
+## 🙌 Acknowledgements
+
+- UI rhythm and dark fintech aesthetic trace to **[Cryptix — Framer Marketplace](https://www.framer.com/marketplace/templates/cryptix/)** (Arthur Duchesne). Daubo branding and career-specific copy are our own.
+- Charts: [Recharts](https://recharts.org/). Icons in-app: [Lucide](https://lucide.dev/).
+
+---
+
+## 📄 License
+
+This project is **private** / all rights reserved unless a `LICENSE` file states otherwise.
+
+---
+
+<div align="center">
+
+<sub>Built with care for candidates who want **speed** without surrendering **control**.</sub>
+
+<!-- Optional: subtle pulse divider using unicode -->
+<pre>━━━  ◆  ━━━</pre>
+
+</div>
