@@ -65,6 +65,24 @@ export function JobDiscoverPanel({
         const j = await r.json().catch(() => ({}));
         throw new Error((j as { detail?: string }).detail ?? r.statusText);
       }
+      try {
+        const sr = await fetch(dauboBffUrl("v1/me/workspace-settings"), {
+          credentials: "same-origin",
+        });
+        if (sr.ok) {
+          const ws = (await sr.json()) as { autopilot_enabled?: boolean };
+          if (ws.autopilot_enabled) {
+            await fetch(dauboBffUrl("v1/me/autopilot/run"), {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ limit: 4 }),
+            });
+          }
+        }
+      } catch {
+        /* prep autopilot is best-effort */
+      }
       onAddedToPipeline?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not add to pipeline");

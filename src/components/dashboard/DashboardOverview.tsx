@@ -17,11 +17,10 @@ export function DashboardOverview({ hasResume }: { hasResume: boolean | null }) 
             Find roles, tailor packages, apply on your terms
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-            Agents help with matching plans and text—you stay in control on official sites. Use{" "}
-            <strong className="font-medium text-zinc-400">Human apply</strong> to open drafts, then
-            paste into LinkedIn or the employer&apos;s portal. Optional{" "}
-            <strong className="font-medium text-zinc-400">Gmail drafts</strong> put the same copy in
-            your inbox as a draft (never auto-sent).
+            Turn on <strong className="font-medium text-zinc-400">prep autopilot</strong> below to
+            auto-generate packages (and optional Gmail drafts) for new shortlisted roles. You still{" "}
+            <strong className="font-medium text-zinc-400">Human apply</strong> on LinkedIn and career
+            sites—Daubo does not auto-submit there. Gmail remains drafts-only until you send.
           </p>
           {!hasResume ? (
             <p className="mt-3 max-w-2xl rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">

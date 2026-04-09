@@ -88,6 +88,33 @@ async def fetch_google_email(access_token: str) -> str | None:
     return email.strip() if isinstance(email, str) else None
 
 
+def draft_content_from_application(
+    title: str,
+    company: str,
+    job_url: str | None,
+    package_draft: dict[str, Any] | None,
+) -> tuple[str, str] | None:
+    """Build (subject, plain_body) for a Gmail draft, or None if there is no usable text."""
+    pkg: dict[str, Any] = package_draft if isinstance(package_draft, dict) else {}
+    cover = pkg.get("cover_letter")
+    body_text = cover.strip() if isinstance(cover, str) else ""
+    if not body_text:
+        note = pkg.get("linkedin_note")
+        if isinstance(note, str) and note.strip():
+            body_text = note.strip()
+    if not body_text:
+        return None
+    checklist = pkg.get("checklist")
+    if isinstance(checklist, list) and checklist:
+        lines = "\n".join(f"- {x}" for x in checklist if isinstance(x, str))
+        if lines:
+            body_text = f"{body_text}\n\n---\nNext steps:\n{lines}"
+    subject = f"Application: {title} — {company}"
+    if job_url and isinstance(job_url, str):
+        body_text = f"{body_text}\n\nPosting: {job_url.strip()[:2000]}"
+    return subject, body_text
+
+
 def _rfc822_raw(subject: str, body: str, to: str | None) -> str:
     msg = EmailMessage()
     msg["Subject"] = subject.strip()[:900] if subject else "(no subject)"

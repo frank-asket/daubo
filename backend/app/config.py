@@ -1,8 +1,35 @@
+import logging
 from functools import lru_cache
 from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("daubo")
+
+# OpenRouter often returns 404 "No endpoints found" for legacy Anthropic slugs.
+_OPENROUTER_LEGACY_SLUGS = frozenset(
+    {
+        "anthropic/claude-3.5-sonnet",
+        "anthropic/claude-3-5-sonnet",
+        "anthropic/claude-3.5-sonnet:beta",
+    }
+)
+_OPENROUTER_FALLBACK_MODEL = "openai/gpt-4o-mini"
+
+
+def _replace_legacy_openrouter_model(model_id: str, env_var_name: str) -> str:
+    mid = model_id.strip()
+    if mid.lower() in {s.lower() for s in _OPENROUTER_LEGACY_SLUGS}:
+        logger.warning(
+            "%s=%r is not routed on OpenRouter (404). Using %r. "
+            "Set a current model id from https://openrouter.ai/models",
+            env_var_name,
+            mid,
+            _OPENROUTER_FALLBACK_MODEL,
+        )
+        return _OPENROUTER_FALLBACK_MODEL
+    return mid
 
 
 class Settings(BaseSettings):
@@ -89,6 +116,16 @@ class Settings(BaseSettings):
     @classmethod
     def log_level_upper(cls, v: str) -> str:
         return v.upper()
+
+    @field_validator("openrouter_chat_model")
+    @classmethod
+    def openrouter_chat_model_routeable(cls, v: str) -> str:
+        return _replace_legacy_openrouter_model(v, "OPENROUTER_CHAT_MODEL")
+
+    @field_validator("openrouter_vision_model")
+    @classmethod
+    def openrouter_vision_model_routeable(cls, v: str) -> str:
+        return _replace_legacy_openrouter_model(v, "OPENROUTER_VISION_MODEL")
 
     @field_validator("database_url")
     @classmethod

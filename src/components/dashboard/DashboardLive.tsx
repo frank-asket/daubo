@@ -9,6 +9,7 @@ import {
   type ApplicationSummary,
 } from "@/components/daubo/AssetsTableCard";
 import { RepartitionCard } from "@/components/daubo/RepartitionCard";
+import { AutopilotCard } from "@/components/dashboard/AutopilotCard";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
@@ -163,6 +164,12 @@ export function DashboardLive() {
           so Daubo can tailor applications to each role.
         </p>
       ) : null}
+      <AutopilotCard
+        onAutopilotComplete={() => {
+          reloadStats();
+          loadApplications();
+        }}
+      />
       <JobDiscoverPanel
         onDiscoveryComplete={() => {
           reloadStats();

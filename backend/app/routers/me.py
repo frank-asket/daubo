@@ -10,12 +10,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.deps.users import get_clerk_user_id
-from app.models import AgentMatchRun, JobApplication, UserGmailCredentials, UserResume
+from app.models import (
+    AgentMatchRun,
+    JobApplication,
+    UserGmailCredentials,
+    UserResume,
+    UserWorkspaceSettings,
+)
 from app.schemas.me import (
     ApplicationCreate,
     ApplicationOut,
     ApplicationPackageRequest,
     ApplicationUpdate,
+    AutopilotRunIn,
+    AutopilotRunOut,
     GmailDraftOut,
     GmailOAuthCompleteIn,
     GmailOAuthCompleteOut,
@@ -23,14 +31,18 @@ from app.schemas.me import (
     ResumeIn,
     ResumeOut,
     ResumeUploadOut,
+    WorkspaceSettingsOut,
+    WorkspaceSettingsPatch,
 )
 from app.services.application_package import (
     generate_application_package,
     generate_interview_prep,
     package_summary_text,
 )
+from app.services.autopilot import run_autopilot_pass
 from app.services.gmail_integration import (
     create_draft_plain,
+    draft_content_from_application,
     exchange_authorization_code,
     fetch_google_email,
     gmail_oauth_configured,
@@ -43,6 +55,23 @@ router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
 
 _AUTODISCOVER_KIND = "resume_autodiscover"
+
+
+async def _get_or_create_workspace_settings(
+    session: AsyncSession,
+    user_id: str,
+) -> UserWorkspaceSettings:
+    result = await session.execute(
+        select(UserWorkspaceSettings).where(UserWorkspaceSettings.clerk_user_id == user_id)
+    )
+    row = result.scalar_one_or_none()
+    if row:
+        return row
+    row = UserWorkspaceSettings(clerk_user_id=user_id)
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
 
 
 class AgentMatchLatestResponse(BaseModel):
@@ -508,31 +537,19 @@ async def create_gmail_draft_for_application(
     if not app_row:
         raise HTTPException(status_code=404, detail="Application not found")
 
-    pkg = app_row.package_draft
-    if not isinstance(pkg, dict):
-        pkg = {}
-
-    cover = pkg.get("cover_letter")
-    body_text = cover.strip() if isinstance(cover, str) else ""
-    if not body_text:
-        note = pkg.get("linkedin_note")
-        if isinstance(note, str) and note.strip():
-            body_text = note.strip()
-    if not body_text:
+    pkg = app_row.package_draft if isinstance(app_row.package_draft, dict) else {}
+    built = draft_content_from_application(
+        app_row.title,
+        app_row.company,
+        app_row.job_url,
+        pkg,
+    )
+    if not built:
         raise HTTPException(
             status_code=400,
             detail="Generate an application package with email/cover text first.",
         )
-
-    checklist = pkg.get("checklist")
-    if isinstance(checklist, list) and checklist:
-        lines = "\n".join(f"- {x}" for x in checklist if isinstance(x, str))
-        if lines:
-            body_text = f"{body_text}\n\n---\nNext steps:\n{lines}"
-
-    subject = f"Application: {app_row.title} — {app_row.company}"
-    if app_row.job_url and isinstance(app_row.job_url, str):
-        body_text = f"{body_text}\n\nPosting: {app_row.job_url.strip()[:2000]}"
+    subject, body_text = built
 
     try:
         draft_resp = await create_draft_plain(
@@ -555,4 +572,58 @@ async def create_gmail_draft_for_application(
     return GmailDraftOut(
         draft_id=draft_id,
         gmail_web_url="https://mail.google.com/mail/u/0/#drafts",
+    )
+
+
+@router.get("/me/workspace-settings", response_model=WorkspaceSettingsOut)
+async def get_workspace_settings(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> UserWorkspaceSettings:
+    return await _get_or_create_workspace_settings(session, user_id)
+
+
+@router.patch("/me/workspace-settings", response_model=WorkspaceSettingsOut)
+async def patch_workspace_settings(
+    body: WorkspaceSettingsPatch,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> UserWorkspaceSettings:
+    row = await _get_or_create_workspace_settings(session, user_id)
+    data = body.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(row, k, v)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+@router.post("/me/autopilot/run", response_model=AutopilotRunOut)
+async def run_prep_autopilot(
+    body: AutopilotRunIn | None = None,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> AutopilotRunOut:
+    req = body or AutopilotRunIn()
+    ws = await _get_or_create_workspace_settings(session, user_id)
+    do_gmail = (
+        req.create_gmail_drafts
+        if req.create_gmail_drafts is not None
+        else ws.autopilot_auto_gmail_drafts
+    )
+    try:
+        out = await run_autopilot_pass(
+            session,
+            user_id,
+            settings,
+            limit=req.limit,
+            create_gmail_drafts=do_gmail,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return AutopilotRunOut(
+        processed=out["processed"],
+        gmail_drafts_created=out["gmail_drafts_created"],
+        errors=out["errors"],
     )

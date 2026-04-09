@@ -120,3 +120,30 @@ class GmailDraftOut(BaseModel):
 class GmailOAuthCompleteOut(BaseModel):
     connected: bool = True
     google_email: str | None = None
+
+
+class WorkspaceSettingsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    autopilot_enabled: bool = False
+    autopilot_auto_gmail_drafts: bool = False
+    updated_at: datetime | None = None
+
+
+class WorkspaceSettingsPatch(BaseModel):
+    autopilot_enabled: bool | None = None
+    autopilot_auto_gmail_drafts: bool | None = None
+
+
+class AutopilotRunIn(BaseModel):
+    limit: int = Field(default=6, ge=1, le=25)
+    create_gmail_drafts: bool | None = Field(
+        default=None,
+        description="If set, overrides workspace autopilot_auto_gmail_drafts for this run only.",
+    )
+
+
+class AutopilotRunOut(BaseModel):
+    processed: int
+    gmail_drafts_created: int
+    errors: list[str] = Field(default_factory=list)

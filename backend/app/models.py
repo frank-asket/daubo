@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, String, Text, func
+from sqlalchemy import JSON, Boolean, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import DateTime
 
@@ -46,6 +46,21 @@ class AgentMatchRun(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+    )
+
+
+class UserWorkspaceSettings(Base):
+    """Per-user automation preferences (prep autopilot; never submits on third-party sites)."""
+
+    __tablename__ = "user_workspace_settings"
+
+    clerk_user_id: Mapped[str] = mapped_column(String(256), primary_key=True)
+    autopilot_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    autopilot_auto_gmail_drafts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
 
