@@ -143,6 +143,13 @@ def create_app() -> FastAPI:
                         {"detail": "Unauthorized"},
                         status_code=401,
                     )
+                # BFF must attach Clerk user id (Next.js verifies session before proxying).
+                user_id = (request.headers.get("X-Daubo-User-Id") or "").strip()
+                if not user_id:
+                    return JSONResponse(
+                        {"detail": "Missing X-Daubo-User-Id"},
+                        status_code=401,
+                    )
         return await call_next(request)
 
     trusted = s.trusted_host_list()
