@@ -10,6 +10,7 @@ import { DashboardCopilotKit } from "@/components/dashboard/DashboardCopilotKit"
 import { DashboardStatsProvider } from "@/components/dashboard/DashboardStatsContext";
 import { DauboAssistantPanel } from "@/components/dashboard/DauboAssistantPanel";
 import { OnboardingWalkthrough } from "@/components/dashboard/OnboardingWalkthrough";
+import { PostOnboardingPlanModal } from "@/components/dashboard/PostOnboardingPlanModal";
 import { ResumeNudgeBanner } from "@/components/dashboard/ResumeNudgeBanner";
 
 const pathToActive: Record<string, string> = {
@@ -101,6 +102,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </a>
       <div className="flex min-h-screen bg-black text-zinc-50">
         <OnboardingWalkthrough />
+        <PostOnboardingPlanModal />
 
         <div
           className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity lg:hidden ${
