@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
-type DiscoverResult = {
+export type DiscoverResult = {
   country: string;
   result: {
     executive_summary: string;

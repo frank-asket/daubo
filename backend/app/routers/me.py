@@ -217,6 +217,23 @@ async def upsert_resume(
     return row
 
 
+@router.post("/me/resume/trigger-auto-match")
+async def trigger_resume_auto_match(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> dict:
+    """Queue a background résumé→job match (same pipeline as after upload). Respects server cooldown."""
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    row = result.scalar_one_or_none()
+    if row is None or not (row.content_text or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Add your résumé first — matching uses your saved CV text.",
+        )
+    schedule_resume_auto_match(user_id)
+    return {"queued": True}
+
+
 @router.get("/me/agent-match/latest", response_model=AgentMatchLatestResponse)
 async def latest_agent_match(
     user_id: str = Depends(get_clerk_user_id),

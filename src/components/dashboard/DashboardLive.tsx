@@ -14,6 +14,7 @@ import { CareerNextStepsCard } from "@/components/dashboard/CareerNextStepsCard"
 import { GettingStartedCard } from "@/components/dashboard/GettingStartedCard";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
+import { ResumeMatchHighlightsCard } from "@/components/dashboard/ResumeMatchHighlightsCard";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
@@ -125,6 +126,12 @@ export function DashboardLive() {
       <DashboardOverview hasResume={stats?.has_resume ?? null} />
       <GettingStartedCard />
       <CareerNextStepsCard />
+      <ResumeMatchHighlightsCard
+        onPipelineUpdated={() => {
+          reloadStats();
+          loadApplications();
+        }}
+      />
       {statsError ? (
         <div
           className="flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-sm text-amber-200 sm:flex-row sm:items-center sm:justify-between"
