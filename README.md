@@ -72,6 +72,18 @@ flowchart TB
   M --> T --> Q --> A --> P --> G
 ```
 
+**Implementation today (where concepts land in code):**
+
+| Idea | How it works in this repo |
+|------|---------------------------|
+| **Résumé (PDF) + skills / context** | Upload path runs `extract_resume_text` (PDF, DOCX, vision-backed images when OpenRouter is set). Structured skills and career context: `GET /v1/me/resume/profile-signals`. Broader CV signals for search and auto-match also flow through `GET /v1/me/discover/hints` and the background `resume_autodiscover` job. |
+| **Agent orchestration** | Job-scout **Copilot** path: **LangGraph** `create_react_agent` in `backend/app/graph/job_search_agent.py` — a **ReAct** loop (plan in prose, then tool calls). The main dashboard discover flow uses OpenRouter structured outputs + optional **Adzuna** listings, separate from that graph. |
+| **Web search (Tavily)** | A tool on the job-scout agent only, via `backend/app/services/tavily_search.py` and `TAVILY_API_KEY`. Manual/background discover does **not** use Tavily today (Adzuna + LLM there). |
+| **CopilotKit + AG-UI streaming** | FastAPI exposes `POST /v1/ag-ui/job-search` (`LangGraphAGUIAgent` + `add_langgraph_fastapi_endpoint`). Next.js serves `/api/copilotkit` with `LangGraphHttpAgent` pointing at the API; the dashboard wraps **CopilotKit** + **CopilotSidebar** when keys are configured. |
+
+**Evolution — true “planner + N sub-agents”:**  
+Today’s job-scout is **one** LangGraph agent with **tools** (not separate deployed sub-agents). A **planner node** that spawns or routes to **multiple subgraphs** (e.g. “research”, “tailor”, “score”) would be an **extra graph layer** on top of—or instead of—a single ReAct agent. Same AG-UI/CopilotKit surface can wrap that richer graph later.
+
 **Principle:** probabilistic models sit behind a deterministic product layer—schemas, statuses, idempotency, and audit-friendly events (implementation roadmap).
 
 ---
