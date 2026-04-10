@@ -36,6 +36,11 @@ export type MeStats = {
   career?: CareerStats;
   onboarding?: OnboardingStats;
   limits?: UsageLimits;
+  agents?: {
+    openrouter_configured?: boolean;
+    tavily_configured?: boolean;
+    job_web_search_copilot?: boolean;
+  };
 };
 
 type DashboardStatsContextValue = {

@@ -26,6 +26,10 @@ const faqs = [
     a: "No—and that’s intentional. Daubo prepares materials and drafts; you submit on the employer or LinkedIn site yourself (you still click Apply). That protects your accounts and matches how hiring is meant to work.",
   },
   {
+    q: "Is Daubo a “digital twin” that talks to recruiters for me?",
+    a: "No. Daubo is a private workspace: the assistant helps you prepare and organize from your real résumé and credentials—you review everything. There is no public chatbot that represents you to employers unless you build something like that outside Daubo.",
+  },
+  {
     q: "Can I export my saved jobs?",
     a: "Yes. On My jobs, use Export CSV to download a spreadsheet you can open in Excel or Google Sheets for your own tracking.",
   },

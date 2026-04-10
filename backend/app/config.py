@@ -99,6 +99,11 @@ class Settings(BaseSettings):
         ),
     )
 
+    tavily_api_key: str = Field(
+        default="",
+        description="Tavily API key for web job search in the AG-UI / CopilotKit LangGraph agent.",
+    )
+
     google_oauth_client_id: str = Field(
         default="",
         description="Google Cloud OAuth 2.0 Web client ID for Gmail compose (drafts).",

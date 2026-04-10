@@ -61,6 +61,10 @@ from app.services.resume_auto_match import (
 )
 from app.services.resume_ingest import extract_resume_text
 from app.services.resume_kickoff import agent_ack_after_resume_upload
+from app.services.resume_profile_signals import (
+    ResumeProfileSignals,
+    extract_resume_profile_signals,
+)
 
 router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
@@ -151,6 +155,8 @@ async def me_stats(
     has_resume = bool(resume_count)
     gmail_connected = bool(gmail_count)
     cap = settings.daubo_max_job_applications_per_user
+    openrouter = bool((settings.openrouter_api_key or "").strip())
+    tavily = bool((settings.tavily_api_key or "").strip())
     return {
         "application_count": n_apps,
         "has_resume": has_resume,
@@ -169,6 +175,11 @@ async def me_stats(
         "limits": {
             "max_tracked_jobs": cap if cap > 0 else None,
             "tracked_jobs": n_apps,
+        },
+        "agents": {
+            "openrouter_configured": openrouter,
+            "tavily_configured": tavily,
+            "job_web_search_copilot": openrouter and tavily,
         },
     }
 
@@ -262,6 +273,37 @@ async def discover_hints_from_resume(
         emphasize_remote_global=params.emphasize_remote_global,
         resume_excerpt=excerpt,
     )
+
+
+@router.get("/me/resume/profile-signals", response_model=ResumeProfileSignals)
+async def resume_profile_signals(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> ResumeProfileSignals:
+    """Structured skills + career context from the saved résumé (LLM)."""
+    if not (settings.openrouter_api_key or "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail="OPENROUTER_API_KEY is not configured — profile signals require the AI service.",
+        )
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    row = result.scalar_one_or_none()
+    if row is None or not (row.content_text or "").strip():
+        raise HTTPException(
+            status_code=404,
+            detail="Add your résumé first — we extract skills and context from it.",
+        )
+    try:
+        return await extract_resume_profile_signals(settings, row.content_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        logger.exception("resume_profile_signals extraction failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not extract profile signals right now. Try again in a moment.",
+        ) from None
 
 
 @router.post("/me/resume/upload", response_model=ResumeUploadOut)

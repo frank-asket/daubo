@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.db import engine, init_db
 from app.deps.security import require_internal_api_key
 from app.middleware.request_context import RequestContextMiddleware
@@ -68,6 +68,36 @@ async def lifespan(app: FastAPI):
         logger.info("Database connections closed")
 
 
+def _mount_job_search_ag_ui(app: FastAPI, settings: Settings) -> None:
+    if not (
+        (settings.openrouter_api_key or "").strip() and (settings.tavily_api_key or "").strip()
+    ):
+        logger.info("AG-UI job-search agent not mounted (set OPENROUTER_API_KEY and TAVILY_API_KEY)")
+        return
+    try:
+        from ag_ui_langgraph import add_langgraph_fastapi_endpoint
+        from copilotkit import LangGraphAGUIAgent
+
+        from app.graph.job_search_agent import build_job_search_graph
+    except ImportError as exc:
+        logger.warning("AG-UI mount skipped (import): %s", exc)
+        return
+    try:
+        graph = build_job_search_graph(settings)
+    except Exception:
+        logger.exception("build_job_search_graph failed; AG-UI mount skipped")
+        return
+    agent = LangGraphAGUIAgent(
+        name="daubo_job_search",
+        description=(
+            "Job scout: reads résumé context, plans searches, calls Tavily, streams tool progress (AG-UI)."
+        ),
+        graph=graph,
+    )
+    add_langgraph_fastapi_endpoint(app, agent, path="/v1/ag-ui/job-search")
+    logger.info("Mounted AG-UI job-search agent at /v1/ag-ui/job-search")
+
+
 def create_app() -> FastAPI:
     s = get_settings()
     docs_url = "/docs" if s.expose_openapi else None
@@ -95,9 +125,25 @@ def create_app() -> FastAPI:
             "X-Request-ID",
             "X-Daubo-Internal-Key",
             "X-Daubo-User-Id",
+            "Accept",
+            "CopilotKit-Version",
         ],
         expose_headers=["X-Request-ID"],
     )
+
+    @app.middleware("http")
+    async def ag_ui_internal_guard(request: Request, call_next):
+        path = request.url.path or ""
+        if path.startswith("/v1/ag-ui"):
+            expected = get_settings().daubo_internal_api_secret
+            if expected:
+                got = request.headers.get("X-Daubo-Internal-Key")
+                if got != expected:
+                    return JSONResponse(
+                        {"detail": "Unauthorized"},
+                        status_code=401,
+                    )
+        return await call_next(request)
 
     trusted = s.trusted_host_list()
     if trusted:
@@ -162,6 +208,8 @@ def create_app() -> FastAPI:
                 ",".join(sorted(methods)),
                 path,
             )
+
+    _mount_job_search_ag_ui(app, s)
 
     return app
 

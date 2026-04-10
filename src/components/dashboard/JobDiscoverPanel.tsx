@@ -220,7 +220,10 @@ export function JobDiscoverPanel({
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
+    <div
+      id="discover"
+      className="scroll-mt-28 rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5"
+    >
       <h3 className="text-sm font-semibold text-white">Find role ideas</h3>
       <p className="mt-1 text-xs text-zinc-500">
         Fields can <strong className="font-medium text-zinc-400">prefill from your résumé</strong>—primary

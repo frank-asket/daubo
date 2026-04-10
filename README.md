@@ -181,17 +181,24 @@ daubo/
 
 ---
 
-## 🔌 Roadmap (backend & integrations)
+## 🔌 Product status & roadmap
 
-Planned wiring (not all implemented in this UI repo):
+**In the repo today (high level):**
 
-- **Accounts** — Secure sign-in and profiles for every Daubo user.
-- **Billing** — Plans and entitlements for Free / Pro / Business inside Daubo.
-- **Inbox send** — OAuth to your mail provider so applications send as you.
-- **Agents** — Daubo’s multi-agent pipeline for country-aware discovery → match → tailor → QA (including `POST /v1/jobs/discover` for guidance and pasted listings; live feeds integrate next).
-- **Storage** — Resume blobs + generated PDFs; encrypted refresh tokens.
+- **Accounts** — Clerk sign-in; dashboard shell; profile + optional credential uploads.
+- **Résumé & discovery** — Résumé ingest (PDF/DOCX/image with OpenRouter vision when configured); `POST /v1/jobs/discover` and resume-based hints / auto-match; optional Adzuna live listings by region.
+- **Pipeline** — Saved jobs (`/v1/me/applications`), CSV export, optional per-user cap, application package + interview prep (OpenRouter), human-in-the-loop apply.
+- **Gmail** — OAuth to create **drafts** in the user’s inbox (not auto-send); see `.env.example` for `GOOGLE_OAUTH_*`.
+- **Ops** — `OPENROUTER_*` sampling params; internal API key for BFF proxy; pgvector Postgres.
 
-Environment variables will be documented here as services are connected.
+**Still open / product gaps:**
+
+- **Billing** — Stripe (or similar) and plan entitlements in-product.
+- **Rich storage** — Long-term résumé PDF originals + generated PDFs in object storage (today: extracted text in Postgres).
+- **Broader feeds** — More regional job APIs beyond Adzuna where contractually viable.
+- **Deeper “digital twin” / public recruiter chat** — Not part of Daubo; positioning is a **private workspace assistant** with guardrails.
+
+Environment reference: [`.env.example`](.env.example).
 
 ---
 
