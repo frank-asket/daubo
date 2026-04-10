@@ -73,9 +73,18 @@ export function ResumeMatchHighlightsCard({
             credentials: "same-origin",
           });
           if (cancelled) return;
-          if (t.ok) setPhase("queued");
-          else if (t.status === 400) {
+          if (t.ok) {
+            setPhase("queued");
+          } else if (t.status === 400) {
             setPhase("empty");
+            return;
+          } else {
+            if (!cancelled) {
+              setErr(
+                `Could not start résumé matching (HTTP ${t.status}). Try again in a moment.`,
+              );
+              setPhase("error");
+            }
             return;
           }
         } catch {
@@ -106,6 +115,8 @@ export function ResumeMatchHighlightsCard({
     return () => {
       cancelled = true;
       if (intervalId != null) clearInterval(intervalId);
+      triggerSent.current = false;
+      pollCount.current = 0;
     };
   }, [statsReady, stats?.has_resume, fetchLatest]);
 
