@@ -2,6 +2,19 @@
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  /**
+   * CopilotKit runtime pulls graphql-yoga → @whatwg-node/fetch, which uses dynamic
+   * requires webpack flags as a critical dependency. Safe to ignore for the API route bundle.
+   */
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings ?? []),
+      {
+        module: /node_modules[\\/]@whatwg-node[\\/]fetch[\\/]/,
+      },
+    ];
+    return config;
+  },
   images: {
     remotePatterns: [
       {

@@ -121,6 +121,17 @@ export function DashboardLive() {
     [applications],
   );
 
+  /** Prefer live list length when loaded so the chart matches My jobs after discover / auto-match (stats can lag one tick). */
+  const trackedRolesCount = useMemo(() => {
+    if (!appsLoading && !appsError) {
+      return applications.length;
+    }
+    if (stats?.application_count != null) {
+      return stats.application_count;
+    }
+    return null;
+  }, [appsLoading, appsError, applications.length, stats?.application_count]);
+
   return (
     <div className="space-y-4">
       <DashboardOverview hasResume={stats?.has_resume ?? null} />
@@ -149,7 +160,7 @@ export function DashboardLive() {
       ) : null}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <BalanceChart compact trackedRoles={stats?.application_count ?? null} />
+          <BalanceChart compact trackedRoles={trackedRolesCount} />
         </div>
         <div className="lg:col-span-2">
           <QuickSwapCard compact />

@@ -11,11 +11,14 @@ import {
 
 const frames = ["1W", "1M", "3M", "1Y"];
 
-const makeData = () =>
-  Array.from({ length: 24 }, (_, i) => ({
+/** Illustrative series only (not historic job counts). Baseline bumps slightly when user has saved jobs so the curve reflects “activity”. */
+const makeData = (trackedHint: number | null) => {
+  const base = trackedHint != null && trackedHint > 0 ? 42 + Math.min(trackedHint * 2, 36) : 48;
+  return Array.from({ length: 24 }, (_, i) => ({
     t: `${i + 1}`,
-    v: 48 + Math.sin(i / 3) * 8 + i * 1.2,
+    v: base + Math.sin(i / 3) * 8 + i * 1.2,
   }));
+};
 
 export function BalanceChart({
   compact,
@@ -28,7 +31,7 @@ export function BalanceChart({
   const [range, setRange] = useState("1Y");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const data = makeData();
+  const data = makeData(trackedRoles ?? null);
   const h = compact ? 160 : 220;
   const gradId = useId().replace(/:/g, "");
 
