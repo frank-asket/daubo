@@ -4,6 +4,7 @@ import { Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
+import { ResumeProfileStrip } from "@/components/dashboard/ResumeProfileStrip";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { formatApiErrorMessage } from "@/lib/api-error-message";
 import { dauboBffUrl } from "@/lib/daubo-api";
@@ -226,6 +227,7 @@ export function ApplicationsBoard() {
           {stats.limits.tracked_jobs}/{stats.limits.max_tracked_jobs}).
         </p>
       ) : null}
+      <ResumeProfileStrip />
       <form
         onSubmit={addApplication}
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6"

@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.services.resume_profile_signals import ResumeProfileSignals
+
 
 class ResumeIn(BaseModel):
     content_text: str = Field(..., min_length=1, max_length=500_000)
@@ -24,6 +26,16 @@ class ResumeUploadOut(ResumeOut):
     """Saved resume plus optional one-shot agent acknowledgement after ingest."""
 
     agent_reply: str | None = None
+
+
+class ResumeProfileStoredOut(BaseModel):
+    """Cached résumé skills + context for dashboards (persisted on ingest)."""
+
+    has_resume: bool = False
+    signals: ResumeProfileSignals | None = None
+    stale: bool = False
+    resume_updated_at: datetime | None = None
+    profile_extracted_at: datetime | None = None
 
 
 PROFILE_DOC_KINDS = frozenset({"certification", "degree", "other"})

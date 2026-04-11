@@ -33,7 +33,8 @@ Industries: candidates may be in healthcare, trades, logistics, education, tech,
 Tone: concise, practical, encouraging."""
 
 
-def build_job_search_graph(settings: Settings):
+def build_scout_react_graph(settings: Settings, *, with_checkpointer: bool = True):
+    """Tavily ReAct subgraph (used standalone or under the supervisor)."""
     if not (settings.tavily_api_key or "").strip():
         raise ValueError("TAVILY_API_KEY is required for the job search agent")
     if not (settings.openrouter_api_key or "").strip():
@@ -48,13 +49,21 @@ def build_job_search_graph(settings: Settings):
             query: Concrete keywords: role, skills, city/region or 'remote', industry."""
         return tavily_search_jobs(settings, query)
 
+    ckpt = MemorySaver() if with_checkpointer else None
     try:
         return create_react_agent(
             model=llm,
             tools=[search_job_postings_web],
             prompt=JOB_SEARCH_SYSTEM,
-            checkpointer=MemorySaver(),
+            checkpointer=ckpt,
         )
     except Exception:
         logger.exception("create_react_agent failed")
         raise
+
+
+def build_job_search_graph(settings: Settings):
+    """Planner/supervisor → scout (web) or brief reply; streams via same AG-UI endpoint."""
+    from app.graph.job_search_supervisor import build_job_search_supervisor_graph
+
+    return build_job_search_supervisor_graph(settings)

@@ -3,7 +3,7 @@ import logging
 from io import StringIO
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -36,6 +36,7 @@ from app.schemas.me import (
     ProfileDocumentOut,
     ResumeIn,
     ResumeOut,
+    ResumeProfileStoredOut,
     ResumeUploadOut,
     WorkspaceSettingsOut,
     WorkspaceSettingsPatch,
@@ -61,9 +62,11 @@ from app.services.resume_auto_match import (
 )
 from app.services.resume_ingest import extract_resume_text
 from app.services.resume_kickoff import agent_ack_after_resume_upload
-from app.services.resume_profile_signals import (
-    ResumeProfileSignals,
-    extract_resume_profile_signals,
+from app.services.resume_profile_signals import ResumeProfileSignals
+from app.services.resume_profile_store import (
+    get_or_refresh_resume_profile_signals,
+    persist_resume_profile_signals,
+    signals_from_row,
 )
 
 router = APIRouter(tags=["me"])
@@ -198,6 +201,7 @@ async def upsert_resume(
     body: ResumeIn,
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ) -> UserResume:
     result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
     row = result.scalar_one_or_none()
@@ -214,6 +218,7 @@ async def upsert_resume(
     await session.commit()
     await session.refresh(row)
     schedule_resume_auto_match(user_id)
+    await persist_resume_profile_signals(session, settings, user_id, row.content_text)
     return row
 
 
@@ -292,27 +297,69 @@ async def discover_hints_from_resume(
     )
 
 
+@router.get("/me/resume/profile", response_model=ResumeProfileStoredOut)
+async def get_resume_profile_snapshot(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> ResumeProfileStoredOut:
+    """Persisted skills + context from the saved résumé (no LLM on read)."""
+    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
+    row = result.scalar_one_or_none()
+    if row is None or not (row.content_text or "").strip():
+        return ResumeProfileStoredOut(has_resume=False)
+    signals, stale = signals_from_row(row)
+    return ResumeProfileStoredOut(
+        has_resume=True,
+        signals=signals,
+        stale=stale,
+        resume_updated_at=row.updated_at,
+        profile_extracted_at=row.profile_extracted_at,
+    )
+
+
+@router.post("/me/resume/profile/refresh", response_model=ResumeProfileSignals)
+async def refresh_resume_profile(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> ResumeProfileSignals:
+    """Re-run LLM extraction and persist (e.g. after editing résumé text)."""
+    if not (settings.openrouter_api_key or "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail="OPENROUTER_API_KEY is not configured — profile extraction requires the AI service.",
+        )
+    try:
+        return await get_or_refresh_resume_profile_signals(
+            session, settings, user_id, force_refresh=True
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        logger.exception("refresh_resume_profile failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not refresh profile right now. Try again in a moment.",
+        ) from None
+
+
 @router.get("/me/resume/profile-signals", response_model=ResumeProfileSignals)
 async def resume_profile_signals(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    refresh: bool = Query(False, description="If true, re-run extraction even when cache is fresh."),
 ) -> ResumeProfileSignals:
-    """Structured skills + career context from the saved résumé (LLM)."""
+    """Structured skills + career context from the saved résumé (cached; LLM when stale or refresh)."""
     if not (settings.openrouter_api_key or "").strip():
         raise HTTPException(
             status_code=503,
             detail="OPENROUTER_API_KEY is not configured — profile signals require the AI service.",
         )
-    result = await session.execute(select(UserResume).where(UserResume.clerk_user_id == user_id))
-    row = result.scalar_one_or_none()
-    if row is None or not (row.content_text or "").strip():
-        raise HTTPException(
-            status_code=404,
-            detail="Add your résumé first — we extract skills and context from it.",
-        )
     try:
-        return await extract_resume_profile_signals(settings, row.content_text)
+        return await get_or_refresh_resume_profile_signals(
+            session, settings, user_id, force_refresh=refresh
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception:
@@ -362,6 +409,7 @@ async def upload_resume_file(
     await session.refresh(row)
 
     schedule_resume_auto_match(user_id)
+    await persist_resume_profile_signals(session, settings, user_id, row.content_text)
     agent_reply = await agent_ack_after_resume_upload(settings)
     return ResumeUploadOut(
         id=row.id,

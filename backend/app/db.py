@@ -59,6 +59,19 @@ async def init_db() -> None:
                     "UPDATE job_applications SET status = 'ready_to_apply' WHERE status = 'ready'"
                 )
             )
+            await conn.execute(
+                text("ALTER TABLE user_resumes ADD COLUMN IF NOT EXISTS profile_signals JSONB")
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE user_resumes ADD COLUMN IF NOT EXISTS profile_content_hash VARCHAR(64)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE user_resumes ADD COLUMN IF NOT EXISTS profile_extracted_at TIMESTAMPTZ"
+                )
+            )
         db_init_ok = True
     except Exception:
         logger.exception(

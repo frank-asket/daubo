@@ -90,7 +90,7 @@ def _mount_job_search_ag_ui(app: FastAPI, settings: Settings) -> None:
     agent = LangGraphAGUIAgent(
         name="daubo_job_search",
         description=(
-            "Job scout: reads résumé context, plans searches, calls Tavily, streams tool progress (AG-UI)."
+            "Job scout: supervisor routes to Tavily web search or a brief reply; streams tool progress (AG-UI)."
         ),
         graph=graph,
     )

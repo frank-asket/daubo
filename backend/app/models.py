@@ -27,6 +27,13 @@ class UserResume(Base):
     clerk_user_id: Mapped[str] = mapped_column(String(256), unique=True, index=True)
     content_text: Mapped[str] = mapped_column(Text, nullable=False)
     file_name: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Persisted LLM extraction (skills + context); invalidated when content_text changes.
+    profile_signals: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    profile_content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    profile_extracted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
