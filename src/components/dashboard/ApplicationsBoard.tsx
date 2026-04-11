@@ -199,6 +199,8 @@ export function ApplicationsBoard() {
     }
   }
 
+  const limits = stats?.limits;
+
   return (
     <div className="space-y-8">
       <ApplyHandoffPanel
@@ -209,22 +211,22 @@ export function ApplicationsBoard() {
           await updateStatus(id, status);
         }}
       />
-      {stats?.limits?.max_tracked_jobs != null &&
-      stats.limits.tracked_jobs >= stats.limits.max_tracked_jobs ? (
+      {limits?.max_tracked_jobs != null &&
+      limits.tracked_jobs >= limits.max_tracked_jobs ? (
         <p
           className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100"
           role="status"
         >
           You&apos;ve reached the maximum number of saved jobs for your current plan (
-          {stats.limits.max_tracked_jobs}). Remove a job below to add another, or contact support about
+          {limits.max_tracked_jobs}). Remove a job below to add another, or contact support about
           upgrading.
         </p>
-      ) : stats?.limits?.max_tracked_jobs != null &&
-        stats.limits.max_tracked_jobs > 0 &&
-        stats.limits.tracked_jobs === stats.limits.max_tracked_jobs - 1 ? (
+      ) : limits?.max_tracked_jobs != null &&
+        limits.max_tracked_jobs > 0 &&
+        limits.tracked_jobs === limits.max_tracked_jobs - 1 ? (
         <p className="rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-400">
           You can save <strong className="text-zinc-300">one</strong> more job on your current plan (
-          {stats.limits.tracked_jobs}/{stats.limits.max_tracked_jobs}).
+          {limits.tracked_jobs}/{limits.max_tracked_jobs}).
         </p>
       ) : null}
       <ResumeProfileStrip />
@@ -265,8 +267,8 @@ export function ApplicationsBoard() {
           type="submit"
           disabled={
             saving ||
-            (stats?.limits?.max_tracked_jobs != null &&
-              stats.limits.tracked_jobs >= stats.limits.max_tracked_jobs)
+            (limits?.max_tracked_jobs != null &&
+              limits.tracked_jobs >= limits.max_tracked_jobs)
           }
           className="mt-4 rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-50"
         >

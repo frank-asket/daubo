@@ -30,9 +30,11 @@ export function ResumeProfileStrip() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
     setError(null);
-    setLoading(true);
+    if (!opts?.silent) {
+      setLoading(true);
+    }
     try {
       const r = await fetch(dauboBffUrl("v1/me/resume/profile"), { credentials: "same-origin" });
       if (!r.ok) {
@@ -43,7 +45,9 @@ export function ResumeProfileStrip() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load résumé profile.");
     } finally {
-      setLoading(false);
+      if (!opts?.silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -63,7 +67,7 @@ export function ResumeProfileStrip() {
         const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
         throw new Error(formatApiErrorMessage(j.detail, "Could not refresh profile."));
       }
-      await load();
+      await load({ silent: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Refresh failed.");
     } finally {
@@ -76,6 +80,21 @@ export function ResumeProfileStrip() {
       <div className="flex items-center gap-2 rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-3 text-sm text-zinc-500">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading your résumé profile…
+      </div>
+    );
+  }
+
+  if (!data && error) {
+    return (
+      <div className="space-y-2 rounded-2xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm">
+        <p className="text-red-300/95">{error}</p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded-full border border-zinc-600 px-4 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -152,9 +171,9 @@ export function ResumeProfileStrip() {
       {sig.summary ? <p className="text-sm leading-relaxed text-zinc-400">{sig.summary}</p> : null}
       {sig.skills.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
-          {sig.skills.map((s) => (
+          {sig.skills.map((s, i) => (
             <span
-              key={s}
+              key={`${s}-${i}`}
               className="rounded-full border border-zinc-700/80 bg-black/40 px-2.5 py-0.5 text-[11px] text-zinc-300"
             >
               {s}

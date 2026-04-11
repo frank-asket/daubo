@@ -33,6 +33,22 @@ const nextConfig = {
         hostname: "images.clerk.dev",
         pathname: "/**",
       },
+      // OAuth profile images (dashboard ProfileOverview uses next/image)
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "media.licdn.com",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {
