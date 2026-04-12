@@ -52,6 +52,74 @@ function resumeMatchBadgeTitle(
   return "Structured listings from your most recent auto-match run (not yet saved as pipeline rows).";
 }
 
+/** Shared by SSR (`!mounted`) and first client paint — must stay structurally identical to avoid #418. */
+function ResumeMatchLoadingColumn() {
+  return (
+    <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-3 sm:mt-0">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Latest résumé match</p>
+      <div className="mt-2 h-8 w-24 animate-pulse rounded-md bg-zinc-800/60" aria-hidden />
+    </div>
+  );
+}
+
+function ResumeMatchPromptColumn() {
+  return (
+    <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-2 sm:mt-0">
+      <p className="text-[10px] leading-snug text-zinc-500">
+        <a href="/dashboard/resume" className="font-medium text-emerald-400/90 hover:underline">
+          Add a résumé
+        </a>{" "}
+        to run auto-match and see listing counts here.
+      </p>
+    </div>
+  );
+}
+
+function ResumeMatchMetricsColumn({
+  resumeMatchLoading,
+  resumeMatchListings,
+  resumeMatchPending,
+  badgeText,
+  badgeTitle,
+}: {
+  resumeMatchLoading?: boolean;
+  resumeMatchListings?: number | null;
+  resumeMatchPending: boolean;
+  badgeText: string;
+  badgeTitle: string;
+}) {
+  return (
+    <div>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">Latest résumé match</p>
+      <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
+        <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          {resumeMatchLoading
+            ? "…"
+            : resumeMatchListings != null
+              ? `${resumeMatchListings} role${resumeMatchListings === 1 ? "" : "s"}`
+              : "—"}
+        </span>
+        <span
+          className={`text-xs font-medium ${resumeMatchPending ? "text-emerald-400/90" : "text-zinc-500"}`}
+          title={badgeTitle}
+        >
+          {badgeText}
+        </span>
+      </div>
+      {resumeMatchPending ? (
+        <p className="mt-1 text-[10px] leading-snug text-emerald-400/90">
+          Matching your résumé in the background—this count updates when a run finishes.
+        </p>
+      ) : (
+        <p className="mt-1 text-[10px] leading-snug text-zinc-600">
+          Add matches to <span className="text-zinc-500">My jobs</span> to grow the saved count.
+          The curve below is illustrative, not a historical chart.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function BalanceChart({
   compact,
   trackedRoles,
@@ -132,56 +200,17 @@ export function BalanceChart({
                   </span>
                 </div>
               </div>
-              {showResumeLoading ? (
-                <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-3 sm:mt-0">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                    Latest résumé match
-                  </p>
-                  <div className="mt-2 h-8 w-24 animate-pulse rounded-md bg-zinc-800/60" aria-hidden />
-                </div>
-              ) : null}
+              {showResumeLoading ? <ResumeMatchLoadingColumn /> : null}
               {showMatchMetrics ? (
-                <div>
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                    Latest résumé match
-                  </p>
-                  <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
-                    <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                      {resumeMatchLoading
-                        ? "…"
-                        : resumeMatchListings != null
-                          ? `${resumeMatchListings} role${resumeMatchListings === 1 ? "" : "s"}`
-                          : "—"}
-                    </span>
-                    <span
-                      className={`text-xs font-medium ${resumeMatchPending ? "text-emerald-400/90" : "text-zinc-500"}`}
-                      title={badgeTitle}
-                    >
-                      {badgeText}
-                    </span>
-                  </div>
-                  {resumeMatchPending ? (
-                    <p className="mt-1 text-[10px] leading-snug text-emerald-400/90">
-                      Matching your résumé in the background—this count updates when a run finishes.
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-[10px] leading-snug text-zinc-600">
-                      Add matches to <span className="text-zinc-500">My jobs</span> to grow the saved count.
-                      The curve below is illustrative, not a historical chart.
-                    </p>
-                  )}
-                </div>
+                <ResumeMatchMetricsColumn
+                  resumeMatchLoading={resumeMatchLoading}
+                  resumeMatchListings={resumeMatchListings}
+                  resumeMatchPending={resumeMatchPending}
+                  badgeText={badgeText}
+                  badgeTitle={badgeTitle}
+                />
               ) : null}
-              {showResumePrompt ? (
-                <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-2 sm:mt-0">
-                  <p className="text-[10px] leading-snug text-zinc-500">
-                    <a href="/dashboard/resume" className="font-medium text-emerald-400/90 hover:underline">
-                      Add a résumé
-                    </a>{" "}
-                    to run auto-match and see listing counts here.
-                  </p>
-                </div>
-              ) : null}
+              {showResumePrompt ? <ResumeMatchPromptColumn /> : null}
             </div>
           </div>
           <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5" aria-hidden>
@@ -230,56 +259,17 @@ export function BalanceChart({
                 </span>
               </div>
             </div>
-            {showResumeLoading ? (
-              <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-3 sm:mt-0">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                  Latest résumé match
-                </p>
-                <div className="mt-2 h-8 w-24 animate-pulse rounded-md bg-zinc-800/60" aria-hidden />
-              </div>
-            ) : null}
+            {showResumeLoading ? <ResumeMatchLoadingColumn /> : null}
             {showMatchMetrics ? (
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                  Latest résumé match
-                </p>
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
-                  <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    {resumeMatchLoading
-                      ? "…"
-                      : resumeMatchListings != null
-                        ? `${resumeMatchListings} role${resumeMatchListings === 1 ? "" : "s"}`
-                        : "—"}
-                  </span>
-                  <span
-                    className={`text-xs font-medium ${resumeMatchPending ? "text-emerald-400/90" : "text-zinc-500"}`}
-                    title={badgeTitle}
-                  >
-                    {badgeText}
-                  </span>
-                </div>
-                {resumeMatchPending ? (
-                  <p className="mt-1 text-[10px] leading-snug text-emerald-400/90">
-                    Matching your résumé in the background—this count updates when a run finishes.
-                  </p>
-                ) : (
-                  <p className="mt-1 text-[10px] leading-snug text-zinc-600">
-                    Add matches to <span className="text-zinc-500">My jobs</span> to grow the saved count.
-                    The curve below is illustrative, not a historical chart.
-                  </p>
-                )}
-              </div>
+              <ResumeMatchMetricsColumn
+                resumeMatchLoading={resumeMatchLoading}
+                resumeMatchListings={resumeMatchListings}
+                resumeMatchPending={resumeMatchPending}
+                badgeText={badgeText}
+                badgeTitle={badgeTitle}
+              />
             ) : null}
-            {showResumePrompt ? (
-              <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-2 sm:mt-0">
-                <p className="text-[10px] leading-snug text-zinc-500">
-                  <a href="/dashboard/resume" className="font-medium text-emerald-400/90 hover:underline">
-                    Add a résumé
-                  </a>{" "}
-                  to run auto-match and see listing counts here.
-                </p>
-              </div>
-            ) : null}
+            {showResumePrompt ? <ResumeMatchPromptColumn /> : null}
           </div>
         </div>
         <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5">
