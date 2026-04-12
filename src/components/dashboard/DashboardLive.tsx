@@ -161,24 +161,30 @@ export function DashboardLive() {
     let cancelled = false;
 
     void (async () => {
+      if (cancelled) return;
       setMatchLoading(true);
       setResumeMatchPending(false);
       try {
         const r = await fetch(dauboBffUrl("v1/me/agent-match/latest"), { credentials: "same-origin" });
+        if (cancelled) return;
         if (!r.ok) {
-          setResumeMatchListings(null);
-          resumeMatchBootstrapDone.current = false;
+          if (!cancelled) {
+            setResumeMatchListings(null);
+            resumeMatchBootstrapDone.current = false;
+          }
           return;
         }
         const j = (await r.json()) as { run: unknown };
+        if (cancelled) return;
         let c = countParsedListingsFromRun(j.run);
-        setResumeMatchListings(c);
+        if (!cancelled) setResumeMatchListings(c);
 
         if (cancelled) return;
         setMatchLoading(false);
 
         if (c !== null && c > 0) return;
 
+        if (cancelled) return;
         setResumeMatchPending(true);
         try {
           await fetch(dauboBffUrl("v1/me/resume/trigger-auto-match"), {
@@ -197,15 +203,19 @@ export function DashboardLive() {
           if (!pr.ok) continue;
           const pj = (await pr.json()) as { run: unknown };
           c = countParsedListingsFromRun(pj.run);
-          setResumeMatchListings(c);
+          if (!cancelled) setResumeMatchListings(c);
           if (c !== null && c > 0) break;
         }
       } catch {
-        setResumeMatchListings(null);
-        resumeMatchBootstrapDone.current = false;
+        if (!cancelled) {
+          setResumeMatchListings(null);
+          resumeMatchBootstrapDone.current = false;
+        }
       } finally {
-        setMatchLoading(false);
-        setResumeMatchPending(false);
+        if (!cancelled) {
+          setMatchLoading(false);
+          setResumeMatchPending(false);
+        }
       }
     })();
 

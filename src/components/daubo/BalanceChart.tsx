@@ -120,6 +120,37 @@ function ResumeMatchMetricsColumn({
   );
 }
 
+/** Same DOM for SSR, hydration, and post-mount; `disabled` until client mounted so Recharts can defer. */
+function TimeRangeSelector({
+  range,
+  onSelect,
+  disabled,
+}: {
+  range: string;
+  onSelect: (f: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5">
+      {frames.map((f) => (
+        <button
+          key={f}
+          type="button"
+          disabled={disabled}
+          onClick={() => onSelect(f)}
+          className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+            range === f
+              ? "bg-zinc-800 text-white"
+              : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          {f}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function BalanceChart({
   compact,
   trackedRoles,
@@ -169,66 +200,6 @@ export function BalanceChart({
   );
 
   // Recharts measures the DOM on mount; defer chart. Keep SSR + first client paint aligned (no #418).
-  if (!mounted) {
-    return (
-      <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-zinc-500">Pipeline overview</p>
-            <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
-                  Saved in My jobs
-                </p>
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
-                  <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    {trackedRoles != null
-                      ? `${trackedRoles} job${trackedRoles === 1 ? "" : "s"}`
-                      : "—"}
-                  </span>
-                  <span
-                    className={`text-xs font-medium ${
-                      trackedRoles != null ? "text-zinc-500" : "text-emerald-400/90"
-                    }`}
-                    title={
-                      trackedRoles != null
-                        ? "Rows in your pipeline (same as My jobs)"
-                        : "Save roles under My jobs to populate this count"
-                    }
-                  >
-                    {trackedRoles != null ? "pipeline" : "none yet"}
-                  </span>
-                </div>
-              </div>
-              {showResumeLoading ? <ResumeMatchLoadingColumn /> : null}
-              {showMatchMetrics ? (
-                <ResumeMatchMetricsColumn
-                  resumeMatchLoading={resumeMatchLoading}
-                  resumeMatchListings={resumeMatchListings}
-                  resumeMatchPending={resumeMatchPending}
-                  badgeText={badgeText}
-                  badgeTitle={badgeTitle}
-                />
-              ) : null}
-              {showResumePrompt ? <ResumeMatchPromptColumn /> : null}
-            </div>
-          </div>
-          <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5" aria-hidden>
-            {frames.map((f) => (
-              <span
-                key={f}
-                className="rounded-full px-3 py-1 text-[11px] font-semibold text-zinc-500"
-              >
-                {f}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4 rounded-lg bg-zinc-900/50" style={{ height: h }} aria-hidden />
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -272,68 +243,57 @@ export function BalanceChart({
             {showResumePrompt ? <ResumeMatchPromptColumn /> : null}
           </div>
         </div>
-        <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5">
-          {frames.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setRange(f)}
-              className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
-                range === f
-                  ? "bg-zinc-800 text-white"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+        <TimeRangeSelector range={range} onSelect={setRange} disabled={!mounted} />
+      </div>
+      {mounted ? (
+        <div
+          className="mt-4 min-h-0 flex-1"
+          style={{ height: h }}
+          role="img"
+          aria-label="Illustrative activity curve based on saved jobs and résumé match counts, not a historical time series"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 6, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="t"
+                tick={{ fill: "#52525b", fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+                interval={4}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "#18181b",
+                  border: "1px solid #27272a",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                }}
+                labelStyle={{ color: "#a1a1aa" }}
+                formatter={(v: number) => [
+                  `${v.toFixed(0)} (illustrative — not historic counts)`,
+                  "Activity",
+                ]}
+              />
+              <Area
+                type="monotone"
+                dataKey="v"
+                stroke="#ffffff"
+                strokeWidth={2}
+                fill={`url(#${gradId})`}
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-      </div>
-      <div
-        className="mt-4 min-h-0 flex-1"
-        style={{ height: h }}
-        role="img"
-        aria-label="Illustrative activity curve based on saved jobs and résumé match counts, not a historical time series"
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 6, right: 0, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
-                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="t"
-              tick={{ fill: "#52525b", fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-              interval={4}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "#18181b",
-                border: "1px solid #27272a",
-                borderRadius: "12px",
-                fontSize: "12px",
-              }}
-              labelStyle={{ color: "#a1a1aa" }}
-              formatter={(v: number) => [
-                `${v.toFixed(0)} (illustrative — not historic counts)`,
-                "Activity",
-              ]}
-            />
-            <Area
-              type="monotone"
-              dataKey="v"
-              stroke="#ffffff"
-              strokeWidth={2}
-              fill={`url(#${gradId})`}
-              dot={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      ) : (
+        <div className="mt-4 rounded-lg bg-zinc-900/50" style={{ height: h }} aria-hidden />
+      )}
     </div>
   );
 }
