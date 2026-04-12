@@ -1,0 +1,182 @@
+diff --git a/node_modules/@copilotkit/react-ui/dist/index.cjs b/node_modules/@copilotkit/react-ui/dist/index.cjs
+index 22a87f3..a38e04f 100644
+--- a/node_modules/@copilotkit/react-ui/dist/index.cjs
++++ b/node_modules/@copilotkit/react-ui/dist/index.cjs
+@@ -1306,7 +1306,7 @@ const highlightStyle = {
+ //#endregion
+ //#region src/components/chat/Markdown.tsx
+ const defaultComponents = {
+-	a({ children, ...props }) {
++	a({ children, node, ...props }) {
+ 		return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+ 			className: "copilotKitMarkdownElement",
+ 			...props,
+@@ -1315,7 +1315,7 @@ const defaultComponents = {
+ 			children
+ 		});
+ 	},
+-	code({ children, className, inline, ...props }) {
++	code({ children, className, inline, node, ...props }) {
+ 		if (Array.isArray(children) && children.length) {
+ 			if (children[0] == "▍") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+ 				style: {
+@@ -1340,57 +1340,57 @@ const defaultComponents = {
+ 			...props
+ 		}, Math.random());
+ 	},
+-	h1: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h1", {
++	h1: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h1", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h2: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
++	h2: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h3: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
++	h3: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h4: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
++	h4: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h5: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h5", {
++	h5: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h5", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h6: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h6", {
++	h6: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h6", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	p: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
++	p: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	pre: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
++	pre: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	blockquote: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("blockquote", {
++	blockquote: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("blockquote", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	ul: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
++	ul: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	li: ({ children, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
++	li: ({ children, node, ...props }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+diff --git a/node_modules/@copilotkit/react-ui/dist/index.mjs b/node_modules/@copilotkit/react-ui/dist/index.mjs
+index 077fc73..c69ba1c 100644
+--- a/node_modules/@copilotkit/react-ui/dist/index.mjs
++++ b/node_modules/@copilotkit/react-ui/dist/index.mjs
+@@ -1274,7 +1274,7 @@ const highlightStyle = {
+ //#endregion
+ //#region src/components/chat/Markdown.tsx
+ const defaultComponents = {
+-	a({ children, ...props }) {
++	a({ children, node, ...props }) {
+ 		return /* @__PURE__ */ jsx("a", {
+ 			className: "copilotKitMarkdownElement",
+ 			...props,
+@@ -1283,7 +1283,7 @@ const defaultComponents = {
+ 			children
+ 		});
+ 	},
+-	code({ children, className, inline, ...props }) {
++	code({ children, className, inline, node, ...props }) {
+ 		if (Array.isArray(children) && children.length) {
+ 			if (children[0] == "▍") return /* @__PURE__ */ jsx("span", {
+ 				style: {
+@@ -1308,57 +1308,57 @@ const defaultComponents = {
+ 			...props
+ 		}, Math.random());
+ 	},
+-	h1: ({ children, ...props }) => /* @__PURE__ */ jsx("h1", {
++	h1: ({ children, node, ...props }) => /* @__PURE__ */ jsx("h1", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h2: ({ children, ...props }) => /* @__PURE__ */ jsx("h2", {
++	h2: ({ children, node, ...props }) => /* @__PURE__ */ jsx("h2", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h3: ({ children, ...props }) => /* @__PURE__ */ jsx("h3", {
++	h3: ({ children, node, ...props }) => /* @__PURE__ */ jsx("h3", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h4: ({ children, ...props }) => /* @__PURE__ */ jsx("h4", {
++	h4: ({ children, node, ...props }) => /* @__PURE__ */ jsx("h4", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h5: ({ children, ...props }) => /* @__PURE__ */ jsx("h5", {
++	h5: ({ children, node, ...props }) => /* @__PURE__ */ jsx("h5", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	h6: ({ children, ...props }) => /* @__PURE__ */ jsx("h6", {
++	h6: ({ children, node, ...props }) => /* @__PURE__ */ jsx("h6", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	p: ({ children, ...props }) => /* @__PURE__ */ jsx("p", {
++	p: ({ children, node, ...props }) => /* @__PURE__ */ jsx("p", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	pre: ({ children, ...props }) => /* @__PURE__ */ jsx("pre", {
++	pre: ({ children, node, ...props }) => /* @__PURE__ */ jsx("pre", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	blockquote: ({ children, ...props }) => /* @__PURE__ */ jsx("blockquote", {
++	blockquote: ({ children, node, ...props }) => /* @__PURE__ */ jsx("blockquote", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	ul: ({ children, ...props }) => /* @__PURE__ */ jsx("ul", {
++	ul: ({ children, node, ...props }) => /* @__PURE__ */ jsx("ul", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
+ 	}),
+-	li: ({ children, ...props }) => /* @__PURE__ */ jsx("li", {
++	li: ({ children, node, ...props }) => /* @__PURE__ */ jsx("li", {
+ 		className: "copilotKitMarkdownElement",
+ 		...props,
+ 		children
