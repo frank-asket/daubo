@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_SECONDARY } from "@/lib/dashboard-nav";
 
 type MainNavItem = {
   href: string;
@@ -19,22 +20,30 @@ type MainNavItem = {
   badge?: string;
 };
 
-const main: MainNavItem[] = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/dashboard/applications", label: "My jobs", icon: Briefcase },
-  { href: "/dashboard/resume", label: "My resume", icon: FileText },
-  {
-    href: "/dashboard/interviews",
-    label: "Interview practice",
-    icon: MessageSquare,
-  },
-];
+const ICON_MAIN: Record<string, LucideIcon> = {
+  "/dashboard": LayoutDashboard,
+  "/dashboard/applications": Briefcase,
+  "/dashboard/resume": FileText,
+  "/dashboard/interviews": MessageSquare,
+};
 
-const secondary = [
-  { href: "/dashboard/profile", label: "Profile", icon: User },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/dashboard/support", label: "Support", icon: LifeBuoy },
-];
+const ICON_SECONDARY: Record<string, LucideIcon> = {
+  "/dashboard/profile": User,
+  "/dashboard/settings": Settings,
+  "/dashboard/support": LifeBuoy,
+};
+
+const main: MainNavItem[] = DASHBOARD_NAV_MAIN.map((n) => ({
+  href: n.href,
+  label: n.label,
+  icon: ICON_MAIN[n.href] ?? LayoutDashboard,
+}));
+
+const secondary = DASHBOARD_NAV_SECONDARY.map((n) => ({
+  href: n.href,
+  label: n.label,
+  icon: ICON_SECONDARY[n.href] ?? User,
+}));
 
 function mergeClassNames(...parts: (string | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -116,11 +125,12 @@ export function DauboSidebar({
         <div className="mt-3 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
             <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            Coach
+            Help
           </div>
           <p className="mt-1 text-[11px] leading-snug text-zinc-500">
-            Tap the floating <strong className="font-medium text-zinc-400">Coach</strong> on any page
-            for quick answers about using Daubo.
+            <strong className="font-medium text-zinc-400">Coach</strong> (bottom-right) explains how Daubo
+            works. <strong className="font-medium text-zinc-400">Web job search</strong> in the sidebar
+            (when enabled) searches live postings and may use your résumé excerpt—separate from Coach.
           </p>
         </div>
       </div>

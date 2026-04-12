@@ -98,7 +98,7 @@ export function DauboAssistantPanel() {
             : "border-emerald-500/40 bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
         }`}
         aria-expanded={open}
-        aria-label={open ? "Close career assistant" : "Open career assistant"}
+        aria-label={open ? "Close Coach" : "Open Coach"}
       >
         {open ? (
           <>
@@ -117,16 +117,16 @@ export function DauboAssistantPanel() {
         <div
           className="fixed bottom-[4.75rem] right-5 z-[60] flex max-h-[min(72vh,560px)] w-[min(calc(100vw-1.5rem),400px)] flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-[#0c0c0c] shadow-2xl sm:bottom-[5.25rem] sm:right-6"
           role="dialog"
-          aria-label="Career assistant chat"
+          aria-label="Coach chat"
         >
           <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
               <MessageCircle className="h-4 w-4" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white">Career assistant</p>
+              <p className="text-sm font-semibold text-white">Coach</p>
               <p className="truncate text-[11px] text-zinc-500">
-                My jobs, applying on real sites, Gmail drafts &amp; interview prep
+                How-to help for Daubo—separate from Web job search in the sidebar
               </p>
             </div>
           </div>
@@ -135,8 +135,8 @@ export function DauboAssistantPanel() {
             {messages.length === 0 ? (
               <div className="space-y-2">
                 <p className="text-xs leading-relaxed text-zinc-500">
-                  Ask how Daubo fits your search: saving roles, tailoring materials, applying on
-                  company sites, or getting ready for interviews.
+                  Ask how Daubo works—saved jobs, drafts, Gmail, interviews. For live posting search, use{" "}
+                  <strong className="text-zinc-400">Web job search</strong> in the sidebar when it’s on.
                 </p>
                 <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
                   Try
@@ -200,7 +200,7 @@ export function DauboAssistantPanel() {
                     setInput("");
                   }
                 }}
-                placeholder="Ask your career assistant…"
+                placeholder="Ask Coach…"
                 disabled={sending}
                 className="min-h-[44px] flex-1 resize-none rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600 disabled:opacity-50"
               />

@@ -37,12 +37,13 @@ export function QuickSwapCard({ compact }: { compact?: boolean }) {
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
           <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-wide text-emerald-400/90">
             <Sparkles className="h-3 w-3" strokeWidth={1.75} />
-            Built-in help
+            Three ways to get help
           </div>
           <p className="mt-1 text-[11px] leading-snug text-zinc-400">
-            Role ideas, application wording, interview practice, and the bottom-right{" "}
-            <strong className="text-zinc-300">Coach</strong> all use the same personalized context from
-            your resume and saved jobs.
+            <strong className="text-zinc-300">Coach</strong> (bottom-right) for product how-tos.{" "}
+            <strong className="text-zinc-300">Web job search</strong> in the sidebar for live postings when
+            enabled. Discover and prep flows use your résumé and saved jobs for tailored text—you always
+            approve sends.
           </p>
         </div>
 

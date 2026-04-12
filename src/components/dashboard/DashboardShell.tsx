@@ -12,22 +12,13 @@ import { DauboAssistantPanel } from "@/components/dashboard/DauboAssistantPanel"
 import { OnboardingWalkthrough } from "@/components/dashboard/OnboardingWalkthrough";
 import { PostOnboardingPlanModal } from "@/components/dashboard/PostOnboardingPlanModal";
 import { ResumeNudgeBanner } from "@/components/dashboard/ResumeNudgeBanner";
-
-const pathToActive: Record<string, string> = {
-  "/dashboard": "Home",
-  "/dashboard/applications": "My jobs",
-  "/dashboard/resume": "My resume",
-  "/dashboard/interviews": "Interview practice",
-  "/dashboard/settings": "Settings",
-  "/dashboard/profile": "Profile",
-  "/dashboard/support": "Support",
-};
+import { dashboardNavLabel } from "@/lib/dashboard-nav";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? "/dashboard";
   const router = useRouter();
   const searchParams = useSearchParams();
-  const active = pathToActive[path] ?? "Home";
+  const active = dashboardNavLabel(path);
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -194,9 +185,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       >
                         <p className="text-xs font-semibold text-white">Notifications</p>
                         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                          Job reminders and alerts aren’t turned on yet. For quick help, open the{" "}
-                          <strong className="text-zinc-400">Coach</strong> button at the bottom-right of
-                          the screen.
+                          Job reminders aren’t turned on yet. Use{" "}
+                          <strong className="text-zinc-400">Coach</strong> (bottom-right) for how-to help, or
+                          open <strong className="text-zinc-400">Web job search</strong> in the sidebar when
+                          it’s available for live posting search.
                         </p>
                         <div className="mt-3 flex flex-col gap-2">
                           <Link

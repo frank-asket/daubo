@@ -73,7 +73,7 @@ export function BalanceChart({
                   : "Preview only until you save jobs"
               }
             >
-              {trackedRoles != null ? "saved in Daubo" : "sample chart"}
+              {trackedRoles != null ? "saved in Daubo" : "preview only"}
             </span>
           </div>
         </div>
@@ -118,7 +118,7 @@ export function BalanceChart({
                 fontSize: "12px",
               }}
               labelStyle={{ color: "#a1a1aa" }}
-              formatter={(v: number) => [`${v.toFixed(0)} (example)`, "Trend"]}
+              formatter={(v: number) => [`${v.toFixed(0)} (illustrative)`, "Activity"]}
             />
             <Area
               type="monotone"

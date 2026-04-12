@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AccountProfilePanel } from "@/components/dashboard/AccountProfilePanel";
+import { DashboardPrivacyNoteCard } from "@/components/dashboard/DashboardPrivacyNoteCard";
 import { GmailConnectCard } from "@/components/dashboard/GmailConnectCard";
 
 export default function SettingsPage() {
@@ -20,6 +21,7 @@ export default function SettingsPage() {
       </Link>
 
       <div className="mt-10 space-y-8">
+        <DashboardPrivacyNoteCard />
         <Suspense
           fallback={
             <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6 text-sm text-zinc-500">

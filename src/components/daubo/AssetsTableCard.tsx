@@ -33,15 +33,22 @@ export function AssetsTableCard({
   loading,
   error,
   onRetry,
+  title = "Saved roles",
 }: {
   applications: ApplicationSummary[];
   loading?: boolean;
   error?: string | null;
   /** Shown as “Try again” when `error` is set */
   onRetry?: () => void;
+  /** Card heading — job pipeline, not financial assets */
+  title?: string;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-0">
+      <div className="border-b border-zinc-800/80 px-4 py-3">
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="mt-0.5 text-[11px] text-zinc-500">Recent rows from My jobs (same data as the full list)</p>
+      </div>
       {error ? (
         <div
           className="flex flex-col gap-2 border-b border-amber-500/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"

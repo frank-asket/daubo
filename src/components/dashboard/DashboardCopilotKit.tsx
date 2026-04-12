@@ -55,7 +55,7 @@ export function DashboardCopilotKit({ children }: { children: React.ReactNode })
         labels={{
           title: "Web job search",
           initial:
-            "I search the live web with Tavily using your message and résumé context. Ask for a role and location—or say “remote”.",
+            "I search live job postings on the web (not your email). Your résumé excerpt may be included so results match your background. Ask for a role and location—or say “remote”.",
           placeholder: "e.g. Senior ICU nurse jobs in Melbourne, or remote SRE with Kubernetes",
         }}
       />
