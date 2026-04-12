@@ -49,6 +49,11 @@ export function DashboardCopilotKit({ children }: { children: React.ReactNode })
 
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" agent="daubo_job_search">
+      {/*
+        CopilotSidebar must wrap the dashboard: it renders children inside `.copilotKitModalChildrenWrapper`
+        and the chat chrome beside them. Sibling `{children}` under CopilotKit leaves that wrapper empty and
+        breaks the intended flex/layout relationship with `.copilotKitSidebarContentWrapper`.
+      */}
       <CopilotSidebar
         defaultOpen={false}
         instructions={instructions}
@@ -58,8 +63,9 @@ export function DashboardCopilotKit({ children }: { children: React.ReactNode })
             "I search live job postings on the web (not your email). Your résumé excerpt may be included so results match your background. Ask for a role and location—or say “remote”.",
           placeholder: "e.g. Senior ICU nurse jobs in Melbourne, or remote SRE with Kubernetes",
         }}
-      />
-      {children}
+      >
+        {children}
+      </CopilotSidebar>
     </CopilotKit>
   );
 }

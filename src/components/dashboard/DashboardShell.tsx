@@ -85,9 +85,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <DashboardStatsProvider>
       {/*
-        Skip link must stay *outside* CopilotKit so it is first in the DOM. CopilotKit renders
-        the sidebar/button before its children, which would put the skip link after Copilot in
-        tab order and break WCAG “bypass blocks” expectations.
+        Skip link stays outside CopilotKit so it remains first in document order before any
+        Copilot UI (wrapped in DashboardCopilotKit). Dashboard content is nested inside
+        CopilotSidebar so CopilotKit’s layout CSS applies to the shell.
       */}
       <a
         href="#dashboard-main"
