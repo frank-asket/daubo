@@ -171,14 +171,22 @@ export function ResumeProfileStrip() {
       {sig.summary ? <p className="text-sm leading-relaxed text-zinc-400">{sig.summary}</p> : null}
       {sig.skills.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
-          {sig.skills.map((s, i) => (
-            <span
-              key={`${s}-${i}`}
-              className="rounded-full border border-zinc-700/80 bg-black/40 px-2.5 py-0.5 text-[11px] text-zinc-300"
-            >
-              {s}
-            </span>
-          ))}
+          {(() => {
+            const occurrence = new Map<string, number>();
+            return sig.skills.map((s) => {
+              const n = (occurrence.get(s) ?? 0) + 1;
+              occurrence.set(s, n);
+              // Keys are (skill text, nth duplicate of that text)—not list index—so duplicates reconcile safely
+              return (
+                <span
+                  key={JSON.stringify([s, n])}
+                  className="rounded-full border border-zinc-700/80 bg-black/40 px-2.5 py-0.5 text-[11px] text-zinc-300"
+                >
+                  {s}
+                </span>
+              );
+            });
+          })()}
         </div>
       ) : null}
       {(sig.target_roles.length > 0 || sig.industries.length > 0 || sig.seniority) ? (
