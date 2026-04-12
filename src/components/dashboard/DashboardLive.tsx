@@ -16,8 +16,10 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { JobDiscoverPanel } from "@/components/dashboard/JobDiscoverPanel";
 import { ResumeMatchHighlightsCard } from "@/components/dashboard/ResumeMatchHighlightsCard";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { countParsedListingsFromRun } from "@/lib/agent-match-run";
 import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
+import type { BalanceChartResumeSection } from "@/components/daubo/BalanceChart";
 
 function repartitionFromApplications(apps: ApplicationSummary[]): { name: string; value: number }[] {
   const counts = new Map<string, number>();
@@ -68,10 +70,12 @@ function BottomRow() {
 }
 
 export function DashboardLive() {
-  const { stats, error: statsError, reload: reloadStats } = useDashboardStats();
+  const { stats, statsReady, error: statsError, reload: reloadStats } = useDashboardStats();
   const [applications, setApplications] = useState<ApplicationSummary[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<string | null>(null);
+  const [resumeMatchListings, setResumeMatchListings] = useState<number | null>(null);
+  const [matchLoading, setMatchLoading] = useState(true);
 
   const loadApplications = useCallback(async () => {
     setAppsError(null);
@@ -112,9 +116,42 @@ export function DashboardLive() {
     }
   }, []);
 
+  const loadAgentMatchLatest = useCallback(async () => {
+    setMatchLoading(true);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/agent-match/latest"), { credentials: "same-origin" });
+      if (!r.ok) {
+        setResumeMatchListings(null);
+        return;
+      }
+      const j = (await r.json()) as { run: unknown };
+      setResumeMatchListings(countParsedListingsFromRun(j.run));
+    } catch {
+      setResumeMatchListings(null);
+    } finally {
+      setMatchLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadApplications();
   }, [loadApplications]);
+
+  useEffect(() => {
+    if (!statsReady) return;
+    if (stats?.has_resume) {
+      void loadAgentMatchLatest();
+    } else {
+      setResumeMatchListings(null);
+      setMatchLoading(false);
+    }
+  }, [statsReady, stats?.has_resume, loadAgentMatchLatest]);
+
+  const refreshPipelineData = useCallback(() => {
+    void reloadStats();
+    void loadApplications();
+    void loadAgentMatchLatest();
+  }, [reloadStats, loadApplications, loadAgentMatchLatest]);
 
   const segments = useMemo(
     () => repartitionFromApplications(applications),
@@ -132,6 +169,12 @@ export function DashboardLive() {
     return null;
   }, [appsLoading, appsError, applications.length, stats?.application_count]);
 
+  const resumeSection: BalanceChartResumeSection = !statsReady
+    ? "loading"
+    : !stats?.has_resume
+      ? "prompt_add_resume"
+      : "metrics";
+
   return (
     <div className="space-y-4">
       <DashboardOverview hasResume={stats?.has_resume ?? null} />
@@ -139,8 +182,7 @@ export function DashboardLive() {
       <CareerNextStepsCard />
       <ResumeMatchHighlightsCard
         onPipelineUpdated={() => {
-          reloadStats();
-          loadApplications();
+          refreshPipelineData();
         }}
       />
       {statsError ? (
@@ -160,7 +202,13 @@ export function DashboardLive() {
       ) : null}
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <BalanceChart compact trackedRoles={trackedRolesCount} />
+          <BalanceChart
+            compact
+            trackedRoles={trackedRolesCount}
+            resumeMatchListings={resumeMatchListings}
+            resumeMatchLoading={matchLoading}
+            resumeSection={resumeSection}
+          />
         </div>
         <div className="lg:col-span-2">
           <QuickSwapCard compact />
@@ -177,18 +225,15 @@ export function DashboardLive() {
       ) : null}
       <AutopilotCard
         onAutopilotComplete={() => {
-          reloadStats();
-          loadApplications();
+          refreshPipelineData();
         }}
       />
       <JobDiscoverPanel
         onDiscoveryComplete={() => {
-          reloadStats();
-          loadApplications();
+          refreshPipelineData();
         }}
         onAddedToPipeline={() => {
-          reloadStats();
-          loadApplications();
+          refreshPipelineData();
         }}
       />
       <div className="grid gap-4 lg:grid-cols-5">
