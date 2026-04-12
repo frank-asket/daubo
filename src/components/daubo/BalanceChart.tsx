@@ -24,11 +24,40 @@ const makeData = (savedHint: number | null, matchHint: number | null) => {
 
 export type BalanceChartResumeSection = "loading" | "prompt_add_resume" | "metrics";
 
+function resumeMatchBadgeText(
+  pending: boolean,
+  loading: boolean,
+  count: number | null,
+): string {
+  if (pending) return "matching…";
+  if (loading) return "loading";
+  if (count === null) return "no run yet";
+  if (count === 0) return "last run empty";
+  return "from CV";
+}
+
+function resumeMatchBadgeTitle(
+  pending: boolean,
+  loading: boolean,
+  count: number | null,
+): string {
+  if (pending) {
+    return "Daubo is queuing or running a résumé match in the background.";
+  }
+  if (loading) return "Loading latest match.";
+  if (count === null) return "No completed auto-match run yet.";
+  if (count === 0) {
+    return "Last run returned no structured listings—ensure OpenRouter/Adzuna are configured, or try Find role ideas.";
+  }
+  return "Structured listings from your most recent auto-match run (not yet saved as pipeline rows).";
+}
+
 export function BalanceChart({
   compact,
   trackedRoles,
   resumeMatchListings,
   resumeMatchLoading,
+  resumeMatchPending = false,
   resumeSection = "prompt_add_resume",
 }: {
   compact?: boolean;
@@ -37,14 +66,21 @@ export function BalanceChart({
   /** Listings count from latest résumé auto-match run; null = no run */
   resumeMatchListings?: number | null;
   resumeMatchLoading?: boolean;
+  /** True while POST trigger + poll is looking for a new match after an empty/missing run */
+  resumeMatchPending?: boolean;
   /** loading: stats not ready; prompt_add_resume: no CV; metrics: show match counts */
   resumeSection?: BalanceChartResumeSection;
 }) {
   const [range, setRange] = useState("1Y");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
   const matchHintForCurve =
-    resumeSection === "metrics" ? (resumeMatchListings ?? null) : null;
+    resumeSection === "metrics"
+      ? resumeMatchPending
+        ? Math.max(resumeMatchListings ?? 0, 1)
+        : resumeMatchListings ?? null
+      : null;
   const data = makeData(trackedRoles ?? null, matchHintForCurve);
   const h = compact ? 160 : 220;
   const gradId = useId().replace(/:/g, "");
@@ -53,7 +89,18 @@ export function BalanceChart({
   const showResumePrompt = resumeSection === "prompt_add_resume";
   const showResumeLoading = resumeSection === "loading";
 
-  // Recharts measures the DOM on mount; SSR HTML never matches → React #418 hydration errors.
+  const badgeText = resumeMatchBadgeText(
+    resumeMatchPending,
+    resumeMatchLoading ?? false,
+    resumeMatchListings ?? null,
+  );
+  const badgeTitle = resumeMatchBadgeTitle(
+    resumeMatchPending,
+    resumeMatchLoading ?? false,
+    resumeMatchListings ?? null,
+  );
+
+  // Recharts measures the DOM on mount; defer chart. Keep SSR + first client paint aligned (no #418).
   if (!mounted) {
     return (
       <div className="flex h-full flex-col rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
@@ -65,34 +112,87 @@ export function BalanceChart({
                 <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
                   Saved in My jobs
                 </p>
-                <p className="mt-0.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                  {trackedRoles != null
-                    ? `${trackedRoles} job${trackedRoles === 1 ? "" : "s"}`
-                    : "—"}
-                </p>
+                <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
+                  <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                    {trackedRoles != null
+                      ? `${trackedRoles} job${trackedRoles === 1 ? "" : "s"}`
+                      : "—"}
+                  </span>
+                  <span
+                    className={`text-xs font-medium ${
+                      trackedRoles != null ? "text-zinc-500" : "text-emerald-400/90"
+                    }`}
+                    title={
+                      trackedRoles != null
+                        ? "Rows in your pipeline (same as My jobs)"
+                        : "Save roles under My jobs to populate this count"
+                    }
+                  >
+                    {trackedRoles != null ? "pipeline" : "none yet"}
+                  </span>
+                </div>
               </div>
-              {showMatchMetrics || showResumeLoading ? (
+              {showResumeLoading ? (
+                <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-3 sm:mt-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
+                    Latest résumé match
+                  </p>
+                  <div className="mt-2 h-8 w-24 animate-pulse rounded-md bg-zinc-800/60" aria-hidden />
+                </div>
+              ) : null}
+              {showMatchMetrics ? (
                 <div>
                   <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-600">
                     Latest résumé match
                   </p>
-                  <p className="mt-0.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    {showResumeLoading || resumeMatchLoading
-                      ? "…"
-                      : resumeMatchListings != null
-                        ? resumeMatchListings
-                        : "—"}
-                  </p>
+                  <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
+                    <span className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                      {resumeMatchLoading
+                        ? "…"
+                        : resumeMatchListings != null
+                          ? `${resumeMatchListings} role${resumeMatchListings === 1 ? "" : "s"}`
+                          : "—"}
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${resumeMatchPending ? "text-emerald-400/90" : "text-zinc-500"}`}
+                      title={badgeTitle}
+                    >
+                      {badgeText}
+                    </span>
+                  </div>
+                  {resumeMatchPending ? (
+                    <p className="mt-1 text-[10px] leading-snug text-emerald-400/90">
+                      Matching your résumé in the background—this count updates when a run finishes.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[10px] leading-snug text-zinc-600">
+                      Add matches to <span className="text-zinc-500">My jobs</span> to grow the saved count.
+                      The curve below is illustrative, not a historical chart.
+                    </p>
+                  )}
                 </div>
               ) : null}
               {showResumePrompt ? (
-                <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-2">
+                <div className="rounded-lg border border-zinc-800/80 bg-black/20 px-3 py-2 sm:mt-0">
                   <p className="text-[10px] leading-snug text-zinc-500">
-                    Add a résumé to see match counts.
+                    <a href="/dashboard/resume" className="font-medium text-emerald-400/90 hover:underline">
+                      Add a résumé
+                    </a>{" "}
+                    to run auto-match and see listing counts here.
                   </p>
                 </div>
               ) : null}
             </div>
+          </div>
+          <div className="flex rounded-full border border-zinc-800 bg-black/40 p-0.5" aria-hidden>
+            {frames.map((f) => (
+              <span
+                key={f}
+                className="rounded-full px-3 py-1 text-[11px] font-semibold text-zinc-500"
+              >
+                {f}
+              </span>
+            ))}
           </div>
         </div>
         <div className="mt-4 rounded-lg bg-zinc-900/50" style={{ height: h }} aria-hidden />
@@ -152,20 +252,22 @@ export function BalanceChart({
                         : "—"}
                   </span>
                   <span
-                    className="text-xs font-medium text-zinc-500"
-                    title="Structured listings from your most recent auto-match run (not yet saved as pipeline rows)"
+                    className={`text-xs font-medium ${resumeMatchPending ? "text-emerald-400/90" : "text-zinc-500"}`}
+                    title={badgeTitle}
                   >
-                    {resumeMatchLoading
-                      ? "loading"
-                      : resumeMatchListings != null && resumeMatchListings > 0
-                        ? "from CV"
-                        : "no run yet"}
+                    {badgeText}
                   </span>
                 </div>
-                <p className="mt-1 text-[10px] leading-snug text-zinc-600">
-                  Add matches to <span className="text-zinc-500">My jobs</span> to grow the saved count.
-                  The curve below is illustrative, not a historical chart.
-                </p>
+                {resumeMatchPending ? (
+                  <p className="mt-1 text-[10px] leading-snug text-emerald-400/90">
+                    Matching your résumé in the background—this count updates when a run finishes.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[10px] leading-snug text-zinc-600">
+                    Add matches to <span className="text-zinc-500">My jobs</span> to grow the saved count.
+                    The curve below is illustrative, not a historical chart.
+                  </p>
+                )}
               </div>
             ) : null}
             {showResumePrompt ? (

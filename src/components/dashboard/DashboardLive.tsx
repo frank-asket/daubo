@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BalanceChart } from "@/components/daubo/BalanceChart";
 import { QuickSwapCard } from "@/components/daubo/QuickSwapCard";
 import {
@@ -20,6 +20,9 @@ import { countParsedListingsFromRun } from "@/lib/agent-match-run";
 import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
 import type { BalanceChartResumeSection } from "@/components/daubo/BalanceChart";
+
+const RESUME_MATCH_POLL_MS = 7000;
+const RESUME_MATCH_POLL_MAX = 18;
 
 function repartitionFromApplications(apps: ApplicationSummary[]): { name: string; value: number }[] {
   const counts = new Map<string, number>();
@@ -76,6 +79,8 @@ export function DashboardLive() {
   const [appsError, setAppsError] = useState<string | null>(null);
   const [resumeMatchListings, setResumeMatchListings] = useState<number | null>(null);
   const [matchLoading, setMatchLoading] = useState(true);
+  const [resumeMatchPending, setResumeMatchPending] = useState(false);
+  const resumeMatchBootstrapDone = useRef(false);
 
   const loadApplications = useCallback(async () => {
     setAppsError(null);
@@ -138,14 +143,76 @@ export function DashboardLive() {
   }, [loadApplications]);
 
   useEffect(() => {
-    if (!statsReady) return;
-    if (stats?.has_resume) {
-      void loadAgentMatchLatest();
-    } else {
+    if (!statsReady) {
+      resumeMatchBootstrapDone.current = false;
+      return;
+    }
+    if (!stats?.has_resume) {
+      resumeMatchBootstrapDone.current = false;
       setResumeMatchListings(null);
       setMatchLoading(false);
+      setResumeMatchPending(false);
+      return;
     }
-  }, [statsReady, stats?.has_resume, loadAgentMatchLatest]);
+
+    if (resumeMatchBootstrapDone.current) return;
+    resumeMatchBootstrapDone.current = true;
+
+    let cancelled = false;
+
+    void (async () => {
+      setMatchLoading(true);
+      setResumeMatchPending(false);
+      try {
+        const r = await fetch(dauboBffUrl("v1/me/agent-match/latest"), { credentials: "same-origin" });
+        if (!r.ok) {
+          setResumeMatchListings(null);
+          resumeMatchBootstrapDone.current = false;
+          return;
+        }
+        const j = (await r.json()) as { run: unknown };
+        let c = countParsedListingsFromRun(j.run);
+        setResumeMatchListings(c);
+
+        if (cancelled) return;
+        setMatchLoading(false);
+
+        if (c !== null && c > 0) return;
+
+        setResumeMatchPending(true);
+        try {
+          await fetch(dauboBffUrl("v1/me/resume/trigger-auto-match"), {
+            method: "POST",
+            credentials: "same-origin",
+          });
+        } catch {
+          /* ignore */
+        }
+
+        for (let i = 0; i < RESUME_MATCH_POLL_MAX - 1; i++) {
+          if (cancelled) return;
+          await new Promise((res) => setTimeout(res, RESUME_MATCH_POLL_MS));
+          if (cancelled) return;
+          const pr = await fetch(dauboBffUrl("v1/me/agent-match/latest"), { credentials: "same-origin" });
+          if (!pr.ok) continue;
+          const pj = (await pr.json()) as { run: unknown };
+          c = countParsedListingsFromRun(pj.run);
+          setResumeMatchListings(c);
+          if (c !== null && c > 0) break;
+        }
+      } catch {
+        setResumeMatchListings(null);
+        resumeMatchBootstrapDone.current = false;
+      } finally {
+        setMatchLoading(false);
+        setResumeMatchPending(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [statsReady, stats?.has_resume]);
 
   const refreshPipelineData = useCallback(() => {
     void reloadStats();
@@ -207,6 +274,7 @@ export function DashboardLive() {
             trackedRoles={trackedRolesCount}
             resumeMatchListings={resumeMatchListings}
             resumeMatchLoading={matchLoading}
+            resumeMatchPending={resumeMatchPending}
             resumeSection={resumeSection}
           />
         </div>
