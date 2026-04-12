@@ -84,13 +84,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <DashboardStatsProvider>
-      <DashboardCopilotKit>
+      {/*
+        Skip link must stay *outside* CopilotKit so it is first in the DOM. CopilotKit renders
+        the sidebar/button before its children, which would put the skip link after Copilot in
+        tab order and break WCAG “bypass blocks” expectations.
+      */}
       <a
         href="#dashboard-main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-lg focus:bg-emerald-400 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-zinc-950 focus:shadow-lg focus:outline-none"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:rounded-lg focus:bg-emerald-400 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-zinc-950 focus:shadow-lg focus:outline-none"
       >
         Skip to main content
       </a>
+      <DashboardCopilotKit>
       <div className="flex min-h-screen bg-black text-zinc-50">
         <OnboardingWalkthrough />
         <PostOnboardingPlanModal />
