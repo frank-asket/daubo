@@ -10,9 +10,30 @@ type Settings = {
 };
 
 type RunResult = {
+  run_id?: string | null;
+  status?: string;
   processed: number;
   gmail_drafts_created: number;
   errors: string[];
+};
+
+type RunRecord = {
+  id: string;
+  status: string;
+  processed: number;
+  gmail_drafts_created: number;
+  started_at: string;
+  finished_at: string | null;
+  errors: string[];
+};
+
+type RunItem = {
+  id: string;
+  title: string;
+  company: string;
+  status: string;
+  error: string | null;
+  job_url: string | null;
 };
 
 export function AutopilotCard({
@@ -26,6 +47,11 @@ export function AutopilotCard({
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [runsLoading, setRunsLoading] = useState(false);
+  const [runs, setRuns] = useState<RunRecord[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [runItemsLoading, setRunItemsLoading] = useState(false);
+  const [runItems, setRunItems] = useState<RunItem[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,6 +71,51 @@ export function AutopilotCard({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadRuns = useCallback(async () => {
+    setRunsLoading(true);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/autopilot/runs?limit=10"), { credentials: "same-origin" });
+      if (!r.ok) throw new Error("Could not load run history");
+      const list = (await r.json()) as RunRecord[];
+      setRuns(list);
+      setSelectedRunId((prev) => prev ?? list[0]?.id ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load run history");
+      setRuns([]);
+      setSelectedRunId(null);
+    } finally {
+      setRunsLoading(false);
+    }
+  }, []);
+
+  const loadRunItems = useCallback(async (runId: string) => {
+    setRunItemsLoading(true);
+    try {
+      const r = await fetch(dauboBffUrl(`v1/me/autopilot/runs/${runId}/items`), {
+        credentials: "same-origin",
+      });
+      if (!r.ok) throw new Error("Could not load run details");
+      setRunItems((await r.json()) as RunItem[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load run details");
+      setRunItems([]);
+    } finally {
+      setRunItemsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRuns();
+  }, [loadRuns]);
+
+  useEffect(() => {
+    if (!selectedRunId) {
+      setRunItems([]);
+      return;
+    }
+    void loadRunItems(selectedRunId);
+  }, [selectedRunId, loadRunItems]);
 
   async function save(patch: Partial<Settings>) {
     setSaving(true);
@@ -85,7 +156,12 @@ export function AutopilotCard({
         const j = await r.json().catch(() => ({}));
         throw new Error((j as { detail?: string }).detail ?? r.statusText);
       }
-      setRunResult((await r.json()) as RunResult);
+      const out = (await r.json()) as RunResult;
+      setRunResult(out);
+      await loadRuns();
+      if (out.run_id) {
+        setSelectedRunId(out.run_id);
+      }
       onAutopilotComplete?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Smart prep failed");
@@ -180,6 +256,54 @@ export function AutopilotCard({
           ) : null}
         </div>
       ) : null}
+      <div className="mt-4 rounded-xl border border-zinc-800/80 bg-black/20 p-3">
+        <p className="text-xs font-semibold text-zinc-300">Recent Smart prep runs</p>
+        {runsLoading ? (
+          <p className="mt-2 text-xs text-zinc-500">Loading run history…</p>
+        ) : runs.length === 0 ? (
+          <p className="mt-2 text-xs text-zinc-500">No runs yet.</p>
+        ) : (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {runs.slice(0, 6).map((run) => (
+              <button
+                key={run.id}
+                type="button"
+                onClick={() => setSelectedRunId(run.id)}
+                className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
+                  selectedRunId === run.id
+                    ? "border-amber-400/60 bg-amber-500/10 text-amber-200"
+                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                }`}
+              >
+                {run.status} · {run.processed}
+              </button>
+            ))}
+          </div>
+        )}
+        {selectedRunId ? (
+          <div className="mt-3">
+            {runItemsLoading ? (
+              <p className="text-xs text-zinc-500">Loading run details…</p>
+            ) : runItems.length === 0 ? (
+              <p className="text-xs text-zinc-500">No items recorded for this run.</p>
+            ) : (
+              <ul className="space-y-1 text-xs">
+                {runItems.slice(0, 8).map((item) => (
+                  <li key={item.id} className="rounded-md border border-zinc-800 bg-black/30 px-2 py-1.5">
+                    <p className="text-zinc-300">
+                      {item.title} · <span className="text-zinc-500">{item.company}</span>
+                    </p>
+                    <p className="text-zinc-500">
+                      status: <span className="text-zinc-400">{item.status}</span>
+                    </p>
+                    {item.error ? <p className="text-amber-300/80">{item.error}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
