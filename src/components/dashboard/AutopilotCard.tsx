@@ -74,7 +74,9 @@ export function AutopilotCard({
 
   const loadRuns = useCallback(async (opts?: { suppressError?: boolean }) => {
     setRunsLoading(true);
-    setError(null);
+    if (!opts?.suppressError) {
+      setError(null);
+    }
     try {
       const r = await fetch(dauboBffUrl("v1/me/autopilot/runs?limit=10"), { credentials: "same-origin" });
       if (!r.ok) throw new Error("Could not load run history");
