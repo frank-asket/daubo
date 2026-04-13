@@ -128,6 +128,28 @@ class AutopilotRun(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class AutopilotRunItem(Base):
+    """Per-job outcome rows within an autopilot run."""
+
+    __tablename__ = "autopilot_run_items"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    run_id: Mapped[UUID | None] = mapped_column(nullable=True, index=True)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), index=True)
+    application_id: Mapped[UUID | None] = mapped_column(nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    company: Mapped[str] = mapped_column(String(500), nullable=False)
+    job_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
 class UserGmailCredentials(Base):
     """Refresh token for Gmail API (drafts only — gmail.compose scope)."""
 

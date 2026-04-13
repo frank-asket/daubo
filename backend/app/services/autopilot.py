@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Settings
-from app.models import JobApplication, UserGmailCredentials, UserResume
+from app.models import AutopilotRunItem, JobApplication, UserGmailCredentials, UserResume
 from app.services.application_package import generate_application_package
 from app.services.gmail_integration import (
     create_draft_plain,
@@ -42,6 +43,7 @@ async def run_autopilot_pass(
     *,
     limit: int = 6,
     create_gmail_drafts: bool = False,
+    run_id: UUID | None = None,
 ) -> dict[str, Any]:
     if not app_settings.openrouter_api_key:
         raise ValueError("OPENROUTER_API_KEY is not configured")
@@ -70,6 +72,18 @@ async def run_autopilot_pass(
     errors: list[str] = []
 
     for row in candidates:
+        item = AutopilotRunItem(
+            run_id=run_id,
+            clerk_user_id=user_id,
+            application_id=row.id,
+            title=row.title,
+            company=row.company,
+            job_url=row.job_url,
+            status="running",
+        )
+        session.add(item)
+        await session.commit()
+        await session.refresh(item)
         try:
             package = await generate_application_package(
                 app_settings,
@@ -84,6 +98,9 @@ async def run_autopilot_pass(
             if row.status not in _FROZEN_STATUSES:
                 row.status = "package_ready"
             session.add(row)
+            item.status = "prepared"
+            item.error = None
+            session.add(item)
             await session.commit()
             await session.refresh(row)
             processed += 1
@@ -91,6 +108,10 @@ async def run_autopilot_pass(
             await session.rollback()
             logger.exception("autopilot package failed")
             errors.append(f"{row.title} · {row.company}: {exc!s}"[:240])
+            item.status = "failed"
+            item.error = str(exc)[:500]
+            session.add(item)
+            await session.commit()
             await asyncio.sleep(0.5)
             continue
 
@@ -111,10 +132,18 @@ async def run_autopilot_pass(
                         body=body_text,
                         to=None,
                     )
+                    item.status = "prepared_with_draft"
+                    item.error = None
+                    session.add(item)
+                    await session.commit()
                     gmail_created += 1
                 except Exception as exc:  # noqa: BLE001
                     logger.exception("autopilot gmail draft failed")
                     errors.append(f"Gmail draft · {row.title}: {exc!s}"[:200])
+                    item.status = "prepared_draft_failed"
+                    item.error = str(exc)[:500]
+                    session.add(item)
+                    await session.commit()
 
         await asyncio.sleep(1.0)
 

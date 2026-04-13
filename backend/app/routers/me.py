@@ -17,6 +17,7 @@ from app.deps.users import get_clerk_user_id
 from app.models import (
     AgentMatchRun,
     AutopilotRun,
+    AutopilotRunItem,
     JobApplication,
     UserAutopilotProfile,
     UserGmailCredentials,
@@ -33,6 +34,7 @@ from app.schemas.me import (
     AutopilotProfileOut,
     AutopilotProfilePatch,
     AutopilotRunIn,
+    AutopilotRunItemOut,
     AutopilotRunOut,
     AutopilotRunRecordOut,
     GmailDraftOut,
@@ -998,6 +1000,7 @@ async def run_prep_autopilot(
             settings,
             limit=effective_limit,
             create_gmail_drafts=do_gmail,
+            run_id=run.id,
         )
     except ValueError as exc:
         run.status = "failed"
@@ -1061,5 +1064,31 @@ async def list_autopilot_runs(
         .where(AutopilotRun.clerk_user_id == user_id)
         .order_by(AutopilotRun.started_at.desc())
         .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+@router.get("/me/autopilot/runs/{run_id}/items", response_model=list[AutopilotRunItemOut])
+async def list_autopilot_run_items(
+    run_id: UUID,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> list[AutopilotRunItem]:
+    run_res = await session.execute(
+        select(AutopilotRun).where(
+            AutopilotRun.id == run_id,
+            AutopilotRun.clerk_user_id == user_id,
+        )
+    )
+    run = run_res.scalar_one_or_none()
+    if not run:
+        raise HTTPException(status_code=404, detail="Autopilot run not found")
+    result = await session.execute(
+        select(AutopilotRunItem)
+        .where(
+            AutopilotRunItem.run_id == run_id,
+            AutopilotRunItem.clerk_user_id == user_id,
+        )
+        .order_by(AutopilotRunItem.updated_at.desc())
     )
     return list(result.scalars().all())

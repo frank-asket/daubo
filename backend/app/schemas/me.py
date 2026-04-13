@@ -218,3 +218,19 @@ class AutopilotRunRecordOut(BaseModel):
     errors: list[str] = Field(default_factory=list)
     started_at: datetime
     finished_at: datetime | None = None
+
+
+class AutopilotRunItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    run_id: UUID
+    clerk_user_id: str
+    application_id: UUID | None = None
+    title: str
+    company: str
+    job_url: str | None = None
+    status: str
+    error: str | None = None
+    created_at: datetime
+    updated_at: datetime
