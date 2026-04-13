@@ -23,6 +23,7 @@ import type { BalanceChartResumeSection } from "@/components/daubo/BalanceChart"
 
 const RESUME_MATCH_POLL_MS = 7000;
 const RESUME_MATCH_POLL_MAX = 18;
+const RESUME_MATCH_AUTO_CYCLES = 3;
 
 function runFingerprint(run: unknown): string | null {
   if (run == null || typeof run !== "object") return null;
@@ -210,32 +211,47 @@ export function DashboardLive() {
 
         if (c !== null && c > 0) return;
 
-        if (cancelled) return;
-        setResumeMatchPending(true);
-        try {
-          await fetch(dauboBffUrl("v1/me/resume/trigger-auto-match"), {
-            method: "POST",
-            credentials: "same-origin",
-          });
-        } catch {
-          /* ignore */
-        }
+        let settled = false;
+        for (let cycle = 0; cycle < RESUME_MATCH_AUTO_CYCLES; cycle++) {
+          if (cancelled) return;
+          setResumeMatchPending(true);
+          try {
+            await fetch(dauboBffUrl("v1/me/resume/trigger-auto-match"), {
+              method: "POST",
+              credentials: "same-origin",
+            });
+          } catch {
+            /* ignore */
+          }
 
-        for (let i = 0; i < RESUME_MATCH_POLL_MAX - 1; i++) {
-          if (cancelled) return;
-          await new Promise((res) => setTimeout(res, RESUME_MATCH_POLL_MS));
-          if (cancelled) return;
-          const pr = await fetch(dauboBffUrl("v1/me/agent-match/latest"), { credentials: "same-origin" });
-          if (!pr.ok) continue;
-          const pj = (await pr.json()) as { run: unknown };
-          c = countParsedListingsFromRun(pj.run);
-          if (!cancelled) setResumeMatchListings(c);
-          const changedRun =
-            initialFingerprint != null &&
-            runFingerprint(pj.run) != null &&
-            runFingerprint(pj.run) !== initialFingerprint;
-          if (c !== null && c > 0) break;
-          if (changedRun || isTerminalRunStatus(pj.run)) break;
+          for (let i = 0; i < RESUME_MATCH_POLL_MAX - 1; i++) {
+            if (cancelled) return;
+            await new Promise((res) => setTimeout(res, RESUME_MATCH_POLL_MS));
+            if (cancelled) return;
+            const pr = await fetch(dauboBffUrl("v1/me/agent-match/latest"), { credentials: "same-origin" });
+            if (!pr.ok) continue;
+            const pj = (await pr.json()) as { run: unknown };
+            c = countParsedListingsFromRun(pj.run);
+            if (!cancelled) setResumeMatchListings(c);
+            const nextFingerprint = runFingerprint(pj.run);
+            const changedRun =
+              initialFingerprint != null &&
+              nextFingerprint != null &&
+              nextFingerprint !== initialFingerprint;
+            if (c !== null && c > 0) {
+              settled = true;
+              break;
+            }
+            if (changedRun || isTerminalRunStatus(pj.run)) {
+              settled = true;
+              break;
+            }
+          }
+
+          if (settled) break;
+          if (cycle < RESUME_MATCH_AUTO_CYCLES - 1) {
+            await new Promise((res) => setTimeout(res, 1500 * (cycle + 1)));
+          }
         }
       } catch {
         if (!cancelled) {
