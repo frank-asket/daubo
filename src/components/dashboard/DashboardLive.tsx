@@ -24,6 +24,31 @@ import type { BalanceChartResumeSection } from "@/components/daubo/BalanceChart"
 const RESUME_MATCH_POLL_MS = 7000;
 const RESUME_MATCH_POLL_MAX = 18;
 
+function runFingerprint(run: unknown): string | null {
+  if (run == null || typeof run !== "object") return null;
+  const r = run as {
+    id?: unknown;
+    run_id?: unknown;
+    created_at?: unknown;
+    updated_at?: unknown;
+    started_at?: unknown;
+    finished_at?: unknown;
+    status?: unknown;
+  };
+  const vals = [r.id, r.run_id, r.created_at, r.updated_at, r.started_at, r.finished_at, r.status]
+    .map((v) => (typeof v === "string" || typeof v === "number" ? String(v) : ""))
+    .filter(Boolean);
+  return vals.length ? vals.join("|") : null;
+}
+
+function isTerminalRunStatus(run: unknown): boolean {
+  if (run == null || typeof run !== "object") return false;
+  const status = (run as { status?: unknown }).status;
+  if (typeof status !== "string") return false;
+  const s = status.toLowerCase();
+  return s === "completed" || s === "done" || s === "failed" || s === "error" || s === "cancelled";
+}
+
 function repartitionFromApplications(apps: ApplicationSummary[]): { name: string; value: number }[] {
   const counts = new Map<string, number>();
   for (const s of JOB_STAGE_VALUES) counts.set(s, 0);
@@ -177,6 +202,7 @@ export function DashboardLive() {
         const j = (await r.json()) as { run: unknown };
         if (cancelled) return;
         let c = countParsedListingsFromRun(j.run);
+        const initialFingerprint = runFingerprint(j.run);
         if (!cancelled) setResumeMatchListings(c);
 
         if (cancelled) return;
@@ -204,7 +230,12 @@ export function DashboardLive() {
           const pj = (await pr.json()) as { run: unknown };
           c = countParsedListingsFromRun(pj.run);
           if (!cancelled) setResumeMatchListings(c);
+          const changedRun =
+            initialFingerprint != null &&
+            runFingerprint(pj.run) != null &&
+            runFingerprint(pj.run) !== initialFingerprint;
           if (c !== null && c > 0) break;
+          if (changedRun || isTerminalRunStatus(pj.run)) break;
         }
       } catch {
         if (!cancelled) {
