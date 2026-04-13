@@ -2,6 +2,7 @@ import csv
 import logging
 from io import StringIO
 from uuid import UUID
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
@@ -15,7 +16,9 @@ from app.db import get_db
 from app.deps.users import get_clerk_user_id
 from app.models import (
     AgentMatchRun,
+    AutopilotRun,
     JobApplication,
+    UserAutopilotProfile,
     UserGmailCredentials,
     UserProfileDocument,
     UserResume,
@@ -27,8 +30,11 @@ from app.schemas.me import (
     ApplicationOut,
     ApplicationPackageRequest,
     ApplicationUpdate,
+    AutopilotProfileOut,
+    AutopilotProfilePatch,
     AutopilotRunIn,
     AutopilotRunOut,
+    AutopilotRunRecordOut,
     GmailDraftOut,
     GmailOAuthCompleteIn,
     GmailOAuthCompleteOut,
@@ -96,6 +102,23 @@ async def _get_or_create_workspace_settings(
     if row:
         return row
     row = UserWorkspaceSettings(clerk_user_id=user_id)
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def _get_or_create_autopilot_profile(
+    session: AsyncSession,
+    user_id: str,
+) -> UserAutopilotProfile:
+    result = await session.execute(
+        select(UserAutopilotProfile).where(UserAutopilotProfile.clerk_user_id == user_id)
+    )
+    row = result.scalar_one_or_none()
+    if row:
+        return row
+    row = UserAutopilotProfile(clerk_user_id=user_id)
     session.add(row)
     await session.commit()
     await session.refresh(row)
@@ -951,24 +974,92 @@ async def run_prep_autopilot(
     settings: Settings = Depends(get_settings),
 ) -> AutopilotRunOut:
     req = body or AutopilotRunIn()
+    profile = await _get_or_create_autopilot_profile(session, user_id)
+    effective_limit = min(req.limit, profile.daily_apply_limit)
     ws = await _get_or_create_workspace_settings(session, user_id)
     do_gmail = (
         req.create_gmail_drafts
         if req.create_gmail_drafts is not None
         else ws.autopilot_auto_gmail_drafts
     )
+    run = AutopilotRun(
+        clerk_user_id=user_id,
+        status="running",
+        requested_limit=effective_limit,
+        create_gmail_drafts=do_gmail,
+    )
+    session.add(run)
+    await session.commit()
+    await session.refresh(run)
     try:
         out = await run_autopilot_pass(
             session,
             user_id,
             settings,
-            limit=req.limit,
+            limit=effective_limit,
             create_gmail_drafts=do_gmail,
         )
     except ValueError as exc:
+        run.status = "failed"
+        run.errors = [str(exc)]
+        run.finished_at = datetime.now(timezone.utc)
+        await session.commit()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        run.status = "failed"
+        run.errors = ["Autopilot run failed unexpectedly."]
+        run.finished_at = datetime.now(timezone.utc)
+        await session.commit()
+        raise
+    run.status = "completed"
+    run.processed = out["processed"]
+    run.gmail_drafts_created = out["gmail_drafts_created"]
+    run.errors = out["errors"]
+    run.finished_at = datetime.now(timezone.utc)
+    await session.commit()
+    await session.refresh(run)
     return AutopilotRunOut(
+        run_id=run.id,
+        status=run.status,
         processed=out["processed"],
         gmail_drafts_created=out["gmail_drafts_created"],
         errors=out["errors"],
     )
+
+
+@router.get("/me/autopilot/profile", response_model=AutopilotProfileOut)
+async def get_autopilot_profile(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> UserAutopilotProfile:
+    return await _get_or_create_autopilot_profile(session, user_id)
+
+
+@router.patch("/me/autopilot/profile", response_model=AutopilotProfileOut)
+async def patch_autopilot_profile(
+    body: AutopilotProfilePatch,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> UserAutopilotProfile:
+    row = await _get_or_create_autopilot_profile(session, user_id)
+    data = body.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(row, k, v)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+@router.get("/me/autopilot/runs", response_model=list[AutopilotRunRecordOut])
+async def list_autopilot_runs(
+    limit: int = Query(20, ge=1, le=100),
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> list[AutopilotRun]:
+    result = await session.execute(
+        select(AutopilotRun)
+        .where(AutopilotRun.clerk_user_id == user_id)
+        .order_by(AutopilotRun.started_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())

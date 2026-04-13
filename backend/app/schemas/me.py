@@ -172,6 +172,49 @@ class AutopilotRunIn(BaseModel):
 
 
 class AutopilotRunOut(BaseModel):
+    run_id: UUID | None = None
+    status: str = "completed"
     processed: int
     gmail_drafts_created: int
     errors: list[str] = Field(default_factory=list)
+
+
+class AutopilotProfileOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    clerk_user_id: str
+    target_titles: list[str] = Field(default_factory=list)
+    target_locations: list[str] = Field(default_factory=list)
+    company_blacklist: list[str] = Field(default_factory=list)
+    remote_only: bool = True
+    salary_floor: int | None = None
+    daily_apply_limit: int = 10
+    approval_mode: str = Field(default="always_approve")
+    is_active: bool = False
+    updated_at: datetime | None = None
+
+
+class AutopilotProfilePatch(BaseModel):
+    target_titles: list[str] | None = None
+    target_locations: list[str] | None = None
+    company_blacklist: list[str] | None = None
+    remote_only: bool | None = None
+    salary_floor: int | None = Field(default=None, ge=0)
+    daily_apply_limit: int | None = Field(default=None, ge=1, le=50)
+    approval_mode: str | None = Field(default=None, pattern="^(always_approve|manual_before_submit)$")
+    is_active: bool | None = None
+
+
+class AutopilotRunRecordOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    clerk_user_id: str
+    status: str
+    requested_limit: int
+    create_gmail_drafts: bool
+    processed: int
+    gmail_drafts_created: int
+    errors: list[str] = Field(default_factory=list)
+    started_at: datetime
+    finished_at: datetime | None = None

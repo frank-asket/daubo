@@ -90,6 +90,44 @@ class UserWorkspaceSettings(Base):
     )
 
 
+class UserAutopilotProfile(Base):
+    """Per-user apply automation preferences used by future execution workers."""
+
+    __tablename__ = "user_autopilot_profiles"
+
+    clerk_user_id: Mapped[str] = mapped_column(String(256), primary_key=True)
+    target_titles: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    target_locations: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    company_blacklist: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    remote_only: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    salary_floor: Mapped[int | None] = mapped_column(nullable=True)
+    daily_apply_limit: Mapped[int] = mapped_column(nullable=False, default=10)
+    approval_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="always_approve")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class AutopilotRun(Base):
+    """Persisted outcomes for each manual or scheduled autopilot run."""
+
+    __tablename__ = "autopilot_runs"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    requested_limit: Mapped[int] = mapped_column(nullable=False, default=6)
+    create_gmail_drafts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    processed: Mapped[int] = mapped_column(nullable=False, default=0)
+    gmail_drafts_created: Mapped[int] = mapped_column(nullable=False, default=0)
+    errors: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class UserGmailCredentials(Base):
     """Refresh token for Gmail API (drafts only — gmail.compose scope)."""
 
