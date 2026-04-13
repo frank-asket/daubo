@@ -72,8 +72,9 @@ export function AutopilotCard({
     void load();
   }, [load]);
 
-  const loadRuns = useCallback(async () => {
+  const loadRuns = useCallback(async (opts?: { suppressError?: boolean }) => {
     setRunsLoading(true);
+    setError(null);
     try {
       const r = await fetch(dauboBffUrl("v1/me/autopilot/runs?limit=10"), { credentials: "same-origin" });
       if (!r.ok) throw new Error("Could not load run history");
@@ -81,7 +82,9 @@ export function AutopilotCard({
       setRuns(list);
       setSelectedRunId((prev) => prev ?? list[0]?.id ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load run history");
+      if (!opts?.suppressError) {
+        setError(e instanceof Error ? e.message : "Could not load run history");
+      }
       setRuns([]);
       setSelectedRunId(null);
     } finally {
@@ -91,6 +94,7 @@ export function AutopilotCard({
 
   const loadRunItems = useCallback(async (runId: string) => {
     setRunItemsLoading(true);
+    setError(null);
     try {
       const r = await fetch(dauboBffUrl(`v1/me/autopilot/runs/${runId}/items`), {
         credentials: "same-origin",
@@ -158,7 +162,7 @@ export function AutopilotCard({
       }
       const out = (await r.json()) as RunResult;
       setRunResult(out);
-      await loadRuns();
+      await loadRuns({ suppressError: true });
       if (out.run_id) {
         setSelectedRunId(out.run_id);
       }
