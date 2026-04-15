@@ -12,20 +12,18 @@ export function DashboardOverview({ hasResume }: { hasResume: boolean | null }) 
             Your platform for opportunity
           </p>
           <h1 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            From job search to your own venture—one automated workspace
+            One workspace for job search, tailoring, and apply handoff
           </h1>
           <p className="mt-2 text-sm font-medium text-emerald-400/90">
             Daubo automates drafts, prep, and pipeline—you still approve every Apply and Send.
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-            Use Daubo whether you&apos;re <strong className="font-medium text-zinc-400">chasing a dream role</strong>{" "}
-            or <strong className="font-medium text-zinc-400">sharpening how you show up</strong> for grants,
-            clients, or a business you&apos;re starting. We help you{" "}
-            <strong className="font-medium text-zinc-400">find and track opportunities</strong>,{" "}
-            <strong className="font-medium text-zinc-400">shape stronger materials</strong> from your résumé and
-            credentials, and <strong className="font-medium text-zinc-400">prepare for interviews</strong>. Turn on{" "}
-            <strong className="font-medium text-zinc-400">Smart prep</strong> and we&apos;ll draft for new items
-            you save—you review and submit on official sites (and Gmail drafts when connected).
+            We help you <strong className="font-medium text-zinc-400">find and track opportunities</strong>,{" "}
+            <strong className="font-medium text-zinc-400">gather richer context</strong> from your résumé and job
+            descriptions, and <strong className="font-medium text-zinc-400">prepare stronger materials</strong> for
+            LinkedIn, company sites, and email outreach. Turn on{" "}
+            <strong className="font-medium text-zinc-400">Smart prep</strong> and Daubo drafts for saved roles;
+            you review and submit on official platforms.
           </p>
           {!hasResume ? (
             <p className="mt-3 max-w-2xl rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">

@@ -88,6 +88,10 @@ export function GmailConnectCard() {
             creates <strong className="font-medium text-zinc-400">drafts</strong> in your Gmail—you
             review and send. No auto-send.
           </p>
+          <p className="mt-1 text-[11px] text-zinc-600">
+            Only needed for <span className="text-zinc-500">email-channel</span> workflows. If you mostly apply
+            via LinkedIn or company forms, you can skip this step.
+          </p>
         </div>
       </div>
 

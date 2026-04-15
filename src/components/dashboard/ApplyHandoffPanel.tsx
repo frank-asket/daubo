@@ -154,9 +154,11 @@ export function ApplyHandoffPanel({
   if (!application) return null;
 
   const draft = application.package_draft;
+  const selectedChannel = (channelOverride || application.apply_channel || "").trim().toLowerCase();
   const showGmailDraft =
     Boolean(draft?.cover_letter?.trim() || draft?.linkedin_note?.trim()) &&
     Boolean(gmailStatus?.configured);
+  const hasRichContext = jdOverride.trim().length >= 240;
 
   return (
     <div
@@ -193,6 +195,10 @@ export function ApplyHandoffPanel({
           <p className="text-xs leading-relaxed text-zinc-500">
             Daubo does not log into LinkedIn or company sites. Open the posting, paste the drafts
             below, and confirm when you have submitted.
+          </p>
+          <p className="rounded-lg border border-zinc-800 bg-black/30 px-3 py-2 text-[11px] text-zinc-500">
+            Richer context improves drafting quality: include the full posting, required skills, and team focus
+            before generating.
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -233,6 +239,11 @@ export function ApplyHandoffPanel({
               placeholder="Paste the job ad text, then generate the package."
             />
           </label>
+          {!hasRichContext ? (
+            <p className="text-[11px] text-amber-200/80">
+              Add more job description context for better LinkedIn notes and email drafts.
+            </p>
+          ) : null}
 
           <label className="block">
             <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
@@ -249,6 +260,20 @@ export function ApplyHandoffPanel({
               <option value="web">Company careers site</option>
             </select>
           </label>
+          {selectedChannel === "linkedin" ? (
+            <p className="text-[11px] text-zinc-500">
+              LinkedIn flow: focus on the <span className="text-zinc-400">LinkedIn note</span> and tailored bullets.
+              Gmail drafts are optional.
+            </p>
+          ) : selectedChannel === "email" ? (
+            <p className="text-[11px] text-zinc-500">
+              Email flow: generate package first, then create a Gmail draft if Gmail is connected.
+            </p>
+          ) : selectedChannel === "web" ? (
+            <p className="text-[11px] text-zinc-500">
+              Company-site flow: use checklist + cover text, then submit directly on the employer portal.
+            </p>
+          ) : null}
 
           <button
             type="button"
@@ -267,7 +292,7 @@ export function ApplyHandoffPanel({
           </button>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-          {showGmailDraft ? (
+          {showGmailDraft && selectedChannel !== "linkedin" ? (
             <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-200/90">
                 Gmail draft
