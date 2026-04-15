@@ -117,6 +117,39 @@ class ApplicationOut(BaseModel):
     updated_at: datetime
 
 
+class ApplicationsIntegrityIn(BaseModel):
+    dry_run: bool = Field(
+        default=True,
+        description="Preview changes only when true; apply dedupe/normalization when false.",
+    )
+    stale_days: int = Field(
+        default=21,
+        ge=1,
+        le=365,
+        description="Rows older than this threshold are flagged as stale in the report.",
+    )
+
+
+class ApplicationsIntegrityChange(BaseModel):
+    application_id: UUID
+    action: str
+    reason: str
+    before: str | None = None
+    after: str | None = None
+    duplicate_of_id: UUID | None = None
+
+
+class ApplicationsIntegrityOut(BaseModel):
+    dry_run: bool = True
+    stale_days: int
+    scanned: int
+    duplicates_found: int
+    duplicates_removed: int
+    statuses_normalized: int
+    stale_flagged: int
+    changes: list[ApplicationsIntegrityChange] = Field(default_factory=list)
+
+
 class ApplicationPackageRequest(BaseModel):
     """Optional overrides when generating paste-ready drafts."""
 

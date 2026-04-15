@@ -28,6 +28,8 @@ from app.models import (
 from app.schemas.me import (
     PROFILE_DOC_KINDS,
     ApplicationCreate,
+    ApplicationsIntegrityIn,
+    ApplicationsIntegrityOut,
     ApplicationOut,
     ApplicationPackageRequest,
     ApplicationUpdate,
@@ -55,6 +57,7 @@ from app.services.application_package import (
     package_summary_text,
 )
 from app.services.autopilot import run_autopilot_pass
+from app.services.pipeline_integrity import run_pipeline_integrity_pass
 from app.services.gmail_integration import (
     create_draft_plain,
     draft_content_from_application,
@@ -663,6 +666,22 @@ async def delete_application(
         raise HTTPException(status_code=404, detail="Application not found")
     await session.delete(row)
     await session.commit()
+
+
+@router.post("/me/applications/integrity-check", response_model=ApplicationsIntegrityOut)
+async def run_applications_integrity_check(
+    body: ApplicationsIntegrityIn | None = None,
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+) -> ApplicationsIntegrityOut:
+    req = body or ApplicationsIntegrityIn()
+    out = await run_pipeline_integrity_pass(
+        session,
+        user_id,
+        dry_run=req.dry_run,
+        stale_days=req.stale_days,
+    )
+    return ApplicationsIntegrityOut.model_validate(out)
 
 
 @router.post(

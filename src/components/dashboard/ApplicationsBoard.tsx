@@ -2,7 +2,7 @@
 
 import { Download, ExternalLink, Loader2, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
 import { ResumeProfileStrip } from "@/components/dashboard/ResumeProfileStrip";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
@@ -25,6 +25,26 @@ type Application = {
   updated_at: string;
 };
 
+type IntegrityChange = {
+  application_id: string;
+  action: string;
+  reason: string;
+  before?: string | null;
+  after?: string | null;
+  duplicate_of_id?: string | null;
+};
+
+type IntegrityReport = {
+  dry_run: boolean;
+  stale_days: number;
+  scanned: number;
+  duplicates_found: number;
+  duplicates_removed: number;
+  statuses_normalized: number;
+  stale_flagged: number;
+  changes: IntegrityChange[];
+};
+
 export function ApplicationsBoard() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,6 +62,11 @@ export function ApplicationsBoard() {
   const [jobUrl, setJobUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [handoffId, setHandoffId] = useState<string | null>(null);
+  const [integrityLoading, setIntegrityLoading] = useState(false);
+  const [integrityApplying, setIntegrityApplying] = useState(false);
+  const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
+  const [staleOnly, setStaleOnly] = useState(false);
+  const autoPreviewTriggered = useRef(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -106,17 +131,25 @@ export function ApplicationsBoard() {
     setFilterText(qFromUrl);
   }, [qFromUrl]);
 
+  const staleCutoffMs = 21 * 24 * 60 * 60 * 1000;
+
   const filteredItems = useMemo(() => {
+    const now = Date.now();
     const needle = filterText.trim().toLowerCase();
-    if (!needle) return items;
-    return items.filter(
-      (row) =>
+    return items.filter((row) => {
+      const textMatch =
+        !needle ||
         row.title.toLowerCase().includes(needle) ||
         row.company.toLowerCase().includes(needle) ||
         (row.location ?? "").toLowerCase().includes(needle) ||
-        (row.notes ?? "").toLowerCase().includes(needle),
-    );
-  }, [items, filterText]);
+        (row.notes ?? "").toLowerCase().includes(needle);
+      if (!textMatch) return false;
+      if (!staleOnly) return true;
+      const updated = new Date(row.updated_at).getTime();
+      if (!Number.isFinite(updated)) return false;
+      return now - updated > staleCutoffMs;
+    });
+  }, [items, filterText, staleOnly, staleCutoffMs]);
 
   useEffect(() => {
     const q = filterText.trim();
@@ -199,6 +232,49 @@ export function ApplicationsBoard() {
     }
   }
 
+  async function runIntegrityCheck(dryRun: boolean) {
+    if (dryRun) setIntegrityLoading(true);
+    else setIntegrityApplying(true);
+    setError(null);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/applications/integrity-check"), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ dry_run: dryRun, stale_days: 21 }),
+      });
+      if (!r.ok) {
+        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
+        throw new Error(formatApiErrorMessage(j.detail, "Could not run pipeline cleanup. Try again."));
+      }
+      const report = (await r.json()) as IntegrityReport;
+      setIntegrityReport(report);
+      if (!dryRun) {
+        await load();
+        void reloadStats();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Pipeline cleanup failed");
+    } finally {
+      if (dryRun) setIntegrityLoading(false);
+      else setIntegrityApplying(false);
+    }
+  }
+
+  function jumpToApplicationRow(applicationId: string) {
+    const el = document.getElementById(`app-row-${applicationId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el instanceof HTMLElement) el.focus({ preventScroll: true });
+  }
+
+  useEffect(() => {
+    if (loading || autoPreviewTriggered.current) return;
+    if (items.length < 12) return;
+    autoPreviewTriggered.current = true;
+    void runIntegrityCheck(true);
+  }, [items.length, loading]);
+
   const limits = stats?.limits;
 
   return (
@@ -277,6 +353,49 @@ export function ApplicationsBoard() {
       </form>
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      {integrityReport ? (
+        <div className="rounded-xl border border-zinc-800 bg-black/30 px-4 py-3 text-xs text-zinc-300">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-medium text-zinc-200">
+              Pipeline integrity {integrityReport.dry_run ? "preview" : "applied"}
+            </p>
+            {integrityReport.dry_run ? (
+              <button
+                type="button"
+                disabled={integrityApplying}
+                onClick={() => void runIntegrityCheck(false)}
+                className="rounded-full border border-emerald-500/40 px-3 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
+              >
+                {integrityApplying ? "Applying…" : "Apply changes"}
+              </button>
+            ) : null}
+          </div>
+          <p className="mt-2 text-zinc-400">
+            Scanned {integrityReport.scanned} rows · duplicates found {integrityReport.duplicates_found}
+            {integrityReport.dry_run ? "" : ` · removed ${integrityReport.duplicates_removed}`} · statuses
+            normalized {integrityReport.statuses_normalized} · stale flagged{" "}
+            {integrityReport.stale_flagged}
+          </p>
+          {integrityReport.changes.length > 0 ? (
+            <ul className="mt-2 list-inside list-disc space-y-1 text-zinc-400">
+              {integrityReport.changes.slice(0, 8).map((change) => (
+                <li key={`${change.application_id}-${change.action}-${change.duplicate_of_id ?? ""}`}>
+                  <span className="text-zinc-300">{change.action}</span>: {change.reason}
+                  <button
+                    type="button"
+                    onClick={() => jumpToApplicationRow(change.application_id)}
+                    className="ml-2 text-[11px] font-medium text-emerald-400 hover:underline"
+                  >
+                    Open row
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-zinc-500">No integrity issues detected.</p>
+          )}
+        </div>
+      ) : null}
 
       <div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -284,6 +403,26 @@ export function ApplicationsBoard() {
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             {items.length > 0 ? (
               <>
+                <button
+                  type="button"
+                  disabled={integrityLoading || integrityApplying}
+                  onClick={() => void runIntegrityCheck(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-600 px-4 py-2 text-xs font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white disabled:opacity-50"
+                >
+                  {integrityLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Clean pipeline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaleOnly((v) => !v)}
+                  className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                    staleOnly
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                      : "border-zinc-600 text-zinc-200 hover:border-zinc-500 hover:text-white"
+                  }`}
+                >
+                  {staleOnly ? "Showing stale only" : "Only stale"}
+                </button>
                 <button
                   type="button"
                   disabled={exporting}
@@ -336,6 +475,8 @@ export function ApplicationsBoard() {
               {filteredItems.map((row) => (
                 <div
                   key={row.id}
+                  id={`app-row-${row.id}`}
+                  tabIndex={-1}
                   className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-4 text-sm"
                 >
                   <div className="font-medium text-white">
@@ -404,7 +545,12 @@ export function ApplicationsBoard() {
                 </thead>
                 <tbody className="text-zinc-300">
                   {filteredItems.map((row) => (
-                    <tr key={row.id} className="border-b border-zinc-800/80 last:border-0">
+                    <tr
+                      key={row.id}
+                      id={`app-row-${row.id}`}
+                      tabIndex={-1}
+                      className="border-b border-zinc-800/80 last:border-0"
+                    >
                       <td className="px-4 py-3 font-medium text-white">
                         {row.job_url ? (
                           <a
