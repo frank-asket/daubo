@@ -297,12 +297,15 @@ export function AutopilotCard({
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-white">Smart prep</h3>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            When you save roles from discover, we can automatically prepare{" "}
-            <strong className="text-zinc-400">tailored application materials</strong> (and optional{" "}
-            <strong className="text-zinc-400">Gmail drafts</strong> when Gmail is connected).{" "}
+            When you save roles, Daubo prepares{" "}
+            <strong className="text-zinc-400">tailored application materials</strong> for LinkedIn and
+            company-site flows first.{" "}
             <span className="text-zinc-600">
-              You still apply on LinkedIn and company sites yourself—we never auto-submit there.
+              You still apply manually on official platforms—we never auto-submit.
             </span>
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-600">
+            Gmail drafts are optional and only useful when you apply via email outreach.
           </p>
         </div>
       </div>
@@ -333,7 +336,7 @@ export function AutopilotCard({
               }
               className="rounded border-zinc-600 bg-black"
             />
-            When Smart prep runs, also create Gmail drafts (connect Gmail in Settings)
+            Also create Gmail drafts for email-channel roles (optional)
           </label>
           <div className="flex flex-wrap gap-2">
             <button
@@ -357,9 +360,9 @@ export function AutopilotCard({
                   actionTag: "run-gmail",
                 })
               }
-              className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 disabled:opacity-50"
+              className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 disabled:opacity-50"
             >
-              Run now + Gmail drafts
+              Run now + optional Gmail drafts
             </button>
           </div>
         </div>
