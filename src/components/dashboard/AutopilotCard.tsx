@@ -46,6 +46,13 @@ type ActiveRunConflict = {
   message: string;
 };
 
+type AutopilotConflictDetail = {
+  code?: string;
+  message?: string;
+  active_run_id?: string;
+  started_at?: string;
+};
+
 export function AutopilotCard({
   onAutopilotComplete,
 }: {
@@ -183,16 +190,35 @@ export function AutopilotCard({
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        const detail = ((j as { detail?: string }).detail ?? r.statusText).trim();
+        const detailRaw = (j as { detail?: unknown }).detail;
         if (r.status === 409) {
-          const m = detail.match(/Run id:\s*([0-9a-f-]{36})/i);
+          const conflict =
+            detailRaw && typeof detailRaw === "object"
+              ? (detailRaw as AutopilotConflictDetail)
+              : null;
+          const startedAtLabel =
+            typeof conflict?.started_at === "string" && conflict.started_at.trim()
+              ? ` Started ${new Date(conflict.started_at).toLocaleString()}.`
+              : "";
           setActiveRunConflict({
-            runId: m?.[1] ?? null,
-            message: detail || "A Smart prep run is already in progress.",
+            runId: typeof conflict?.active_run_id === "string" ? conflict.active_run_id : null,
+            message:
+              (typeof conflict?.message === "string" && conflict.message.trim()
+                ? conflict.message.trim()
+                : "A Smart prep run is already in progress.") + startedAtLabel,
           });
           return;
         }
-        throw new Error(detail);
+        const detail =
+          typeof detailRaw === "string"
+            ? detailRaw.trim()
+            : typeof detailRaw === "object" &&
+                detailRaw !== null &&
+                "message" in (detailRaw as Record<string, unknown>) &&
+                typeof (detailRaw as { message?: unknown }).message === "string"
+              ? ((detailRaw as { message: string }).message || "").trim()
+              : "";
+        throw new Error(detail || r.statusText || "Smart prep failed");
       }
       const out = (await r.json()) as RunResult;
       setRunResult(out);

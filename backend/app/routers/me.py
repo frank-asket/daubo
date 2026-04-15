@@ -1,10 +1,12 @@
 import csv
+import hashlib
+import json
 import logging
 from io import StringIO
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Header, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -85,6 +87,52 @@ logger = logging.getLogger("daubo")
 
 _AUTODISCOVER_KIND = "resume_autodiscover"
 _AUTOPILOT_RUNNING_STALE_AFTER = timedelta(minutes=30)
+_AUTOPILOT_IDEMPOTENCY_TTL = timedelta(hours=8)
+
+
+def _is_autopilot_run_stale(started_at: datetime) -> bool:
+    started_utc = started_at if started_at.tzinfo else started_at.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - started_utc > _AUTOPILOT_RUNNING_STALE_AFTER
+
+
+def _autopilot_conflict_detail(running: AutopilotRun) -> dict:
+    started = running.started_at
+    started_utc = started if started.tzinfo else started.replace(tzinfo=timezone.utc)
+    return {
+        "code": "autopilot_run_in_progress",
+        "message": "A Smart prep run is already in progress. Wait for it to finish before starting another run.",
+        "active_run_id": str(running.id),
+        "started_at": started_utc.isoformat(),
+    }
+
+
+def _normalize_idempotency_key(raw: str | None) -> str | None:
+    key = (raw or "").strip()
+    if not key:
+        return None
+    return key[:128]
+
+
+def _autopilot_request_fingerprint(
+    *,
+    limit: int,
+    create_gmail_drafts: bool,
+    retry_scope: str | None,
+    source_run_id: UUID | None,
+) -> str:
+    payload = {
+        "limit": limit,
+        "create_gmail_drafts": bool(create_gmail_drafts),
+        "retry_scope": retry_scope or None,
+        "source_run_id": str(source_run_id) if source_run_id is not None else None,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _autopilot_idempotency_active(started_at: datetime) -> bool:
+    started_utc = started_at if started_at.tzinfo else started_at.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - started_utc <= _AUTOPILOT_IDEMPOTENCY_TTL
 
 
 def _classify_autopilot_item_error(status: str, error: str | None) -> str | None:
@@ -203,9 +251,7 @@ async def _resolve_or_block_running_autopilot(
     if running is None:
         return None
 
-    started = running.started_at
-    started_utc = started if started.tzinfo else started.replace(tzinfo=timezone.utc)
-    if datetime.now(timezone.utc) - started_utc > _AUTOPILOT_RUNNING_STALE_AFTER:
+    if _is_autopilot_run_stale(running.started_at):
         running.status = "failed"
         prev_errors = running.errors if isinstance(running.errors, list) else []
         running.errors = list(prev_errors) + [
@@ -1081,30 +1127,72 @@ async def run_prep_autopilot(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    idempotency_key_header: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> AutopilotRunOut:
     req = body or AutopilotRunIn()
     profile = await _get_or_create_autopilot_profile(session, user_id)
-    running = await _resolve_or_block_running_autopilot(session, user_id)
-    if running is not None:
-        started = running.started_at
-        started_utc = started if started.tzinfo else started.replace(tzinfo=timezone.utc)
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "A Smart prep run is already in progress. "
-                f"Run id: {running.id} (started {started_utc.isoformat()}). "
-                "Wait for it to finish before starting another run."
-            ),
-        )
     effective_limit = min(req.limit, profile.daily_apply_limit)
+    # Resolve workspace prefs before entering the overlap-guard critical section because
+    # this helper may create a row and commit (which would otherwise release our lock).
     ws = await _get_or_create_workspace_settings(session, user_id)
     do_gmail = (
         req.create_gmail_drafts
         if req.create_gmail_drafts is not None
         else ws.autopilot_auto_gmail_drafts
     )
+    idem_key = _normalize_idempotency_key(idempotency_key_header)
+    req_fingerprint = _autopilot_request_fingerprint(
+        limit=effective_limit,
+        create_gmail_drafts=do_gmail,
+        retry_scope=req.retry_scope,
+        source_run_id=req.source_run_id,
+    )
+    if idem_key is not None:
+        prev_res = await session.execute(
+            select(AutopilotRun)
+            .where(
+                AutopilotRun.clerk_user_id == user_id,
+                AutopilotRun.idempotency_key == idem_key,
+            )
+            .order_by(AutopilotRun.started_at.desc())
+            .limit(1)
+        )
+        prev = prev_res.scalar_one_or_none()
+        if prev is not None and _autopilot_idempotency_active(prev.started_at):
+            prev_fp = (prev.request_fingerprint or "").strip()
+            if prev_fp and prev_fp != req_fingerprint:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "idempotency_key_reused_with_different_payload",
+                        "message": "Idempotency key was already used with different run parameters.",
+                        "active_run_id": str(prev.id),
+                        "started_at": (
+                            prev.started_at
+                            if prev.started_at.tzinfo
+                            else prev.started_at.replace(tzinfo=timezone.utc)
+                        ).isoformat(),
+                    },
+                )
+            return AutopilotRunOut(
+                run_id=prev.id,
+                status=prev.status,
+                processed=prev.processed,
+                gmail_drafts_created=prev.gmail_drafts_created,
+                errors=prev.errors if isinstance(prev.errors, list) else [],
+            )
+    # From this point to run creation commit, do not call helpers that may commit before
+    # the new "running" row is inserted; that would release the launch lock too early.
+    running = await _resolve_or_block_running_autopilot(session, user_id)
+    if running is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=_autopilot_conflict_detail(running),
+        )
     run = AutopilotRun(
         clerk_user_id=user_id,
+        idempotency_key=idem_key,
+        request_fingerprint=req_fingerprint,
         status="running",
         requested_limit=effective_limit,
         create_gmail_drafts=do_gmail,

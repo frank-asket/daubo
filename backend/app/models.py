@@ -118,6 +118,8 @@ class AutopilotRun(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     clerk_user_id: Mapped[str] = mapped_column(String(256), index=True)
+    idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    request_fingerprint: Mapped[str | None] = mapped_column(String(128), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
     requested_limit: Mapped[int] = mapped_column(nullable=False, default=6)
     create_gmail_drafts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

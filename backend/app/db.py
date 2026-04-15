@@ -72,6 +72,22 @@ async def init_db() -> None:
                     "ALTER TABLE user_resumes ADD COLUMN IF NOT EXISTS profile_extracted_at TIMESTAMPTZ"
                 )
             )
+            await conn.execute(
+                text(
+                    "ALTER TABLE autopilot_runs ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(128)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE autopilot_runs ADD COLUMN IF NOT EXISTS request_fingerprint VARCHAR(128)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_autopilot_runs_idempotency_key "
+                    "ON autopilot_runs (idempotency_key)"
+                )
+            )
         db_init_ok = True
     except Exception:
         logger.exception(

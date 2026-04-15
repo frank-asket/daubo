@@ -36,6 +36,23 @@ def _needs_package(row: JobApplication) -> bool:
     return False
 
 
+def _retry_application_ids_for_scope(
+    item_rows: list[AutopilotRunItem],
+    retry_scope: str | None,
+) -> set[UUID]:
+    ids: set[UUID] = set()
+    if retry_scope not in {"failed_only", "gmail_failed_only"}:
+        return ids
+    for it in item_rows:
+        if it.application_id is None:
+            continue
+        if retry_scope == "failed_only" and it.status == "failed":
+            ids.add(it.application_id)
+        if retry_scope == "gmail_failed_only" and it.status == "prepared_draft_failed":
+            ids.add(it.application_id)
+    return ids
+
+
 async def run_autopilot_pass(
     session: AsyncSession,
     user_id: str,
@@ -69,14 +86,7 @@ async def run_autopilot_pass(
             item_q = item_q.where(AutopilotRunItem.run_id == source_run_id)
         item_q = item_q.order_by(AutopilotRunItem.updated_at.desc())
         item_rows = (await session.execute(item_q)).scalars().all()
-        retry_ids = set()
-        for it in item_rows:
-            if it.application_id is None:
-                continue
-            if retry_scope == "failed_only" and it.status == "failed":
-                retry_ids.add(it.application_id)
-            if retry_scope == "gmail_failed_only" and it.status == "prepared_draft_failed":
-                retry_ids.add(it.application_id)
+        retry_ids = _retry_application_ids_for_scope(list(item_rows), retry_scope)
 
     if retry_scope == "gmail_failed_only":
         candidates = [r for r in all_rows if retry_ids and r.id in retry_ids][: max(1, min(limit, 25))]
