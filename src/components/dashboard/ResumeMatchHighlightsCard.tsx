@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
@@ -32,11 +33,32 @@ function byFitThenTitle(
   return a.title.localeCompare(b.title);
 }
 
+const FIT_THRESHOLDS = new Set([0, 2.5, 3, 3.5, 4, 4.5]);
+const RESUME_FIT_QUERY_KEY = "resumeFitMin";
+const RESUME_FIT_STORAGE_KEY = "daubo:resume-fit-min";
+
+function normalizeFitThreshold(raw: string | number | null | undefined): number {
+  if (raw == null) return 0;
+  const parsed = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(parsed)) return 0;
+  return FIT_THRESHOLDS.has(parsed) ? parsed : 0;
+}
+
+function listingKey(l: DiscoverResult["result"]["parsed_listings"][number]): string {
+  const title = l.title.trim().toLowerCase();
+  const employer = (l.employer ?? "").trim().toLowerCase();
+  const location = (l.location ?? "").trim().toLowerCase();
+  const url = (l.source_url ?? "").trim().toLowerCase();
+  return [title, employer, location, url].join("|");
+}
+
 export function ResumeMatchHighlightsCard({
   onPipelineUpdated,
 }: {
   onPipelineUpdated?: () => void;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { stats, statsReady } = useDashboardStats();
   const [run, setRun] = useState<DiscoverResult | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
@@ -50,6 +72,38 @@ export function ResumeMatchHighlightsCard({
   const pollCount = useRef(0);
   const onUpdate = useRef(onPipelineUpdated);
   onUpdate.current = onPipelineUpdated;
+
+  useEffect(() => {
+    const fromQuery = normalizeFitThreshold(searchParams.get(RESUME_FIT_QUERY_KEY));
+    if (fromQuery > 0 || searchParams.has(RESUME_FIT_QUERY_KEY)) {
+      setMinFitThreshold(fromQuery);
+      return;
+    }
+    try {
+      const fromStorage = normalizeFitThreshold(localStorage.getItem(RESUME_FIT_STORAGE_KEY));
+      setMinFitThreshold(fromStorage);
+    } catch {
+      setMinFitThreshold(0);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(RESUME_FIT_STORAGE_KEY, String(minFitThreshold));
+    } catch {
+      /* ignore storage failures */
+    }
+    const currentRaw = searchParams.get(RESUME_FIT_QUERY_KEY);
+    const currentNormalized = normalizeFitThreshold(currentRaw);
+    if (minFitThreshold <= 0 && !searchParams.has(RESUME_FIT_QUERY_KEY)) return;
+    if (minFitThreshold > 0 && currentNormalized === minFitThreshold) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (minFitThreshold <= 0) params.delete(RESUME_FIT_QUERY_KEY);
+    else params.set(RESUME_FIT_QUERY_KEY, String(minFitThreshold));
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  }, [minFitThreshold, router, searchParams]);
 
   const fetchLatest = useCallback(async (): Promise<boolean> => {
     try {
@@ -138,11 +192,8 @@ export function ResumeMatchHighlightsCard({
     };
   }, [statsReady, stats?.has_resume, fetchLatest]);
 
-  async function addListing(
-    l: DiscoverResult["result"]["parsed_listings"][number],
-    idx: number,
-  ) {
-    const key = `${l.title}-${idx}`;
+  async function addListing(l: DiscoverResult["result"]["parsed_listings"][number]) {
+    const key = listingKey(l);
     setAddingId(key);
     setErr(null);
     try {
@@ -279,7 +330,7 @@ export function ResumeMatchHighlightsCard({
           Min fit score
           <select
             value={minFitThreshold}
-            onChange={(e) => setMinFitThreshold(Number(e.target.value))}
+            onChange={(e) => setMinFitThreshold(normalizeFitThreshold(e.target.value))}
             className="ml-2 rounded-md border border-zinc-700 bg-black px-2 py-1 text-[11px] text-zinc-200"
           >
             <option value={0}>All</option>
@@ -298,9 +349,9 @@ export function ResumeMatchHighlightsCard({
         </p>
       ) : null}
       <ul className="mt-4 space-y-2">
-        {filteredListings.slice(0, 8).map((l, i) => (
+        {filteredListings.slice(0, 8).map((l) => (
           <li
-            key={`${l.title}-${i}`}
+            key={listingKey(l)}
             className="flex flex-col gap-2 rounded-xl border border-zinc-800/90 bg-black/30 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 flex-1">
@@ -352,10 +403,10 @@ export function ResumeMatchHighlightsCard({
             <button
               type="button"
               disabled={addingId !== null}
-              onClick={() => void addListing(l, i)}
+              onClick={() => void addListing(l)}
               className="shrink-0 rounded-full border border-zinc-600 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-50"
             >
-              {addingId === `${l.title}-${i}` ? "Saving…" : "Save to my jobs"}
+              {addingId === listingKey(l) ? "Saving…" : "Save to my jobs"}
             </button>
           </li>
         ))}

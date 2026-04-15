@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import { dauboBffUrl } from "@/lib/daubo-api";
@@ -56,6 +57,25 @@ function byFitThenTitle(
   return a.title.localeCompare(b.title);
 }
 
+const FIT_THRESHOLDS = new Set([0, 2.5, 3, 3.5, 4, 4.5]);
+const DISCOVER_FIT_QUERY_KEY = "discoverFitMin";
+const DISCOVER_FIT_STORAGE_KEY = "daubo:discover-fit-min";
+
+function normalizeFitThreshold(raw: string | number | null | undefined): number {
+  if (raw == null) return 0;
+  const parsed = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(parsed)) return 0;
+  return FIT_THRESHOLDS.has(parsed) ? parsed : 0;
+}
+
+function listingKey(l: DiscoverResult["result"]["parsed_listings"][number]): string {
+  const title = l.title.trim().toLowerCase();
+  const employer = (l.employer ?? "").trim().toLowerCase();
+  const location = (l.location ?? "").trim().toLowerCase();
+  const url = (l.source_url ?? "").trim().toLowerCase();
+  return [title, employer, location, url].join("|");
+}
+
 export function JobDiscoverPanel({
   onDiscoveryComplete,
   onAddedToPipeline,
@@ -63,6 +83,8 @@ export function JobDiscoverPanel({
   onDiscoveryComplete?: () => void;
   onAddedToPipeline?: () => void;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const onCompleteRef = useRef(onDiscoveryComplete);
   onCompleteRef.current = onDiscoveryComplete;
 
@@ -85,8 +107,40 @@ export function JobDiscoverPanel({
   const [addingId, setAddingId] = useState<string | null>(null);
   const [minFitThreshold, setMinFitThreshold] = useState(0);
 
-  async function addListingToPipeline(l: DiscoverResult["result"]["parsed_listings"][number], idx: number) {
-    const key = `${l.title}-${idx}`;
+  useEffect(() => {
+    const fromQuery = normalizeFitThreshold(searchParams.get(DISCOVER_FIT_QUERY_KEY));
+    if (fromQuery > 0 || searchParams.has(DISCOVER_FIT_QUERY_KEY)) {
+      setMinFitThreshold(fromQuery);
+      return;
+    }
+    try {
+      const fromStorage = normalizeFitThreshold(localStorage.getItem(DISCOVER_FIT_STORAGE_KEY));
+      setMinFitThreshold(fromStorage);
+    } catch {
+      setMinFitThreshold(0);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DISCOVER_FIT_STORAGE_KEY, String(minFitThreshold));
+    } catch {
+      /* ignore storage failures */
+    }
+    const currentRaw = searchParams.get(DISCOVER_FIT_QUERY_KEY);
+    const currentNormalized = normalizeFitThreshold(currentRaw);
+    if (minFitThreshold <= 0 && !searchParams.has(DISCOVER_FIT_QUERY_KEY)) return;
+    if (minFitThreshold > 0 && currentNormalized === minFitThreshold) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (minFitThreshold <= 0) params.delete(DISCOVER_FIT_QUERY_KEY);
+    else params.set(DISCOVER_FIT_QUERY_KEY, String(minFitThreshold));
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  }, [minFitThreshold, router, searchParams]);
+
+  async function addListingToPipeline(l: DiscoverResult["result"]["parsed_listings"][number]) {
+    const key = listingKey(l);
     setAddingId(key);
     setError(null);
     try {
@@ -373,7 +427,7 @@ export function JobDiscoverPanel({
                   Min fit score
                   <select
                     value={minFitThreshold}
-                    onChange={(e) => setMinFitThreshold(Number(e.target.value))}
+                    onChange={(e) => setMinFitThreshold(normalizeFitThreshold(e.target.value))}
                     className="ml-2 rounded-md border border-zinc-700 bg-black px-2 py-1 text-[11px] text-zinc-200"
                   >
                     <option value={0}>All</option>
@@ -391,9 +445,9 @@ export function JobDiscoverPanel({
                 </p>
               ) : null}
               <ul className="mt-2 space-y-2 text-zinc-300">
-                {filteredParsedListings.map((l, i) => (
+                {filteredParsedListings.map((l) => (
                   <li
-                    key={`${l.title}-${i}`}
+                    key={listingKey(l)}
                     className="flex flex-col gap-2 rounded-lg border border-zinc-800 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0 flex-1">
@@ -449,10 +503,10 @@ export function JobDiscoverPanel({
                     <button
                       type="button"
                       disabled={addingId !== null}
-                      onClick={() => void addListingToPipeline(l, i)}
+                      onClick={() => void addListingToPipeline(l)}
                       className="shrink-0 rounded-full border border-zinc-700 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-50"
                     >
-                      {addingId === `${l.title}-${i}` ? "Saving…" : "Save to my jobs"}
+                      {addingId === listingKey(l) ? "Saving…" : "Save to my jobs"}
                     </button>
                   </li>
                 ))}
