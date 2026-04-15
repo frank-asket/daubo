@@ -15,6 +15,23 @@ type AgentMatchLatestJson = {
   created_at: string | null;
 };
 
+function fitTone(score: number | null | undefined): string {
+  if (score == null) return "border-zinc-700 text-zinc-300";
+  if (score >= 4.2) return "border-emerald-500/50 text-emerald-300";
+  if (score >= 3.3) return "border-amber-500/50 text-amber-200";
+  return "border-zinc-700 text-zinc-300";
+}
+
+function byFitThenTitle(
+  a: DiscoverResult["result"]["parsed_listings"][number],
+  b: DiscoverResult["result"]["parsed_listings"][number],
+): number {
+  const as = typeof a.fit_score === "number" ? a.fit_score : -1;
+  const bs = typeof b.fit_score === "number" ? b.fit_score : -1;
+  if (as !== bs) return bs - as;
+  return a.title.localeCompare(b.title);
+}
+
 export function ResumeMatchHighlightsCard({
   onPipelineUpdated,
 }: {
@@ -28,6 +45,7 @@ export function ResumeMatchHighlightsCard({
   );
   const [err, setErr] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [minFitThreshold, setMinFitThreshold] = useState(0);
   const triggerSent = useRef(false);
   const pollCount = useRef(0);
   const onUpdate = useRef(onPipelineUpdated);
@@ -155,7 +173,12 @@ export function ResumeMatchHighlightsCard({
 
   if (!statsReady || !stats?.has_resume) return null;
 
-  const listings = run?.result?.parsed_listings ?? [];
+  const listings = [...(run?.result?.parsed_listings ?? [])].sort(byFitThenTitle);
+  const filteredListings = listings.filter((l) => {
+    if (minFitThreshold <= 0) return true;
+    if (typeof l.fit_score !== "number") return false;
+    return l.fit_score >= minFitThreshold;
+  });
   const summary = run?.result?.executive_summary?.trim();
 
   if (phase === "polling" || phase === "queued") {
@@ -250,15 +273,48 @@ export function ResumeMatchHighlightsCard({
       {summary ? (
         <p className="mt-3 text-xs leading-relaxed text-zinc-400">{summary}</p>
       ) : null}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] text-zinc-500">Sorted by estimated fit (highest first).</p>
+        <label className="text-[11px] text-zinc-500">
+          Min fit score
+          <select
+            value={minFitThreshold}
+            onChange={(e) => setMinFitThreshold(Number(e.target.value))}
+            className="ml-2 rounded-md border border-zinc-700 bg-black px-2 py-1 text-[11px] text-zinc-200"
+          >
+            <option value={0}>All</option>
+            <option value={2.5}>2.5+</option>
+            <option value={3}>3.0+</option>
+            <option value={3.5}>3.5+</option>
+            <option value={4}>4.0+</option>
+            <option value={4.5}>4.5+</option>
+          </select>
+        </label>
+      </div>
       {err ? <p className="mt-2 text-xs text-red-400">{err}</p> : null}
+      {filteredListings.length === 0 ? (
+        <p className="mt-2 text-xs text-zinc-500">
+          No matched listings meet this threshold yet. Lower the minimum to see more roles.
+        </p>
+      ) : null}
       <ul className="mt-4 space-y-2">
-        {listings.slice(0, 8).map((l, i) => (
+        {filteredListings.slice(0, 8).map((l, i) => (
           <li
             key={`${l.title}-${i}`}
             className="flex flex-col gap-2 rounded-xl border border-zinc-800/90 bg-black/30 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0 flex-1">
-              <span className="font-medium text-white">{l.title}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-white">{l.title}</span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${fitTone(
+                    l.fit_score ?? null,
+                  )}`}
+                  title="Estimated fit score from your résumé profile and listing details."
+                >
+                  Fit {typeof l.fit_score === "number" ? `${l.fit_score.toFixed(1)}/5` : "—"}
+                </span>
+              </div>
               {l.employer ? <span className="text-zinc-500"> · {l.employer}</span> : null}
               {l.location ? <span className="text-zinc-500"> · {l.location}</span> : null}
               {l.source_url ? (
@@ -270,6 +326,27 @@ export function ResumeMatchHighlightsCard({
                 >
                   View posting
                 </a>
+              ) : null}
+              {(l.fit_reasons?.length ?? 0) > 0 || (l.risk_flags?.length ?? 0) > 0 ? (
+                <details className="mt-2 rounded-md border border-zinc-800/80 bg-black/20 px-2.5 py-1.5 text-xs">
+                  <summary className="cursor-pointer select-none text-zinc-400">
+                    Why this role matched
+                  </summary>
+                  {(l.fit_reasons?.length ?? 0) > 0 ? (
+                    <ul className="mt-1 list-inside list-disc space-y-0.5 text-zinc-300">
+                      {(l.fit_reasons ?? []).map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {(l.risk_flags?.length ?? 0) > 0 ? (
+                    <ul className="mt-1 list-inside list-disc space-y-0.5 text-amber-200/80">
+                      {(l.risk_flags ?? []).map((risk) => (
+                        <li key={risk}>{risk}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </details>
               ) : null}
             </div>
             <button
@@ -283,9 +360,9 @@ export function ResumeMatchHighlightsCard({
           </li>
         ))}
       </ul>
-      {listings.length > 8 ? (
+      {filteredListings.length > 8 ? (
         <p className="mt-3 text-[11px] text-zinc-500">
-          +{listings.length - 8} more in{" "}
+          +{filteredListings.length - 8} more in{" "}
           <a href="#discover" className="font-medium text-emerald-400 hover:underline">
             Find role ideas
           </a>

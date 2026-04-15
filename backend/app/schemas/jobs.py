@@ -75,6 +75,22 @@ class ParsedListing(BaseModel):
     location: str | None = None
     contract_type: str | None = None
     excerpt: str | None = None
+    fit_score: float | None = Field(
+        default=None,
+        ge=1.0,
+        le=5.0,
+        description="Daubo-calculated role fit score (1.0 low, 5.0 high).",
+    )
+    fit_reasons: list[str] = Field(
+        default_factory=list,
+        max_length=6,
+        description="Short bullets explaining why this role may fit the candidate profile.",
+    )
+    risk_flags: list[str] = Field(
+        default_factory=list,
+        max_length=5,
+        description="Short caveats to review before saving/applying.",
+    )
     source_url: str | None = Field(
         default=None,
         max_length=2000,

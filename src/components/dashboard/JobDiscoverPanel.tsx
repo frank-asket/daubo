@@ -18,6 +18,9 @@ export type DiscoverResult = {
       employer: string | null;
       location: string | null;
       excerpt?: string | null;
+      fit_score?: number | null;
+      fit_reasons?: string[];
+      risk_flags?: string[];
       source_url?: string | null;
     }[];
   };
@@ -35,6 +38,23 @@ type DiscoverHints = {
   emphasize_remote_global: boolean;
   resume_excerpt: string;
 };
+
+function fitTone(score: number | null | undefined): string {
+  if (score == null) return "border-zinc-700 text-zinc-300";
+  if (score >= 4.2) return "border-emerald-500/50 text-emerald-300";
+  if (score >= 3.3) return "border-amber-500/50 text-amber-200";
+  return "border-zinc-700 text-zinc-300";
+}
+
+function byFitThenTitle(
+  a: DiscoverResult["result"]["parsed_listings"][number],
+  b: DiscoverResult["result"]["parsed_listings"][number],
+): number {
+  const as = typeof a.fit_score === "number" ? a.fit_score : -1;
+  const bs = typeof b.fit_score === "number" ? b.fit_score : -1;
+  if (as !== bs) return bs - as;
+  return a.title.localeCompare(b.title);
+}
 
 export function JobDiscoverPanel({
   onDiscoveryComplete,
@@ -63,6 +83,7 @@ export function JobDiscoverPanel({
   const [autoPlanAt, setAutoPlanAt] = useState<string | null>(null);
   const lastFetchedCreatedAt = useRef<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [minFitThreshold, setMinFitThreshold] = useState(0);
 
   async function addListingToPipeline(l: DiscoverResult["result"]["parsed_listings"][number], idx: number) {
     const key = `${l.title}-${idx}`;
@@ -219,6 +240,13 @@ export function JobDiscoverPanel({
     }
   }
 
+  const sortedParsedListings = data ? [...data.result.parsed_listings].sort(byFitThenTitle) : [];
+  const filteredParsedListings = sortedParsedListings.filter((l) => {
+    if (minFitThreshold <= 0) return true;
+    if (typeof l.fit_score !== "number") return false;
+    return l.fit_score >= minFitThreshold;
+  });
+
   return (
     <div
       id="discover"
@@ -330,19 +358,56 @@ export function JobDiscoverPanel({
         <div className="mt-6 space-y-4 border-t border-zinc-800 pt-6 text-sm">
           <p className="text-xs text-zinc-500">{data.notice}</p>
           <p className="leading-relaxed text-zinc-300">{data.result.executive_summary}</p>
-          {data.result.parsed_listings.length > 0 ? (
+          {sortedParsedListings.length > 0 ? (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Roles to save
-              </p>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Roles to save
+                  </p>
+                  <p className="mt-1 text-[11px] text-zinc-500">
+                    Sorted by estimated fit (highest first).
+                  </p>
+                </div>
+                <label className="text-[11px] text-zinc-500">
+                  Min fit score
+                  <select
+                    value={minFitThreshold}
+                    onChange={(e) => setMinFitThreshold(Number(e.target.value))}
+                    className="ml-2 rounded-md border border-zinc-700 bg-black px-2 py-1 text-[11px] text-zinc-200"
+                  >
+                    <option value={0}>All</option>
+                    <option value={2.5}>2.5+</option>
+                    <option value={3}>3.0+</option>
+                    <option value={3.5}>3.5+</option>
+                    <option value={4}>4.0+</option>
+                    <option value={4.5}>4.5+</option>
+                  </select>
+                </label>
+              </div>
+              {filteredParsedListings.length === 0 ? (
+                <p className="mt-2 text-xs text-zinc-500">
+                  No listings meet this threshold. Lower the minimum to see more results.
+                </p>
+              ) : null}
               <ul className="mt-2 space-y-2 text-zinc-300">
-                {data.result.parsed_listings.map((l, i) => (
+                {filteredParsedListings.map((l, i) => (
                   <li
                     key={`${l.title}-${i}`}
                     className="flex flex-col gap-2 rounded-lg border border-zinc-800 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0 flex-1">
-                      <span className="font-medium text-white">{l.title}</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-white">{l.title}</span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${fitTone(
+                            l.fit_score ?? null,
+                          )}`}
+                          title="Estimated fit score from your discovery profile."
+                        >
+                          Fit {typeof l.fit_score === "number" ? `${l.fit_score.toFixed(1)}/5` : "—"}
+                        </span>
+                      </div>
                       {l.employer ? (
                         <span className="text-zinc-500"> · {l.employer}</span>
                       ) : null}
@@ -358,6 +423,27 @@ export function JobDiscoverPanel({
                         >
                           Open posting
                         </a>
+                      ) : null}
+                      {(l.fit_reasons?.length ?? 0) > 0 || (l.risk_flags?.length ?? 0) > 0 ? (
+                        <details className="mt-2 rounded-md border border-zinc-800/80 bg-black/20 px-2.5 py-1.5 text-xs">
+                          <summary className="cursor-pointer select-none text-zinc-400">
+                            Why this role matched
+                          </summary>
+                          {(l.fit_reasons?.length ?? 0) > 0 ? (
+                            <ul className="mt-1 list-inside list-disc space-y-0.5 text-zinc-300">
+                              {(l.fit_reasons ?? []).map((reason) => (
+                                <li key={reason}>{reason}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          {(l.risk_flags?.length ?? 0) > 0 ? (
+                            <ul className="mt-1 list-inside list-disc space-y-0.5 text-amber-200/80">
+                              {(l.risk_flags ?? []).map((risk) => (
+                                <li key={risk}>{risk}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </details>
                       ) : null}
                     </div>
                     <button

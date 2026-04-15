@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 
 from app.config import Settings
 from app.schemas.jobs import JobDiscoverLLMOut, JobDiscoverParams, ParsedListing
@@ -59,6 +60,125 @@ def _dedupe_listings(chunks: list[ParsedListing], *, max_rows: int) -> list[Pars
         out.append(pl)
         if len(out) >= max_rows:
             break
+    return out
+
+
+def _tokenize(text: str | None) -> set[str]:
+    if not text:
+        return set()
+    raw = re.findall(r"[a-zA-Z][a-zA-Z0-9+#.-]{2,}", text.lower())
+    stop = {
+        "with",
+        "from",
+        "your",
+        "this",
+        "that",
+        "have",
+        "will",
+        "role",
+        "jobs",
+        "job",
+        "work",
+        "team",
+        "years",
+        "experience",
+    }
+    return {t for t in raw if t not in stop}
+
+
+def _score_listing(
+    params: JobDiscoverParams,
+    listing: ParsedListing,
+) -> tuple[float, list[str], list[str]]:
+    reasons: list[str] = []
+    risks: list[str] = []
+    score = 2.4
+
+    listing_blob = " ".join(
+        x
+        for x in (
+            listing.title,
+            listing.employer,
+            listing.location,
+            listing.excerpt,
+        )
+        if x
+    )
+    listing_tokens = _tokenize(listing_blob)
+
+    role_tokens = _tokenize(params.role_focus)
+    role_overlap = len(role_tokens & listing_tokens)
+    if role_overlap >= 2:
+        score += 1.3
+        reasons.append("Strong overlap with your role focus.")
+    elif role_overlap == 1:
+        score += 0.7
+        reasons.append("Some alignment with your role focus.")
+
+    industry_tokens = _tokenize(" ".join(params.industries))
+    industry_overlap = len(industry_tokens & listing_tokens)
+    if industry_overlap >= 2:
+        score += 0.8
+        reasons.append("Industry terms match your target sectors.")
+    elif industry_overlap == 1:
+        score += 0.4
+        reasons.append("Touches one of your target sectors.")
+
+    resume_tokens = _tokenize(params.resume_context)
+    resume_overlap = len(resume_tokens & listing_tokens)
+    if resume_overlap >= 7:
+        score += 0.7
+        reasons.append("Several résumé keywords appear in this listing.")
+    elif resume_overlap >= 3:
+        score += 0.4
+        reasons.append("Some résumé keywords appear in this listing.")
+
+    city = (params.city_or_region or "").strip().lower()
+    loc = (listing.location or "").strip().lower()
+    if city and loc and city in loc:
+        score += 0.5
+        reasons.append("Location aligns with your preferred region.")
+
+    if params.emphasize_remote_global:
+        remote_tokens = {"remote", "worldwide", "global", "distributed", "hybrid"}
+        if remote_tokens & listing_tokens:
+            score += 0.3
+            reasons.append("Matches your remote/global preference.")
+
+    if not (listing.source_url or "").strip():
+        risks.append("No source URL attached - verify posting details manually.")
+        score -= 0.3
+    if not (listing.employer or "").strip() or (listing.employer or "").strip().lower() == "unknown employer":
+        risks.append("Employer is missing or generic - validate company identity.")
+        score -= 0.2
+    if not (listing.excerpt or "").strip():
+        risks.append("Limited listing context - open the original posting before applying.")
+        score -= 0.2
+
+    if not reasons:
+        reasons.append("Potential fit, but needs manual review against your profile.")
+
+    bounded = max(1.0, min(5.0, score))
+    rounded = round(bounded, 1)
+    return rounded, reasons[:6], risks[:5]
+
+
+def _annotate_listings_with_fit(
+    params: JobDiscoverParams,
+    listings: list[ParsedListing],
+) -> list[ParsedListing]:
+    out: list[ParsedListing] = []
+    for pl in listings:
+        fit_score, fit_reasons, risk_flags = _score_listing(params, pl)
+        out.append(
+            pl.model_copy(
+                update={
+                    "fit_score": fit_score,
+                    "fit_reasons": fit_reasons,
+                    "risk_flags": risk_flags,
+                }
+            )
+        )
     return out
 
 
@@ -131,4 +251,7 @@ async def run_job_discovery_with_optional_adzuna(
     if api_listings:
         merged = _merge_parsed_listings(api_listings, result.parsed_listings)
         result = result.model_copy(update={"parsed_listings": merged})
+    result = result.model_copy(
+        update={"parsed_listings": _annotate_listings_with_fit(params, result.parsed_listings)}
+    )
     return result
