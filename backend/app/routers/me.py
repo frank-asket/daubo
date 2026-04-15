@@ -2,7 +2,7 @@ import csv
 import logging
 from io import StringIO
 from uuid import UUID
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
@@ -84,6 +84,7 @@ router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
 
 _AUTODISCOVER_KIND = "resume_autodiscover"
+_AUTOPILOT_RUNNING_STALE_AFTER = timedelta(minutes=30)
 
 
 def _classify_autopilot_item_error(status: str, error: str | None) -> str | None:
@@ -176,6 +177,45 @@ async def _get_or_create_autopilot_profile(
     await session.commit()
     await session.refresh(row)
     return row
+
+
+async def _resolve_or_block_running_autopilot(
+    session: AsyncSession,
+    user_id: str,
+) -> AutopilotRun | None:
+    """Serialize launch checks and prevent overlapping runs for one user."""
+    # Row lock on per-user profile ensures rapid concurrent clicks are serialized.
+    await session.execute(
+        select(UserAutopilotProfile)
+        .where(UserAutopilotProfile.clerk_user_id == user_id)
+        .with_for_update()
+    )
+    result = await session.execute(
+        select(AutopilotRun)
+        .where(
+            AutopilotRun.clerk_user_id == user_id,
+            AutopilotRun.status == "running",
+        )
+        .order_by(AutopilotRun.started_at.desc())
+        .limit(1)
+    )
+    running = result.scalar_one_or_none()
+    if running is None:
+        return None
+
+    started = running.started_at
+    started_utc = started if started.tzinfo else started.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - started_utc > _AUTOPILOT_RUNNING_STALE_AFTER:
+        running.status = "failed"
+        prev_errors = running.errors if isinstance(running.errors, list) else []
+        running.errors = list(prev_errors) + [
+            "Run auto-closed as stale before starting a new one."
+        ]
+        running.finished_at = datetime.now(timezone.utc)
+        session.add(running)
+        await session.commit()
+        return None
+    return running
 
 
 class AgentMatchLatestResponse(BaseModel):
@@ -1044,6 +1084,18 @@ async def run_prep_autopilot(
 ) -> AutopilotRunOut:
     req = body or AutopilotRunIn()
     profile = await _get_or_create_autopilot_profile(session, user_id)
+    running = await _resolve_or_block_running_autopilot(session, user_id)
+    if running is not None:
+        started = running.started_at
+        started_utc = started if started.tzinfo else started.replace(tzinfo=timezone.utc)
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "A Smart prep run is already in progress. "
+                f"Run id: {running.id} (started {started_utc.isoformat()}). "
+                "Wait for it to finish before starting another run."
+            ),
+        )
     effective_limit = min(req.limit, profile.daily_apply_limit)
     ws = await _get_or_create_workspace_settings(session, user_id)
     do_gmail = (
