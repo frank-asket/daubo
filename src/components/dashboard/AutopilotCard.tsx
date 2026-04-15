@@ -41,6 +41,11 @@ type RunItem = {
   job_url: string | null;
 };
 
+type ActiveRunConflict = {
+  runId: string | null;
+  message: string;
+};
+
 export function AutopilotCard({
   onAutopilotComplete,
 }: {
@@ -58,6 +63,7 @@ export function AutopilotCard({
   const [runItemsLoading, setRunItemsLoading] = useState(false);
   const [runItems, setRunItems] = useState<RunItem[]>([]);
   const [retryingScope, setRetryingScope] = useState<"failed_only" | "gmail_failed_only" | null>(null);
+  const [activeRunConflict, setActiveRunConflict] = useState<ActiveRunConflict | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -158,6 +164,7 @@ export function AutopilotCard({
     setRunning(true);
     setRunResult(null);
     setError(null);
+    setActiveRunConflict(null);
     try {
       const body: {
         limit: number;
@@ -176,7 +183,16 @@ export function AutopilotCard({
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+        const detail = ((j as { detail?: string }).detail ?? r.statusText).trim();
+        if (r.status === 409) {
+          const m = detail.match(/Run id:\s*([0-9a-f-]{36})/i);
+          setActiveRunConflict({
+            runId: m?.[1] ?? null,
+            message: detail || "A Smart prep run is already in progress.",
+          });
+          return;
+        }
+        throw new Error(detail);
       }
       const out = (await r.json()) as RunResult;
       setRunResult(out);
@@ -280,6 +296,20 @@ export function AutopilotCard({
       ) : null}
 
       {error ? <p className="mt-3 text-xs text-red-400">{error}</p> : null}
+      {activeRunConflict ? (
+        <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+          <p>{activeRunConflict.message}</p>
+          {activeRunConflict.runId ? (
+            <button
+              type="button"
+              onClick={() => setSelectedRunId(activeRunConflict.runId)}
+              className="mt-2 rounded-full border border-amber-400/40 px-3 py-1 text-[11px] font-semibold text-amber-100 hover:bg-amber-500/15"
+            >
+              View active run
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {runResult ? (
         <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2 text-xs text-zinc-400">
           <p>
