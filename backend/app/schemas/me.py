@@ -202,6 +202,15 @@ class AutopilotRunIn(BaseModel):
         default=None,
         description="If set, overrides workspace autopilot_auto_gmail_drafts for this run only.",
     )
+    retry_scope: str | None = Field(
+        default=None,
+        pattern="^(failed_only|gmail_failed_only)$",
+        description="Optional retry mode using previous run outcomes.",
+    )
+    source_run_id: UUID | None = Field(
+        default=None,
+        description="Optional run id to scope retries to; defaults to recent history when omitted.",
+    )
 
 
 class AutopilotRunOut(BaseModel):
@@ -265,5 +274,9 @@ class AutopilotRunItemOut(BaseModel):
     job_url: str | None = None
     status: str
     error: str | None = None
+    error_category: str | None = None
+    retryable: bool = False
+    suggested_action: str | None = None
+    latency_ms: int | None = None
     created_at: datetime
     updated_at: datetime

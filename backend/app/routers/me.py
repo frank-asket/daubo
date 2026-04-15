@@ -86,6 +86,54 @@ logger = logging.getLogger("daubo")
 _AUTODISCOVER_KIND = "resume_autodiscover"
 
 
+def _classify_autopilot_item_error(status: str, error: str | None) -> str | None:
+    if status == "prepared_draft_failed":
+        return "gmail_error"
+    if status != "failed":
+        return None
+    msg = (error or "").lower()
+    if "resume" in msg:
+        return "missing_resume"
+    if "openrouter" in msg or "llm" in msg or "model" in msg:
+        return "llm_error"
+    if "gmail" in msg:
+        return "gmail_error"
+    if "validation" in msg or "invalid" in msg:
+        return "validation_error"
+    return "runtime_error"
+
+
+def _autopilot_item_suggested_action(category: str | None) -> str | None:
+    if category == "missing_resume":
+        return "Upload/update your resume, then retry failed items."
+    if category == "llm_error":
+        return "Retry in a minute; if it persists, verify OpenRouter credentials."
+    if category == "gmail_error":
+        return "Reconnect Gmail in Settings, then retry Gmail draft failures."
+    if category == "validation_error":
+        return "Review job details (URL/description/channel), then retry."
+    if category == "runtime_error":
+        return "Retry failed items; if it repeats, contact support with run id."
+    return None
+
+
+def _autopilot_item_retryable(status: str, category: str | None) -> bool:
+    if status in {"failed", "prepared_draft_failed"}:
+        return category != "validation_error"
+    return False
+
+
+def _autopilot_item_latency_ms(created_at: datetime | None, updated_at: datetime | None) -> int | None:
+    if created_at is None or updated_at is None:
+        return None
+    c = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+    u = updated_at if updated_at.tzinfo else updated_at.replace(tzinfo=timezone.utc)
+    delta = (u - c).total_seconds()
+    if delta < 0:
+        return None
+    return int(delta * 1000)
+
+
 def _normalize_profile_doc_kind(raw: str) -> str:
     k = (raw or "").strip().lower()
     if k not in PROFILE_DOC_KINDS:
@@ -1020,6 +1068,8 @@ async def run_prep_autopilot(
             limit=effective_limit,
             create_gmail_drafts=do_gmail,
             run_id=run.id,
+            retry_scope=req.retry_scope,
+            source_run_id=req.source_run_id,
         )
     except ValueError as exc:
         run.status = "failed"
@@ -1092,7 +1142,7 @@ async def list_autopilot_run_items(
     run_id: UUID,
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
-) -> list[AutopilotRunItem]:
+) -> list[AutopilotRunItemOut]:
     run_res = await session.execute(
         select(AutopilotRun).where(
             AutopilotRun.id == run_id,
@@ -1110,4 +1160,27 @@ async def list_autopilot_run_items(
         )
         .order_by(AutopilotRunItem.updated_at.desc())
     )
-    return list(result.scalars().all())
+    rows = list(result.scalars().all())
+    out: list[AutopilotRunItemOut] = []
+    for row in rows:
+        category = _classify_autopilot_item_error(row.status, row.error)
+        out.append(
+            AutopilotRunItemOut(
+                id=row.id,
+                run_id=row.run_id,
+                clerk_user_id=row.clerk_user_id,
+                application_id=row.application_id,
+                title=row.title,
+                company=row.company,
+                job_url=row.job_url,
+                status=row.status,
+                error=row.error,
+                error_category=category,
+                retryable=_autopilot_item_retryable(row.status, category),
+                suggested_action=_autopilot_item_suggested_action(category),
+                latency_ms=_autopilot_item_latency_ms(row.created_at, row.updated_at),
+                created_at=row.created_at,
+                updated_at=row.updated_at,
+            )
+        )
+    return out

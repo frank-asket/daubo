@@ -44,6 +44,8 @@ async def run_autopilot_pass(
     limit: int = 6,
     create_gmail_drafts: bool = False,
     run_id: UUID | None = None,
+    retry_scope: str | None = None,
+    source_run_id: UUID | None = None,
 ) -> dict[str, Any]:
     if not app_settings.openrouter_api_key:
         raise ValueError("OPENROUTER_API_KEY is not configured")
@@ -58,7 +60,32 @@ async def run_autopilot_pass(
         .where(JobApplication.clerk_user_id == user_id)
         .order_by(JobApplication.updated_at.asc())
     )
-    candidates = [r for r in q.scalars().all() if _needs_package(r)][: max(1, min(limit, 25))]
+    all_rows = list(q.scalars().all())
+
+    retry_ids: set[UUID] | None = None
+    if retry_scope in {"failed_only", "gmail_failed_only"}:
+        item_q = select(AutopilotRunItem).where(AutopilotRunItem.clerk_user_id == user_id)
+        if source_run_id is not None:
+            item_q = item_q.where(AutopilotRunItem.run_id == source_run_id)
+        item_q = item_q.order_by(AutopilotRunItem.updated_at.desc())
+        item_rows = (await session.execute(item_q)).scalars().all()
+        retry_ids = set()
+        for it in item_rows:
+            if it.application_id is None:
+                continue
+            if retry_scope == "failed_only" and it.status == "failed":
+                retry_ids.add(it.application_id)
+            if retry_scope == "gmail_failed_only" and it.status == "prepared_draft_failed":
+                retry_ids.add(it.application_id)
+
+    if retry_scope == "gmail_failed_only":
+        candidates = [r for r in all_rows if retry_ids and r.id in retry_ids][: max(1, min(limit, 25))]
+    elif retry_scope == "failed_only":
+        candidates = [r for r in all_rows if retry_ids and r.id in retry_ids and _needs_package(r)][
+            : max(1, min(limit, 25))
+        ]
+    else:
+        candidates = [r for r in all_rows if _needs_package(r)][: max(1, min(limit, 25))]
 
     gmail_creds: UserGmailCredentials | None = None
     if create_gmail_drafts and gmail_oauth_configured(app_settings):

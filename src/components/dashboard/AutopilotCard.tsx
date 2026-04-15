@@ -29,10 +29,15 @@ type RunRecord = {
 
 type RunItem = {
   id: string;
+  application_id: string | null;
   title: string;
   company: string;
   status: string;
   error: string | null;
+  error_category: string | null;
+  retryable: boolean;
+  suggested_action: string | null;
+  latency_ms: number | null;
   job_url: string | null;
 };
 
@@ -52,6 +57,7 @@ export function AutopilotCard({
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [runItemsLoading, setRunItemsLoading] = useState(false);
   const [runItems, setRunItems] = useState<RunItem[]>([]);
+  const [retryingScope, setRetryingScope] = useState<"failed_only" | "gmail_failed_only" | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -145,13 +151,23 @@ export function AutopilotCard({
     }
   }
 
-  async function runNow(gmailOverride?: boolean) {
+  async function runNow(
+    gmailOverride?: boolean,
+    opts?: { retryScope?: "failed_only" | "gmail_failed_only"; sourceRunId?: string | null },
+  ) {
     setRunning(true);
     setRunResult(null);
     setError(null);
     try {
-      const body: { limit: number; create_gmail_drafts?: boolean } = { limit: 8 };
+      const body: {
+        limit: number;
+        create_gmail_drafts?: boolean;
+        retry_scope?: "failed_only" | "gmail_failed_only";
+        source_run_id?: string;
+      } = { limit: 8 };
       if (gmailOverride !== undefined) body.create_gmail_drafts = gmailOverride;
+      if (opts?.retryScope) body.retry_scope = opts.retryScope;
+      if (opts?.sourceRunId) body.source_run_id = opts.sourceRunId;
       const r = await fetch(dauboBffUrl("v1/me/autopilot/run"), {
         method: "POST",
         credentials: "same-origin",
@@ -174,6 +190,24 @@ export function AutopilotCard({
     } finally {
       setRunning(false);
     }
+  }
+
+  async function retrySubset(scope: "failed_only" | "gmail_failed_only") {
+    setRetryingScope(scope);
+    try {
+      await runNow(undefined, { retryScope: scope, sourceRunId: selectedRunId });
+    } finally {
+      setRetryingScope(null);
+    }
+  }
+
+  function statusPillClass(status: string): string {
+    if (status === "prepared_with_draft") return "border-emerald-500/40 text-emerald-300";
+    if (status === "prepared") return "border-emerald-600/30 text-emerald-200";
+    if (status === "prepared_draft_failed") return "border-amber-500/40 text-amber-200";
+    if (status === "failed") return "border-red-500/40 text-red-300";
+    if (status === "running") return "border-zinc-600 text-zinc-300";
+    return "border-zinc-700 text-zinc-400";
   }
 
   return (
@@ -288,6 +322,26 @@ export function AutopilotCard({
         )}
         {selectedRunId ? (
           <div className="mt-3">
+            <div className="mb-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={running || retryingScope !== null}
+                onClick={() => void retrySubset("failed_only")}
+                className="rounded-full border border-zinc-700 px-3 py-1 text-[11px] font-medium text-zinc-300 hover:border-zinc-500 disabled:opacity-50"
+              >
+                {retryingScope === "failed_only" ? "Retrying failed…" : "Retry failed only"}
+              </button>
+              <button
+                type="button"
+                disabled={running || retryingScope !== null}
+                onClick={() => void retrySubset("gmail_failed_only")}
+                className="rounded-full border border-zinc-700 px-3 py-1 text-[11px] font-medium text-zinc-300 hover:border-zinc-500 disabled:opacity-50"
+              >
+                {retryingScope === "gmail_failed_only"
+                  ? "Retrying Gmail failures…"
+                  : "Retry Gmail draft failures"}
+              </button>
+            </div>
             {runItemsLoading ? (
               <p className="text-xs text-zinc-500">Loading run details…</p>
             ) : runItems.length === 0 ? (
@@ -299,10 +353,27 @@ export function AutopilotCard({
                     <p className="text-zinc-300">
                       {item.title} · <span className="text-zinc-500">{item.company}</span>
                     </p>
-                    <p className="text-zinc-500">
-                      status: <span className="text-zinc-400">{item.status}</span>
+                    <p className="mt-1 text-zinc-500">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusPillClass(
+                          item.status,
+                        )}`}
+                      >
+                        {item.status}
+                      </span>
+                      {typeof item.latency_ms === "number" ? (
+                        <span className="ml-2 text-zinc-600">{Math.max(1, Math.round(item.latency_ms / 1000))}s</span>
+                      ) : null}
                     </p>
                     {item.error ? <p className="text-amber-300/80">{item.error}</p> : null}
+                    {item.error_category ? (
+                      <p className="text-[11px] text-zinc-500">
+                        category: <span className="text-zinc-400">{item.error_category}</span>
+                      </p>
+                    ) : null}
+                    {item.suggested_action ? (
+                      <p className="text-[11px] text-zinc-500">{item.suggested_action}</p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
