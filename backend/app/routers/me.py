@@ -1160,6 +1160,24 @@ async def run_prep_autopilot(
         prev = prev_res.scalar_one_or_none()
         if prev is not None and _autopilot_idempotency_active(prev.started_at):
             prev_fp = (prev.request_fingerprint or "").strip()
+            started_iso = (
+                prev.started_at
+                if prev.started_at.tzinfo
+                else prev.started_at.replace(tzinfo=timezone.utc)
+            ).isoformat()
+            if not prev_fp:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "idempotency_key_reused_unverifiable_payload",
+                        "message": (
+                            "Idempotency key matches an older run that lacks a request fingerprint. "
+                            "Use a new Idempotency-Key for this request."
+                        ),
+                        "active_run_id": str(prev.id),
+                        "started_at": started_iso,
+                    },
+                )
             if prev_fp and prev_fp != req_fingerprint:
                 raise HTTPException(
                     status_code=409,
@@ -1167,11 +1185,7 @@ async def run_prep_autopilot(
                         "code": "idempotency_key_reused_with_different_payload",
                         "message": "Idempotency key was already used with different run parameters.",
                         "active_run_id": str(prev.id),
-                        "started_at": (
-                            prev.started_at
-                            if prev.started_at.tzinfo
-                            else prev.started_at.replace(tzinfo=timezone.utc)
-                        ).isoformat(),
+                        "started_at": started_iso,
                     },
                 )
             return AutopilotRunOut(
