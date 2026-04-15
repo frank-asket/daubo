@@ -53,6 +53,11 @@ type AutopilotConflictDetail = {
   started_at?: string;
 };
 
+function makeIdempotencyKey(prefix: string): string {
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `${prefix}-${Date.now().toString(36)}-${rand}`;
+}
+
 export function AutopilotCard({
   onAutopilotComplete,
 }: {
@@ -166,7 +171,11 @@ export function AutopilotCard({
 
   async function runNow(
     gmailOverride?: boolean,
-    opts?: { retryScope?: "failed_only" | "gmail_failed_only"; sourceRunId?: string | null },
+    opts?: {
+      retryScope?: "failed_only" | "gmail_failed_only";
+      sourceRunId?: string | null;
+      idempotencyKey?: string;
+    },
   ) {
     setRunning(true);
     setRunResult(null);
@@ -185,7 +194,10 @@ export function AutopilotCard({
       const r = await fetch(dauboBffUrl("v1/me/autopilot/run"), {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": opts?.idempotencyKey ?? makeIdempotencyKey("autopilot"),
+        },
         body: JSON.stringify(body),
       });
       if (!r.ok) {
@@ -196,16 +208,23 @@ export function AutopilotCard({
             detailRaw && typeof detailRaw === "object"
               ? (detailRaw as AutopilotConflictDetail)
               : null;
+          const code = typeof conflict?.code === "string" ? conflict.code : "";
+          const isPayloadConflict =
+            code === "idempotency_key_reused_with_different_payload" ||
+            code === "idempotency_key_reused_unverifiable_payload";
           const startedAtLabel =
             typeof conflict?.started_at === "string" && conflict.started_at.trim()
               ? ` Started ${new Date(conflict.started_at).toLocaleString()}.`
               : "";
+          const defaultMessage = isPayloadConflict
+            ? "This request reused an idempotency key that does not safely match previous run parameters. Retry with a new key."
+            : "A Smart prep run is already in progress.";
           setActiveRunConflict({
             runId: typeof conflict?.active_run_id === "string" ? conflict.active_run_id : null,
             message:
               (typeof conflict?.message === "string" && conflict.message.trim()
                 ? conflict.message.trim()
-                : "A Smart prep run is already in progress.") + startedAtLabel,
+                : defaultMessage) + startedAtLabel,
           });
           return;
         }
@@ -237,7 +256,11 @@ export function AutopilotCard({
   async function retrySubset(scope: "failed_only" | "gmail_failed_only") {
     setRetryingScope(scope);
     try {
-      await runNow(undefined, { retryScope: scope, sourceRunId: selectedRunId });
+      await runNow(undefined, {
+        retryScope: scope,
+        sourceRunId: selectedRunId,
+        idempotencyKey: makeIdempotencyKey(`autopilot-${scope}`),
+      });
     } finally {
       setRetryingScope(null);
     }
@@ -303,7 +326,11 @@ export function AutopilotCard({
             <button
               type="button"
               disabled={running}
-              onClick={() => void runNow()}
+              onClick={() =>
+                void runNow(undefined, {
+                  idempotencyKey: makeIdempotencyKey("autopilot-run"),
+                })
+              }
               className="inline-flex items-center gap-2 rounded-full bg-amber-500/90 px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
             >
               {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
@@ -312,7 +339,11 @@ export function AutopilotCard({
             <button
               type="button"
               disabled={running}
-              onClick={() => void runNow(true)}
+              onClick={() =>
+                void runNow(true, {
+                  idempotencyKey: makeIdempotencyKey("autopilot-run-gmail"),
+                })
+              }
               className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 disabled:opacity-50"
             >
               Run now + Gmail drafts
