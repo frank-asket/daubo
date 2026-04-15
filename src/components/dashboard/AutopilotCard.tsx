@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Rocket } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type Settings = {
@@ -76,6 +76,7 @@ export function AutopilotCard({
   const [runItems, setRunItems] = useState<RunItem[]>([]);
   const [retryingScope, setRetryingScope] = useState<"failed_only" | "gmail_failed_only" | null>(null);
   const [activeRunConflict, setActiveRunConflict] = useState<ActiveRunConflict | null>(null);
+  const pendingIdempotencyKeys = useRef<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -175,12 +176,23 @@ export function AutopilotCard({
       retryScope?: "failed_only" | "gmail_failed_only";
       sourceRunId?: string | null;
       idempotencyKey?: string;
+      actionTag?: string;
     },
   ) {
     setRunning(true);
     setRunResult(null);
     setError(null);
     setActiveRunConflict(null);
+    const actionTag =
+      opts?.actionTag ??
+      (opts?.retryScope
+        ? `retry-${opts.retryScope}`
+        : gmailOverride
+          ? "run-gmail"
+          : "run");
+    const existingPending = pendingIdempotencyKeys.current[actionTag];
+    const idempotencyKey = opts?.idempotencyKey ?? existingPending ?? makeIdempotencyKey(`autopilot-${actionTag}`);
+    pendingIdempotencyKeys.current[actionTag] = idempotencyKey;
     try {
       const body: {
         limit: number;
@@ -196,7 +208,7 @@ export function AutopilotCard({
         credentials: "same-origin",
         headers: {
           "content-type": "application/json",
-          "Idempotency-Key": opts?.idempotencyKey ?? makeIdempotencyKey("autopilot"),
+          "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify(body),
       });
@@ -249,6 +261,7 @@ export function AutopilotCard({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Smart prep failed");
     } finally {
+      delete pendingIdempotencyKeys.current[actionTag];
       setRunning(false);
     }
   }
@@ -259,7 +272,7 @@ export function AutopilotCard({
       await runNow(undefined, {
         retryScope: scope,
         sourceRunId: selectedRunId,
-        idempotencyKey: makeIdempotencyKey(`autopilot-${scope}`),
+        actionTag: `retry-${scope}`,
       });
     } finally {
       setRetryingScope(null);
@@ -328,7 +341,7 @@ export function AutopilotCard({
               disabled={running}
               onClick={() =>
                 void runNow(undefined, {
-                  idempotencyKey: makeIdempotencyKey("autopilot-run"),
+                  actionTag: "run",
                 })
               }
               className="inline-flex items-center gap-2 rounded-full bg-amber-500/90 px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
@@ -341,7 +354,7 @@ export function AutopilotCard({
               disabled={running}
               onClick={() =>
                 void runNow(true, {
-                  idempotencyKey: makeIdempotencyKey("autopilot-run-gmail"),
+                  actionTag: "run-gmail",
                 })
               }
               className="rounded-full border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 disabled:opacity-50"

@@ -135,6 +135,26 @@ def _autopilot_idempotency_active(started_at: datetime) -> bool:
     return datetime.now(timezone.utc) - started_utc <= _AUTOPILOT_IDEMPOTENCY_TTL
 
 
+def _autopilot_idempotency_decision(
+    previous_fingerprint: str | None,
+    request_fingerprint: str,
+) -> str:
+    """
+    Decide behavior for a reused Idempotency-Key.
+
+    Returns one of:
+    - "replay": safe to return previous run result
+    - "conflict_unverifiable": previous run cannot be validated (missing fingerprint)
+    - "conflict_mismatch": previous run fingerprint differs from current request
+    """
+    prev_fp = (previous_fingerprint or "").strip()
+    if not prev_fp:
+        return "conflict_unverifiable"
+    if prev_fp != request_fingerprint:
+        return "conflict_mismatch"
+    return "replay"
+
+
 def _classify_autopilot_item_error(status: str, error: str | None) -> str | None:
     if status == "prepared_draft_failed":
         return "gmail_error"
@@ -1159,13 +1179,16 @@ async def run_prep_autopilot(
         )
         prev = prev_res.scalar_one_or_none()
         if prev is not None and _autopilot_idempotency_active(prev.started_at):
-            prev_fp = (prev.request_fingerprint or "").strip()
             started_iso = (
                 prev.started_at
                 if prev.started_at.tzinfo
                 else prev.started_at.replace(tzinfo=timezone.utc)
             ).isoformat()
-            if not prev_fp:
+            decision = _autopilot_idempotency_decision(
+                previous_fingerprint=prev.request_fingerprint,
+                request_fingerprint=req_fingerprint,
+            )
+            if decision == "conflict_unverifiable":
                 raise HTTPException(
                     status_code=409,
                     detail={
@@ -1178,7 +1201,7 @@ async def run_prep_autopilot(
                         "started_at": started_iso,
                     },
                 )
-            if prev_fp and prev_fp != req_fingerprint:
+            if decision == "conflict_mismatch":
                 raise HTTPException(
                     status_code=409,
                     detail={
