@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from redis.asyncio import from_url as redis_from_url
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models import AutopilotRun, UserAutopilotProfile, UserWorkspaceSettings
@@ -132,9 +133,20 @@ async def get_or_create_workspace_settings(
         return row
     row = UserWorkspaceSettings(clerk_user_id=user_id)
     session.add(row)
-    await session.commit()
-    await session.refresh(row)
-    return row
+    try:
+        await session.commit()
+        await session.refresh(row)
+        return row
+    except IntegrityError:
+        # Concurrent first-touch request inserted the same row.
+        await session.rollback()
+        result = await session.execute(
+            select(UserWorkspaceSettings).where(UserWorkspaceSettings.clerk_user_id == user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if existing is not None:
+            return existing
+        raise
 
 
 async def get_or_create_autopilot_profile(
@@ -149,9 +161,20 @@ async def get_or_create_autopilot_profile(
         return row
     row = UserAutopilotProfile(clerk_user_id=user_id)
     session.add(row)
-    await session.commit()
-    await session.refresh(row)
-    return row
+    try:
+        await session.commit()
+        await session.refresh(row)
+        return row
+    except IntegrityError:
+        # Concurrent first-touch request inserted the same row.
+        await session.rollback()
+        result = await session.execute(
+            select(UserAutopilotProfile).where(UserAutopilotProfile.clerk_user_id == user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if existing is not None:
+            return existing
+        raise
 
 
 async def resolve_or_block_running_autopilot(

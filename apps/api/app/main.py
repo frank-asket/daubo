@@ -1,4 +1,6 @@
 import sys
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
@@ -12,6 +14,7 @@ if str(_LEGACY_BACKEND) not in sys.path:
     sys.path.insert(0, str(_LEGACY_BACKEND))
 
 from backend.app.config import get_settings
+from backend.app.db import engine, init_db
 from backend.app.deps.security import require_internal_api_key
 from backend.app.routers import me_status
 
@@ -28,7 +31,28 @@ from app.routers import (
 )
 
 settings = get_settings()
-app = FastAPI(title="Daubo API")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Keep HTTP startup fast while db init runs in background.
+    init_task = asyncio.create_task(init_db())
+    try:
+        yield
+    finally:
+        if not init_task.done():
+            init_task.cancel()
+        try:
+            await init_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            # init_db logs failures; avoid crashing shutdown.
+            pass
+        await engine.dispose()
+
+
+app = FastAPI(title="Daubo API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list() or ["http://localhost:3000"],

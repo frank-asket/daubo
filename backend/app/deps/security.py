@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Header, HTTPException
 
-from app.config import get_settings
+from ..config import get_settings
 
 
 async def require_internal_api_key(

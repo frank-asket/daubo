@@ -43,6 +43,10 @@ class Settings(BaseSettings):
         ...,
         description="Async SQLAlchemy URL, e.g. postgresql+asyncpg://user:pass@host:5432/db",
     )
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis URL used for cache/locks/background coordination.",
+    )
 
     app_environment: Literal["development", "staging", "production"] = "development"
     log_level: str = "INFO"
