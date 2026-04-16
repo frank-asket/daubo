@@ -1,17 +1,26 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard,
-  Briefcase,
+  Asterisk,
+  List,
+  Check,
+  Pencil,
   FileText,
-  MessageSquare,
+  Bot,
   User,
   Settings,
   LifeBuoy,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { Logo } from "@/components/Logo";
-import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_SECONDARY } from "@/lib/dashboard-nav";
+import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import {
+  DASHBOARD_NAV_MAIN,
+  DASHBOARD_NAV_SECONDARY,
+  DASHBOARD_NAV_SETUP,
+} from "@/lib/dashboard-nav";
 
 type MainNavItem = {
   href: string;
@@ -21,10 +30,15 @@ type MainNavItem = {
 };
 
 const ICON_MAIN: Record<string, LucideIcon> = {
-  "/dashboard": LayoutDashboard,
-  "/dashboard/applications": Briefcase,
+  "/dashboard": Asterisk,
+  "/dashboard/pipeline": List,
+  "/dashboard/approvals": Check,
+  "/dashboard/interviews": Pencil,
+};
+
+const ICON_SETUP: Record<string, LucideIcon> = {
   "/dashboard/resume": FileText,
-  "/dashboard/interviews": MessageSquare,
+  "/dashboard/agents": Bot,
 };
 
 const ICON_SECONDARY: Record<string, LucideIcon> = {
@@ -33,17 +47,38 @@ const ICON_SECONDARY: Record<string, LucideIcon> = {
   "/dashboard/support": LifeBuoy,
 };
 
-const main: MainNavItem[] = DASHBOARD_NAV_MAIN.map((n) => ({
+const mainItems: MainNavItem[] = DASHBOARD_NAV_MAIN.map((n) => ({
   href: n.href,
   label: n.label,
-  icon: ICON_MAIN[n.href] ?? LayoutDashboard,
+  icon: ICON_MAIN[n.href] ?? Asterisk,
 }));
 
-const secondary = DASHBOARD_NAV_SECONDARY.map((n) => ({
+const setupItems: MainNavItem[] = DASHBOARD_NAV_SETUP.map((n) => ({
+  href: n.href,
+  label: n.label,
+  icon: ICON_SETUP[n.href] ?? FileText,
+}));
+
+const secondaryItems = DASHBOARD_NAV_SECONDARY.map((n) => ({
   href: n.href,
   label: n.label,
   icon: ICON_SECONDARY[n.href] ?? User,
 }));
+
+function routeCount(route: string, stats: ReturnType<typeof useDashboardStats>["stats"]): string | null {
+  const total = stats?.application_count ?? 0;
+  const career = stats?.career;
+  switch (route) {
+    case "/dashboard":
+      return String(Math.max(total, career?.exploring ?? 0));
+    case "/dashboard/pipeline":
+      return String(total);
+    case "/dashboard/approvals":
+      return String((career?.ready_to_submit ?? 0) + (career?.package_ready ?? 0));
+    default:
+      return null;
+  }
+}
 
 function mergeClassNames(...parts: (string | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -61,21 +96,29 @@ export function DauboSidebar({
   className?: string;
   onNavLinkClick?: () => void;
 }) {
+  const { stats } = useDashboardStats();
+  const { user } = useUser();
+  const displayName = user?.fullName?.trim() || user?.firstName?.trim() || "Daubo member";
+
   return (
     <aside
       id="dashboard-sidebar-nav"
       className={mergeClassNames(
-        "flex w-[min(260px,88vw)] shrink-0 flex-col border-r border-zinc-800/90 bg-[#0a0a0a] lg:w-[220px]",
+        "flex w-[min(280px,92vw)] shrink-0 flex-col border-r border-zinc-200 bg-[#efefec] text-zinc-900 lg:w-[270px]",
         className,
       )}
     >
-      <div className="flex h-14 items-center border-b border-zinc-800/90 px-4">
+      <div className="flex h-28 flex-col items-start justify-center border-b border-zinc-300 px-6">
         <Logo href={logoHref} />
+        <p className="mt-1 text-[12px] font-semibold uppercase tracking-wide text-emerald-700">Job Search AI</p>
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3" aria-label="Dashboard">
-        {main.map((item) => {
+      <nav className="flex flex-1 flex-col overflow-y-auto px-4 py-6" aria-label="Dashboard">
+        <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Workspace</p>
+        <div className="space-y-1">
+          {mainItems.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.label;
+          const badge = routeCount(item.href, stats);
           return (
             <Link
               key={item.href}
@@ -84,24 +127,25 @@ export function DauboSidebar({
               aria-current={isActive ? "page" : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
-                  ? "bg-zinc-800/90 text-white"
-                  : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+                  ? "bg-white text-zinc-950 shadow-sm"
+                  : "text-zinc-700 hover:bg-white/70 hover:text-zinc-950"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+              <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.8} />
               <span className="flex-1">{item.label}</span>
-              {item.badge ? (
-                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-zinc-950">
-                  {item.badge}
+              {badge ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+                  {badge}
                 </span>
               ) : null}
             </Link>
           );
-        })}
-      </nav>
-      <div className="border-t border-zinc-800/90 p-3">
-        <nav className="flex flex-col gap-0.5">
-          {secondary.map((item) => {
+          })}
+        </div>
+
+        <p className="mt-8 px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Setup</p>
+        <div className="space-y-1">
+          {setupItems.map((item) => {
             const Icon = item.icon;
             const isActive = active === item.label;
             return (
@@ -112,8 +156,32 @@ export function DauboSidebar({
                 aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   isActive
-                    ? "bg-zinc-800/60 text-zinc-200"
-                    : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
+                    ? "bg-white text-zinc-950 shadow-sm"
+                    : "text-zinc-700 hover:bg-white/70 hover:text-zinc-950"
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+      <div className="border-t border-zinc-300 p-3">
+        <nav className="flex flex-col gap-0.5">
+          {secondaryItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = active === item.label;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavLinkClick}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-white text-zinc-900"
+                    : "text-zinc-600 hover:bg-white/70 hover:text-zinc-900"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
@@ -122,15 +190,13 @@ export function DauboSidebar({
             );
           })}
         </nav>
-        <div className="mt-3 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            Help
+        <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/70 px-3 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-800">
+            {(user?.firstName?.[0] ?? "D").toUpperCase()}
           </div>
-          <p className="mt-1 text-[11px] leading-snug text-zinc-500">
-            <strong className="font-medium text-zinc-400">Coach</strong> (bottom-right) explains how Daubo
-            works. <strong className="font-medium text-zinc-400">Web job search</strong> in the sidebar
-            (when enabled) searches live postings and may use your résumé excerpt—separate from Coach.
+          <p className="text-sm font-medium text-zinc-800">
+            {displayName}
+            <span className="block text-xs font-normal text-zinc-500">Pro plan</span>
           </p>
         </div>
       </div>

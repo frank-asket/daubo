@@ -19,18 +19,24 @@ export function GmailConnectCard() {
   const [status, setStatus] = useState<GmailStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const r = await fetch(dauboBffUrl("v1/me/integrations/gmail/status"), {
         credentials: "same-origin",
       });
       if (!r.ok) {
         setStatus(null);
+        setError("Could not verify Gmail connection status right now.");
         return;
       }
       setStatus((await r.json()) as GmailStatus);
+    } catch {
+      setStatus(null);
+      setError("Could not verify Gmail connection status right now.");
     } finally {
       setLoading(false);
     }
@@ -45,13 +51,16 @@ export function GmailConnectCard() {
       return;
     }
     setDisconnecting(true);
+    setError(null);
     try {
       const r = await fetch(dauboBffUrl("v1/me/integrations/gmail"), {
         method: "DELETE",
         credentials: "same-origin",
       });
       if (!r.ok) {
-        console.error("Gmail disconnect failed", r.status);
+        const j = await r.json().catch(() => ({}));
+        const detail = (j as { detail?: string }).detail;
+        setError(detail?.trim() || "Could not disconnect Gmail. Try again.");
       }
     } finally {
       setDisconnecting(false);
@@ -114,6 +123,10 @@ export function GmailConnectCard() {
           <Loader2 className="h-4 w-4 animate-spin" />
           Checking Gmail link…
         </div>
+      ) : error ? (
+        <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
+          {error}
+        </p>
       ) : status && !status.configured ? (
         <p className="mt-4 text-sm text-zinc-500">
           API Google OAuth is not configured. Add{" "}

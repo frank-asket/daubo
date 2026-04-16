@@ -53,6 +53,7 @@ export function ApplyHandoffPanel({
     connected: boolean;
     google_email: string | null;
   } | null>(null);
+  const [gmailStatusRefreshing, setGmailStatusRefreshing] = useState(false);
   const [draftingGmail, setDraftingGmail] = useState(false);
 
   useEffect(() => {
@@ -71,28 +72,30 @@ export function ApplyHandoffPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [application, onClose]);
 
+  const refreshGmailStatus = useCallback(async () => {
+    if (!application) return;
+    setGmailStatusRefreshing(true);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/integrations/gmail/status"), {
+        credentials: "same-origin",
+      });
+      if (!r.ok) return;
+      setGmailStatus((await r.json()) as {
+        configured: boolean;
+        connected: boolean;
+        google_email: string | null;
+      });
+    } catch {
+      /* ignore */
+    } finally {
+      setGmailStatusRefreshing(false);
+    }
+  }, [application]);
+
   useEffect(() => {
     if (!application) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const r = await fetch(dauboBffUrl("v1/me/integrations/gmail/status"), {
-          credentials: "same-origin",
-        });
-        if (!r.ok || cancelled) return;
-        setGmailStatus((await r.json()) as {
-          configured: boolean;
-          connected: boolean;
-          google_email: string | null;
-        });
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [application]);
+    void refreshGmailStatus();
+  }, [application, refreshGmailStatus]);
 
   const runGenerate = useCallback(async () => {
     if (!application) return;
@@ -157,7 +160,8 @@ export function ApplyHandoffPanel({
   const selectedChannel = (channelOverride || application.apply_channel || "").trim().toLowerCase();
   const showGmailDraft =
     Boolean(draft?.cover_letter?.trim() || draft?.linkedin_note?.trim()) &&
-    Boolean(gmailStatus?.configured);
+    Boolean(gmailStatus?.configured) &&
+    selectedChannel === "email";
   const hasRichContext = jdOverride.trim().length >= 240;
 
   return (
@@ -292,7 +296,7 @@ export function ApplyHandoffPanel({
           </button>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-          {showGmailDraft && selectedChannel !== "linkedin" ? (
+          {showGmailDraft ? (
             <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-200/90">
                 Gmail draft
@@ -331,6 +335,14 @@ export function ApplyHandoffPanel({
                   >
                     Settings
                   </a>
+                  <button
+                    type="button"
+                    disabled={gmailStatusRefreshing}
+                    onClick={() => void refreshGmailStatus()}
+                    className="text-[11px] text-zinc-500 underline hover:text-zinc-400 disabled:opacity-50"
+                  >
+                    {gmailStatusRefreshing ? "Refreshing…" : "Refresh Gmail status"}
+                  </button>
                 </div>
               )}
             </div>

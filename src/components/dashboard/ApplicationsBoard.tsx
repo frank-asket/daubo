@@ -232,7 +232,7 @@ export function ApplicationsBoard() {
     }
   }
 
-  async function runIntegrityCheck(dryRun: boolean) {
+  const runIntegrityCheck = useCallback(async (dryRun: boolean) => {
     if (dryRun) setIntegrityLoading(true);
     else setIntegrityApplying(true);
     setError(null);
@@ -259,7 +259,7 @@ export function ApplicationsBoard() {
       if (dryRun) setIntegrityLoading(false);
       else setIntegrityApplying(false);
     }
-  }
+  }, [load, reloadStats]);
 
   function jumpToApplicationRow(applicationId: string) {
     const el = document.getElementById(`app-row-${applicationId}`);
@@ -273,7 +273,7 @@ export function ApplicationsBoard() {
     if (items.length < 12) return;
     autoPreviewTriggered.current = true;
     void runIntegrityCheck(true);
-  }, [items.length, loading]);
+  }, [items.length, loading, runIntegrityCheck]);
 
   const limits = stats?.limits;
 

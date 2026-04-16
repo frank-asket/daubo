@@ -35,7 +35,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [path, closeMobileNav]);
 
   useEffect(() => {
-    if (path === "/dashboard/applications") {
+    if (path === "/dashboard/applications" || path === "/dashboard/pipeline") {
       setSearchDraft(searchParams.get("q") ?? "");
     } else {
       setSearchDraft("");
@@ -75,9 +75,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     e.preventDefault();
     const q = searchDraft.trim();
     if (q) {
-      router.push(`/dashboard/applications?q=${encodeURIComponent(q)}`);
+      router.push(`/dashboard/pipeline?q=${encodeURIComponent(q)}`);
     } else {
-      router.push("/dashboard/applications");
+      router.push("/dashboard/pipeline");
     }
     closeMobileNav();
   }

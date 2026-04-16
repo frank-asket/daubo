@@ -34,10 +34,10 @@ export function DashboardOverview({ hasResume }: { hasResume: boolean | null }) 
         </div>
         <div className="flex shrink-0 flex-wrap gap-2 lg:flex-col lg:items-stretch">
           <Link
-            href="/dashboard/applications"
+            href="/dashboard/pipeline"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400"
           >
-            My jobs
+            Pipeline
             <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </Link>
           <Link
