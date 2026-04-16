@@ -7,6 +7,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps.users import get_clerk_user_id
 from app.services.autopilot import run_autopilot_pass
+from app.services.me_autopilot_helpers import (
+    autopilot_conflict_detail,
+    autopilot_idempotency_active,
+    autopilot_idempotency_decision,
+    autopilot_item_latency_ms,
+    autopilot_item_retryable,
+    autopilot_item_suggested_action,
+    autopilot_request_fingerprint,
+    classify_autopilot_item_error,
+    get_or_create_autopilot_profile,
+    get_or_create_workspace_settings,
+    normalize_idempotency_key,
+    resolve_or_block_running_autopilot,
+)
 from backend.app.config import Settings, get_settings
 from backend.app.db import get_db
 from backend.app.models import (
@@ -15,7 +29,6 @@ from backend.app.models import (
     UserAutopilotProfile,
     UserGmailCredentials,
 )
-from backend.app.routers import me as me_legacy
 from backend.app.schemas.me import (
     AutopilotProfileOut,
     AutopilotProfilePatch,
@@ -133,7 +146,7 @@ async def get_workspace_settings(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ):
-    return await me_legacy._get_or_create_workspace_settings(session, user_id)
+    return await get_or_create_workspace_settings(session, user_id)
 
 
 @router.patch("/me/workspace-settings", response_model=WorkspaceSettingsOut)
@@ -142,7 +155,7 @@ async def patch_workspace_settings(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ):
-    row = await me_legacy._get_or_create_workspace_settings(session, user_id)
+    row = await get_or_create_workspace_settings(session, user_id)
     data = body.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(row, k, v)
@@ -160,16 +173,16 @@ async def run_prep_autopilot(
     idempotency_key_header: str | None = Header(default=None, alias="Idempotency-Key"),
 ) -> AutopilotRunOut:
     req = body or AutopilotRunIn()
-    profile = await me_legacy._get_or_create_autopilot_profile(session, user_id)
+    profile = await get_or_create_autopilot_profile(session, user_id)
     effective_limit = min(req.limit, profile.daily_apply_limit)
-    ws = await me_legacy._get_or_create_workspace_settings(session, user_id)
+    ws = await get_or_create_workspace_settings(session, user_id)
     do_gmail = (
         req.create_gmail_drafts
         if req.create_gmail_drafts is not None
         else ws.autopilot_auto_gmail_drafts
     )
-    idem_key = me_legacy._normalize_idempotency_key(idempotency_key_header)
-    req_fingerprint = me_legacy._autopilot_request_fingerprint(
+    idem_key = normalize_idempotency_key(idempotency_key_header)
+    req_fingerprint = autopilot_request_fingerprint(
         limit=effective_limit,
         create_gmail_drafts=do_gmail,
         retry_scope=req.retry_scope,
@@ -186,11 +199,11 @@ async def run_prep_autopilot(
             .limit(1)
         )
         prev = prev_res.scalar_one_or_none()
-        if prev is not None and me_legacy._autopilot_idempotency_active(prev.started_at):
+        if prev is not None and autopilot_idempotency_active(prev.started_at):
             started_iso = (
                 prev.started_at if prev.started_at.tzinfo else prev.started_at.replace(tzinfo=timezone.utc)
             ).isoformat()
-            decision = me_legacy._autopilot_idempotency_decision(
+            decision = autopilot_idempotency_decision(
                 previous_fingerprint=prev.request_fingerprint,
                 request_fingerprint=req_fingerprint,
             )
@@ -224,9 +237,9 @@ async def run_prep_autopilot(
                 gmail_drafts_created=prev.gmail_drafts_created,
                 errors=prev.errors if isinstance(prev.errors, list) else [],
             )
-    running = await me_legacy._resolve_or_block_running_autopilot(session, user_id)
+    running = await resolve_or_block_running_autopilot(session, user_id)
     if running is not None:
-        raise HTTPException(status_code=409, detail=me_legacy._autopilot_conflict_detail(running))
+        raise HTTPException(status_code=409, detail=autopilot_conflict_detail(running))
     run = AutopilotRun(
         clerk_user_id=user_id,
         idempotency_key=idem_key,
@@ -282,7 +295,7 @@ async def get_autopilot_profile(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ) -> UserAutopilotProfile:
-    return await me_legacy._get_or_create_autopilot_profile(session, user_id)
+    return await get_or_create_autopilot_profile(session, user_id)
 
 
 @router.patch("/me/autopilot/profile", response_model=AutopilotProfileOut)
@@ -291,7 +304,7 @@ async def patch_autopilot_profile(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ) -> UserAutopilotProfile:
-    row = await me_legacy._get_or_create_autopilot_profile(session, user_id)
+    row = await get_or_create_autopilot_profile(session, user_id)
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
     await session.commit()
@@ -340,7 +353,7 @@ async def list_autopilot_run_items(
     rows = list(result.scalars().all())
     out: list[AutopilotRunItemOut] = []
     for row in rows:
-        category = me_legacy._classify_autopilot_item_error(row.status, row.error)
+        category = classify_autopilot_item_error(row.status, row.error)
         out.append(
             AutopilotRunItemOut(
                 id=row.id,
@@ -353,9 +366,9 @@ async def list_autopilot_run_items(
                 status=row.status,
                 error=row.error,
                 error_category=category,
-                retryable=me_legacy._autopilot_item_retryable(row.status, category),
-                suggested_action=me_legacy._autopilot_item_suggested_action(category),
-                latency_ms=me_legacy._autopilot_item_latency_ms(row.created_at, row.updated_at),
+                retryable=autopilot_item_retryable(row.status, category),
+                suggested_action=autopilot_item_suggested_action(category),
+                latency_ms=autopilot_item_latency_ms(row.created_at, row.updated_at),
                 created_at=row.created_at,
                 updated_at=row.updated_at,
             )
