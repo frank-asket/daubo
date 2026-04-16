@@ -1,8 +1,9 @@
 "use client";
 
 import { Copy, Loader2, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { dauboBffUrl } from "@/lib/daubo-api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { dauboBffUrl, detailFromApiJson } from "@/lib/daubo-api";
+import { makeIdempotencyKey } from "@/lib/idempotency-key";
 
 export type PackageDraft = {
   cover_letter?: string;
@@ -57,6 +58,8 @@ export function ApplyHandoffPanel({
   const [draftingGmail, setDraftingGmail] = useState(false);
   const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(null);
   const [approvingHandoff, setApprovingHandoff] = useState(false);
+  const [handoffSuccess, setHandoffSuccess] = useState<string | null>(null);
+  const pendingApproveIdempotencyKeys = useRef<Record<string, string>>({});
   const [handoffCoverLetter, setHandoffCoverLetter] = useState("");
   const [handoffLinkedinNote, setHandoffLinkedinNote] = useState("");
 
@@ -181,6 +184,7 @@ export function ApplyHandoffPanel({
     if (!application || !pendingApprovalId) return;
     setApprovingHandoff(true);
     setError(null);
+    setHandoffSuccess(null);
     try {
       const ch = (channelOverride || application.apply_channel || "").trim().toLowerCase();
       const body: { cover_letter?: string; linkedin_note?: string } = {};
@@ -189,27 +193,64 @@ export function ApplyHandoffPanel({
       } else {
         body.cover_letter = handoffCoverLetter;
       }
+      const idTag = pendingApprovalId;
+      const idempotencyKey =
+        pendingApproveIdempotencyKeys.current[idTag] ??
+        makeIdempotencyKey(`approval-approve-${idTag}`);
+      pendingApproveIdempotencyKeys.current[idTag] = idempotencyKey;
       const r = await fetch(
         dauboBffUrl(`v1/me/approvals/${pendingApprovalId}/approve`),
         {
           method: "POST",
           credentials: "same-origin",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
           body: JSON.stringify(body),
         },
       );
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+        throw new Error(detailFromApiJson(j, r.statusText));
       }
-      const data = (await r.json()) as { gmail_draft?: { gmail_web_url?: string } };
+      const data = (await r.json()) as {
+        gmail_draft?: { gmail_web_url?: string };
+        gmail_warning?: string | null;
+        linkedin_handoff?: {
+          note_text: string;
+          job_url?: string | null;
+        } | null;
+      };
+      if (data.gmail_warning?.trim()) {
+        setError(data.gmail_warning.trim());
+      }
       const url = data.gmail_draft?.gmail_web_url;
       if (url) window.open(url, "_blank", "noopener,noreferrer");
+      const li = data.linkedin_handoff;
+      if (li?.note_text) {
+        try {
+          await navigator.clipboard.writeText(li.note_text);
+        } catch {
+          /* ignore */
+        }
+        if (li.job_url?.trim()) {
+          window.open(li.job_url.trim(), "_blank", "noopener,noreferrer");
+        }
+        if (!data.gmail_warning?.trim()) {
+          setHandoffSuccess(
+            "LinkedIn note copied to clipboard. Paste it when you send your connection request.",
+          );
+        }
+      }
       await onRefresh();
       await refreshPendingApproval();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Approval failed");
     } finally {
+      if (pendingApprovalId) {
+        delete pendingApproveIdempotencyKeys.current[pendingApprovalId];
+      }
       setApprovingHandoff(false);
     }
   }, [
@@ -466,6 +507,9 @@ export function ApplyHandoffPanel({
               "Generate application materials"
             )}
           </button>
+          {handoffSuccess ? (
+            <p className="text-sm text-emerald-300/95">{handoffSuccess}</p>
+          ) : null}
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
           {showGmailDraft ? (

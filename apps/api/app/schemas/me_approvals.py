@@ -27,6 +27,22 @@ class ApprovalApproveIn(BaseModel):
     linkedin_note: str | None = Field(default=None, max_length=12_000)
 
 
+class LinkedInHandoffOut(BaseModel):
+    """Post-approval payload for LinkedIn — user pastes manually; Daubo does not auto-send."""
+
+    note_text: str
+    context_line: str = Field(
+        ...,
+        description="Role + company line for orientation when pasting on LinkedIn.",
+    )
+    job_url: str | None = None
+
+
 class ApprovalApproveOut(BaseModel):
     application: ApplicationOut
     gmail_draft: GmailDraftOut | None = None
+    gmail_warning: str | None = Field(
+        default=None,
+        description="Set when Gmail was expected but draft creation failed; user should reconnect or retry.",
+    )
+    linkedin_handoff: LinkedInHandoffOut | None = None

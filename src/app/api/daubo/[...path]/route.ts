@@ -63,6 +63,8 @@ async function handle(req: NextRequest, segments: string[]): Promise<NextRespons
   if (ct) headers.set("content-type", ct);
   const accept = req.headers.get("accept");
   if (accept) headers.set("accept", accept);
+  const idem = req.headers.get("idempotency-key");
+  if (idem?.trim()) headers.set("Idempotency-Key", idem.trim());
   if (secret) headers.set(INTERNAL, secret);
   if (clerkUserId) headers.set(USER_ID, clerkUserId);
 

@@ -267,6 +267,8 @@ Goal: Human-in-the-loop gate works end to end.
 - TASK-048 Frontend: Apply handoff - channel-aware UI (Gmail hidden for non-email)
 - TASK-049 Frontend: Gmail status refresh button in handoff flow
 
+**Implementation status (2026-04-16):** Phase 4 is implemented in-repo for TASK-038–044 and TASK-046–049. Post-approval Gmail uses `backend/app/services/apply_agent.py`; LinkedIn “dispatch” is **manual handoff** (`linkedin_handoff` copy/open URL), not automated messaging. **`Idempotency-Key`** on `POST /v1/me/approvals/:id/approve` and `…/reject` is enforced via Redis (`backend/app/services/approval_idempotency.py`) when the header is sent—**REDIS_URL** must be set for idempotent retries. **TASK-045** (standalone LinkedIn OAuth / token store for the API) is **deferred**; sign-in may use **Clerk** LinkedIn if enabled. The **ApplyAgent** in §6 is realized as that apply service module rather than a `BaseAgent` subclass.
+
 ### Phase 5 - Interview Prep (Week 10)
 
 Goal: STAR-R prep sessions generated per application.

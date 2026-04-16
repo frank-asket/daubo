@@ -3,6 +3,7 @@
 import { Loader2, Rocket } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
+import { makeIdempotencyKey } from "@/lib/idempotency-key";
 
 type Settings = {
   autopilot_enabled: boolean;
@@ -52,11 +53,6 @@ type AutopilotConflictDetail = {
   active_run_id?: string;
   started_at?: string;
 };
-
-function makeIdempotencyKey(prefix: string): string {
-  const rand = Math.random().toString(36).slice(2, 10);
-  return `${prefix}-${Date.now().toString(36)}-${rand}`;
-}
 
 export function AutopilotCard({
   onAutopilotComplete,

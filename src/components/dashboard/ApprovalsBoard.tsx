@@ -1,32 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { dauboBffUrl } from "@/lib/daubo-api";
-
-type ApprovalQueueItem = {
-  id: string;
-  application_id: string;
-  title: string;
-  company: string;
-  apply_channel: string | null;
-  /** Normalized handoff channel from API (email | linkedin | web). */
-  channel?: string;
-  notes: string | null;
-  application_status: string;
-  /** Server-normalized draft snippet; used when package fields are empty. */
-  draft_body?: string;
-  package_draft?: {
-    cover_letter?: string;
-    linkedin_note?: string;
-  } | null;
-};
-
-type DraftEdits = { cover_letter: string; linkedin_note: string };
-
-function isLinkedInChannel(item: ApprovalQueueItem) {
-  return item.apply_channel?.toLowerCase() === "linkedin" || item.channel === "linkedin";
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { dauboBffUrl, detailFromApiJson } from "@/lib/daubo-api";
+import { makeIdempotencyKey } from "@/lib/idempotency-key";
+import {
+  ApprovalCard,
+  type ApprovalQueueItem,
+  type DraftEdits,
+  isLinkedInChannel,
+} from "@/components/dashboard/ApprovalCard";
 
 function initialEditsForItem(item: ApprovalQueueItem): DraftEdits {
   const pkg = item.package_draft;
@@ -45,7 +27,9 @@ export function ApprovalsBoard() {
   const [draftEdits, setDraftEdits] = useState<Record<string, DraftEdits>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
+  const pendingIdempotencyKeys = useRef<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,29 +62,66 @@ export function ApprovalsBoard() {
   async function approve(item: ApprovalQueueItem) {
     setActingId(item.id);
     setError(null);
+    setInfoMessage(null);
     try {
       const ed = draftEdits[item.id] ?? initialEditsForItem(item);
       const li = isLinkedInChannel(item);
       const body: { cover_letter?: string; linkedin_note?: string } = {};
       if (li) body.linkedin_note = ed.linkedin_note;
       else body.cover_letter = ed.cover_letter;
+      const actionTag = `approve:${item.id}`;
+      const idempotencyKey =
+        pendingIdempotencyKeys.current[actionTag] ??
+        makeIdempotencyKey(`approval-${actionTag}`);
+      pendingIdempotencyKeys.current[actionTag] = idempotencyKey;
       const r = await fetch(dauboBffUrl(`v1/me/approvals/${item.id}/approve`), {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify(body),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? "Could not approve this application.");
+        throw new Error(
+          detailFromApiJson(j, "Could not approve this application."),
+        );
       }
-      const data = (await r.json()) as { gmail_draft?: { gmail_web_url?: string } };
+      const data = (await r.json()) as {
+        gmail_draft?: { gmail_web_url?: string };
+        gmail_warning?: string | null;
+        linkedin_handoff?: {
+          note_text: string;
+          job_url?: string | null;
+          context_line?: string;
+        } | null;
+      };
+      if (data.gmail_warning?.trim()) {
+        setError(data.gmail_warning.trim());
+      }
       const gurl = data.gmail_draft?.gmail_web_url;
       if (gurl) window.open(gurl, "_blank", "noopener,noreferrer");
+      const handoff = data.linkedin_handoff;
+      if (handoff?.note_text) {
+        try {
+          await navigator.clipboard.writeText(handoff.note_text);
+        } catch {
+          /* ignore */
+        }
+        if (handoff.job_url?.trim()) {
+          window.open(handoff.job_url.trim(), "_blank", "noopener,noreferrer");
+        }
+        setInfoMessage(
+          "LinkedIn note copied to clipboard. Paste it in the LinkedIn app when you connect or message the team.",
+        );
+      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not approve this application.");
     } finally {
+      delete pendingIdempotencyKeys.current[`approve:${item.id}`];
       setActingId(null);
     }
   }
@@ -108,19 +129,27 @@ export function ApprovalsBoard() {
   async function reject(approvalId: string) {
     setActingId(approvalId);
     setError(null);
+    setInfoMessage(null);
     try {
+      const actionTag = `reject:${approvalId}`;
+      const idempotencyKey =
+        pendingIdempotencyKeys.current[actionTag] ??
+        makeIdempotencyKey(`approval-${actionTag}`);
+      pendingIdempotencyKeys.current[actionTag] = idempotencyKey;
       const r = await fetch(dauboBffUrl(`v1/me/approvals/${approvalId}/reject`), {
         method: "POST",
         credentials: "same-origin",
+        headers: { "Idempotency-Key": idempotencyKey },
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? "Could not reject this approval.");
+        throw new Error(detailFromApiJson(j, "Could not reject this approval."));
       }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not reject this approval.");
     } finally {
+      delete pendingIdempotencyKeys.current[`reject:${approvalId}`];
       setActingId(null);
     }
   }
@@ -132,7 +161,9 @@ export function ApprovalsBoard() {
   const header = useMemo(() => {
     if (loading) return "Loading applications ready for your review…";
     if (items.length === 0) return "No approvals pending. New AI drafts will appear here.";
-    if (items.length === 1) return "1 application ready for your review. AI drafted; nothing sent until you approve.";
+    if (items.length === 1) {
+      return "1 application ready for your review. AI drafted; nothing sent until you approve.";
+    }
     return `${items.length} applications ready for your review. AI drafted; nothing sent until you approve.`;
   }, [items.length, loading]);
 
@@ -142,6 +173,12 @@ export function ApprovalsBoard() {
         {header}
       </p>
 
+      {infoMessage ? (
+        <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+          {infoMessage}
+        </p>
+      ) : null}
+
       {error ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
           {error}
@@ -150,100 +187,26 @@ export function ApprovalsBoard() {
 
       <div className="space-y-3">
         {items.map((item) => (
-          <article key={item.id} className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-semibold text-emerald-200">
-                  {item.company.slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-white">{item.company}</p>
-                  <p className="text-sm text-zinc-300">{item.title}</p>
-                </div>
-              </div>
-              <span className="rounded-[6px] border border-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-                {isLinkedInChannel(item) ? "👥 LinkedIn" : "✉ Email"}
-              </span>
-            </div>
-            <p className="mt-3 text-xs text-zinc-500">
-              Subject:{" "}
-              {isLinkedInChannel(item)
-                ? "LinkedIn connection note"
-                : `Application: ${item.title}`}
-            </p>
-            <div className="mt-3 space-y-2">
-              {isLinkedInChannel(item) ? (
-                <label className="block">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                    LinkedIn note (edit before approve)
-                  </span>
-                  <textarea
-                    className="mt-1 min-h-[140px] w-full resize-y rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm leading-relaxed text-zinc-200 outline-none focus:border-zinc-600"
-                    value={draftEdits[item.id]?.linkedin_note ?? ""}
-                    onChange={(e) =>
-                      setDraftEdits((prev) => {
-                        const cur = prev[item.id] ?? initialEditsForItem(item);
-                        return {
-                          ...prev,
-                          [item.id]: { ...cur, linkedin_note: e.target.value },
-                        };
-                      })
-                    }
-                    disabled={actingId !== null}
-                    placeholder="Connection note shown to the recipient…"
-                  />
-                </label>
-              ) : (
-                <label className="block">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                    Email / cover text (edit before approve)
-                  </span>
-                  <textarea
-                    className="mt-1 min-h-[160px] w-full resize-y rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm leading-relaxed text-zinc-200 outline-none focus:border-zinc-600"
-                    value={draftEdits[item.id]?.cover_letter ?? ""}
-                    onChange={(e) =>
-                      setDraftEdits((prev) => {
-                        const cur = prev[item.id] ?? initialEditsForItem(item);
-                        return {
-                          ...prev,
-                          [item.id]: { ...cur, cover_letter: e.target.value },
-                        };
-                      })
-                    }
-                    disabled={actingId !== null}
-                    placeholder={
-                      item.notes?.trim() ||
-                      "Cover letter or email body — nothing is sent until you approve."
-                    }
-                  />
-                </label>
-              )}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={actingId !== null}
-                onClick={() => void approve(item)}
-                className="rounded-md border border-zinc-600 bg-zinc-100 px-3 py-1.5 text-[12px] font-semibold text-zinc-900 hover:bg-white active:scale-[0.98] disabled:opacity-60"
-              >
-                Approve &amp; send
-              </button>
-              <Link
-                href={`/dashboard/pipeline?focus=${encodeURIComponent(item.application_id)}`}
-                className="rounded-md border border-zinc-700 px-3 py-1.5 text-[12px] text-zinc-300 hover:bg-zinc-900 active:scale-[0.98]"
-              >
-                Edit draft
-              </Link>
-              <button
-                type="button"
-                disabled={actingId !== null}
-                onClick={() => void reject(item.id)}
-                className="rounded-md border border-zinc-700 px-3 py-1.5 text-[12px] text-zinc-300 hover:bg-zinc-900 active:scale-[0.98] disabled:opacity-60"
-              >
-                Reject
-              </button>
-            </div>
-          </article>
+          <ApprovalCard
+            key={item.id}
+            item={item}
+            actingId={actingId}
+            draftEdit={draftEdits[item.id] ?? initialEditsForItem(item)}
+            onLinkedinNoteChange={(value) =>
+              setDraftEdits((prev) => {
+                const cur = prev[item.id] ?? initialEditsForItem(item);
+                return { ...prev, [item.id]: { ...cur, linkedin_note: value } };
+              })
+            }
+            onCoverLetterChange={(value) =>
+              setDraftEdits((prev) => {
+                const cur = prev[item.id] ?? initialEditsForItem(item);
+                return { ...prev, [item.id]: { ...cur, cover_letter: value } };
+              })
+            }
+            onApprove={() => void approve(item)}
+            onReject={() => void reject(item.id)}
+          />
         ))}
       </div>
     </section>
