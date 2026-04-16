@@ -18,7 +18,10 @@ def _package_has_usable_draft(package_draft: dict[str, Any] | None) -> bool:
         return False
     c = package_draft.get("cover_letter")
     n = package_draft.get("linkedin_note")
-    return (isinstance(c, str) and c.strip()) or (isinstance(n, str) and n.strip())
+    return bool(
+        (isinstance(c, str) and c.strip())
+        or (isinstance(n, str) and n.strip())
+    )
 
 
 def _infer_draft(app: JobApplication) -> tuple[str, str, str]:

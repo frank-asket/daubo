@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,19 +24,25 @@ logger = logging.getLogger("daubo")
 
 @router.get("/me/approvals", response_model=list[ApprovalQueueItemOut])
 async def list_pending_approvals(
+    application_id: UUID | None = Query(
+        default=None,
+        description="When set, only pending approvals for this job application are returned.",
+    ),
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ) -> list[ApprovalQueueItemOut]:
     await sync_pending_approvals_for_user(session, user_id)
-    result = await session.execute(
+    stmt = (
         select(JobApproval, JobApplication)
         .join(JobApplication, JobApproval.job_application_id == JobApplication.id)
         .where(
             JobApproval.clerk_user_id == user_id,
             JobApproval.status == "pending",
         )
-        .order_by(JobApproval.created_at.desc())
     )
+    if application_id is not None:
+        stmt = stmt.where(JobApplication.id == application_id)
+    result = await session.execute(stmt.order_by(JobApproval.created_at.desc()))
     out: list[ApprovalQueueItemOut] = []
     for approval, app in result.all():
         pkg = app.package_draft if isinstance(app.package_draft, dict) else None

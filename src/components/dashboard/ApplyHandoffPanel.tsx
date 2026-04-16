@@ -55,6 +55,52 @@ export function ApplyHandoffPanel({
   } | null>(null);
   const [gmailStatusRefreshing, setGmailStatusRefreshing] = useState(false);
   const [draftingGmail, setDraftingGmail] = useState(false);
+  const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(null);
+  const [approvingHandoff, setApprovingHandoff] = useState(false);
+  const [handoffCoverLetter, setHandoffCoverLetter] = useState("");
+  const [handoffLinkedinNote, setHandoffLinkedinNote] = useState("");
+
+  const packageDraftFingerprint = application
+    ? JSON.stringify(application.package_draft ?? null)
+    : "";
+
+  const refreshPendingApproval = useCallback(async () => {
+    if (!application) {
+      setPendingApprovalId(null);
+      return;
+    }
+    try {
+      const r = await fetch(
+        dauboBffUrl(
+          `v1/me/approvals?application_id=${encodeURIComponent(application.id)}`,
+        ),
+        { credentials: "same-origin" },
+      );
+      if (!r.ok) {
+        setPendingApprovalId(null);
+        return;
+      }
+      const list = (await r.json()) as { id: string }[];
+      setPendingApprovalId(list[0]?.id ?? null);
+    } catch {
+      setPendingApprovalId(null);
+    }
+  }, [application]);
+
+  useEffect(() => {
+    void refreshPendingApproval();
+  }, [application?.id, packageDraftFingerprint, refreshPendingApproval]);
+
+  useEffect(() => {
+    if (!application) {
+      setHandoffCoverLetter("");
+      setHandoffLinkedinNote("");
+      return;
+    }
+    const pkg = application.package_draft;
+    setHandoffCoverLetter(pkg?.cover_letter ?? "");
+    setHandoffLinkedinNote(pkg?.linkedin_note ?? "");
+  }, [application?.id, packageDraftFingerprint]);
 
   useEffect(() => {
     if (!application) return;
@@ -123,12 +169,58 @@ export function ApplyHandoffPanel({
         throw new Error((j as { detail?: string }).detail ?? r.statusText);
       }
       await onRefresh();
+      await refreshPendingApproval();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setGenerating(false);
     }
-  }, [application, channelOverride, jdOverride, onRefresh]);
+  }, [application, channelOverride, jdOverride, onRefresh, refreshPendingApproval]);
+
+  const runApproveHandoff = useCallback(async () => {
+    if (!application || !pendingApprovalId) return;
+    setApprovingHandoff(true);
+    setError(null);
+    try {
+      const ch = (channelOverride || application.apply_channel || "").trim().toLowerCase();
+      const body: { cover_letter?: string; linkedin_note?: string } = {};
+      if (ch === "linkedin") {
+        body.linkedin_note = handoffLinkedinNote;
+      } else {
+        body.cover_letter = handoffCoverLetter;
+      }
+      const r = await fetch(
+        dauboBffUrl(`v1/me/approvals/${pendingApprovalId}/approve`),
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+      }
+      const data = (await r.json()) as { gmail_draft?: { gmail_web_url?: string } };
+      const url = data.gmail_draft?.gmail_web_url;
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+      await onRefresh();
+      await refreshPendingApproval();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Approval failed");
+    } finally {
+      setApprovingHandoff(false);
+    }
+  }, [
+    application,
+    channelOverride,
+    handoffCoverLetter,
+    handoffLinkedinNote,
+    pendingApprovalId,
+    onRefresh,
+    refreshPendingApproval,
+  ]);
 
   const runGmailDraft = useCallback(async () => {
     if (!application) return;
@@ -159,7 +251,7 @@ export function ApplyHandoffPanel({
   const draft = application.package_draft;
   const selectedChannel = (channelOverride || application.apply_channel || "").trim().toLowerCase();
   const showGmailDraft =
-    Boolean(draft?.cover_letter?.trim() || draft?.linkedin_note?.trim()) &&
+    Boolean(handoffCoverLetter.trim() || handoffLinkedinNote.trim()) &&
     Boolean(gmailStatus?.configured) &&
     selectedChannel === "email";
   const hasRichContext = jdOverride.trim().length >= 240;
@@ -200,6 +292,80 @@ export function ApplyHandoffPanel({
             Daubo does not log into LinkedIn or company sites. Open the posting, paste the drafts
             below, and confirm when you have submitted.
           </p>
+          {draft != null ? (
+            <section className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Email / cover text
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => void copyToClipboard(handoffCoverLetter)}
+                    disabled={approvingHandoff}
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:underline disabled:opacity-50"
+                  >
+                    <Copy className="h-3 w-3" /> Copy
+                  </button>
+                </div>
+                <textarea
+                  className="mt-2 min-h-[120px] w-full resize-y rounded-lg border border-zinc-800 bg-black px-3 py-2 text-xs leading-relaxed text-zinc-200 outline-none focus:border-zinc-600 disabled:opacity-60"
+                  value={handoffCoverLetter}
+                  onChange={(e) => setHandoffCoverLetter(e.target.value)}
+                  disabled={approvingHandoff}
+                  placeholder="Cover letter or email body…"
+                  spellCheck
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    LinkedIn note
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => void copyToClipboard(handoffLinkedinNote)}
+                    disabled={approvingHandoff}
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:underline disabled:opacity-50"
+                  >
+                    <Copy className="h-3 w-3" /> Copy
+                  </button>
+                </div>
+                <textarea
+                  className="mt-2 min-h-[96px] w-full resize-y rounded-lg border border-zinc-800 bg-black px-3 py-2 text-xs leading-relaxed text-zinc-200 outline-none focus:border-zinc-600 disabled:opacity-60"
+                  value={handoffLinkedinNote}
+                  onChange={(e) => setHandoffLinkedinNote(e.target.value)}
+                  disabled={approvingHandoff}
+                  placeholder="Connection request note…"
+                  spellCheck
+                />
+              </div>
+            </section>
+          ) : null}
+          {pendingApprovalId ? (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3">
+              <p className="text-xs font-semibold text-amber-100">Ready for your approval</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-amber-200/85">
+                This application is in your approvals queue. Approve to lock in the package draft and
+                open a Gmail draft when your account is connected for email applications.
+              </p>
+              <button
+                type="button"
+                disabled={approvingHandoff}
+                onClick={() => void runApproveHandoff()}
+                className="mt-3 w-full rounded-full bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-white disabled:opacity-50 sm:w-auto"
+              >
+                {approvingHandoff ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Approving…
+                  </span>
+                ) : (
+                  "Approve handoff"
+                )}
+              </button>
+            </div>
+          ) : null}
           <p className="rounded-lg border border-zinc-800 bg-black/30 px-3 py-2 text-[11px] text-zinc-500">
             Richer context improves drafting quality: include the full posting, required skills, and team focus
             before generating.
@@ -225,8 +391,14 @@ export function ApplyHandoffPanel({
             </button>
             <button
               type="button"
+              disabled={Boolean(pendingApprovalId)}
+              title={
+                pendingApprovalId
+                  ? "Approve the queued draft first so Daubo can record the handoff."
+                  : undefined
+              }
               onClick={() => onStatusChange(application.id, "applied")}
-              className="rounded-full border border-emerald-500/40 px-4 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10"
+              className="rounded-full border border-emerald-500/40 px-4 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-40"
             >
               I submitted this application
             </button>
@@ -357,46 +529,6 @@ export function ApplyHandoffPanel({
               <span className="font-semibold text-zinc-300">Suggested channel: </span>
               {draft.channel_hint}
             </p>
-          ) : null}
-
-          {draft?.cover_letter ? (
-            <section>
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  Email / cover text
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => void copyToClipboard(draft.cover_letter ?? "")}
-                  className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:underline"
-                >
-                  <Copy className="h-3 w-3" /> Copy
-                </button>
-              </div>
-              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-800 bg-black p-3 text-xs text-zinc-300">
-                {draft.cover_letter}
-              </pre>
-            </section>
-          ) : null}
-
-          {draft?.linkedin_note ? (
-            <section>
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  LinkedIn note
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => void copyToClipboard(draft.linkedin_note ?? "")}
-                  className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:underline"
-                >
-                  <Copy className="h-3 w-3" /> Copy
-                </button>
-              </div>
-              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-zinc-800 bg-black p-3 text-xs text-zinc-300">
-                {draft.linkedin_note}
-              </pre>
-            </section>
           ) : null}
 
           {draft?.tailored_bullets && draft.tailored_bullets.length > 0 ? (

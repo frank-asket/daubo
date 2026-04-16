@@ -14,18 +14,35 @@ type ApprovalQueueItem = {
   channel?: string;
   notes: string | null;
   application_status: string;
+  /** Server-normalized draft snippet; used when package fields are empty. */
+  draft_body?: string;
   package_draft?: {
     cover_letter?: string;
     linkedin_note?: string;
   } | null;
 };
 
+type DraftEdits = { cover_letter: string; linkedin_note: string };
+
 function isLinkedInChannel(item: ApprovalQueueItem) {
   return item.apply_channel?.toLowerCase() === "linkedin" || item.channel === "linkedin";
 }
 
+function initialEditsForItem(item: ApprovalQueueItem): DraftEdits {
+  const pkg = item.package_draft;
+  const fallback = (item.draft_body ?? "").trim();
+  const li = isLinkedInChannel(item);
+  const cov = (pkg?.cover_letter ?? "").trim();
+  const note = (pkg?.linkedin_note ?? "").trim();
+  return {
+    cover_letter: cov || (li ? "" : fallback),
+    linkedin_note: note || (li ? fallback : ""),
+  };
+}
+
 export function ApprovalsBoard() {
   const [items, setItems] = useState<ApprovalQueueItem[]>([]);
+  const [draftEdits, setDraftEdits] = useState<Record<string, DraftEdits>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -50,20 +67,36 @@ export function ApprovalsBoard() {
     }
   }, []);
 
-  async function approve(approvalId: string) {
-    setActingId(approvalId);
+  useEffect(() => {
+    const next: Record<string, DraftEdits> = {};
+    for (const item of items) {
+      next[item.id] = initialEditsForItem(item);
+    }
+    setDraftEdits(next);
+  }, [items]);
+
+  async function approve(item: ApprovalQueueItem) {
+    setActingId(item.id);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl(`v1/me/approvals/${approvalId}/approve`), {
+      const ed = draftEdits[item.id] ?? initialEditsForItem(item);
+      const li = isLinkedInChannel(item);
+      const body: { cover_letter?: string; linkedin_note?: string } = {};
+      if (li) body.linkedin_note = ed.linkedin_note;
+      else body.cover_letter = ed.cover_letter;
+      const r = await fetch(dauboBffUrl(`v1/me/approvals/${item.id}/approve`), {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(body),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error((j as { detail?: string }).detail ?? "Could not approve this application.");
       }
+      const data = (await r.json()) as { gmail_draft?: { gmail_web_url?: string } };
+      const gurl = data.gmail_draft?.gmail_web_url;
+      if (gurl) window.open(gurl, "_blank", "noopener,noreferrer");
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not approve this application.");
@@ -138,20 +171,59 @@ export function ApprovalsBoard() {
                 ? "LinkedIn connection note"
                 : `Application: ${item.title}`}
             </p>
-            <div className="relative mt-3 overflow-hidden rounded-xl bg-zinc-900/70 px-4 py-4">
-              <p className="max-h-36 overflow-hidden text-sm leading-relaxed text-zinc-300">
-                {item.package_draft?.cover_letter?.trim() ||
-                  item.package_draft?.linkedin_note?.trim() ||
-                  item.notes?.trim() ||
-                  "Draft generated. Review and approve in pipeline handoff."}
-              </p>
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-zinc-900/95 to-transparent" />
+            <div className="mt-3 space-y-2">
+              {isLinkedInChannel(item) ? (
+                <label className="block">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                    LinkedIn note (edit before approve)
+                  </span>
+                  <textarea
+                    className="mt-1 min-h-[140px] w-full resize-y rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm leading-relaxed text-zinc-200 outline-none focus:border-zinc-600"
+                    value={draftEdits[item.id]?.linkedin_note ?? ""}
+                    onChange={(e) =>
+                      setDraftEdits((prev) => {
+                        const cur = prev[item.id] ?? initialEditsForItem(item);
+                        return {
+                          ...prev,
+                          [item.id]: { ...cur, linkedin_note: e.target.value },
+                        };
+                      })
+                    }
+                    disabled={actingId !== null}
+                    placeholder="Connection note shown to the recipient…"
+                  />
+                </label>
+              ) : (
+                <label className="block">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                    Email / cover text (edit before approve)
+                  </span>
+                  <textarea
+                    className="mt-1 min-h-[160px] w-full resize-y rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm leading-relaxed text-zinc-200 outline-none focus:border-zinc-600"
+                    value={draftEdits[item.id]?.cover_letter ?? ""}
+                    onChange={(e) =>
+                      setDraftEdits((prev) => {
+                        const cur = prev[item.id] ?? initialEditsForItem(item);
+                        return {
+                          ...prev,
+                          [item.id]: { ...cur, cover_letter: e.target.value },
+                        };
+                      })
+                    }
+                    disabled={actingId !== null}
+                    placeholder={
+                      item.notes?.trim() ||
+                      "Cover letter or email body — nothing is sent until you approve."
+                    }
+                  />
+                </label>
+              )}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={actingId !== null}
-                onClick={() => void approve(item.id)}
+                onClick={() => void approve(item)}
                 className="rounded-md border border-zinc-600 bg-zinc-100 px-3 py-1.5 text-[12px] font-semibold text-zinc-900 hover:bg-white active:scale-[0.98] disabled:opacity-60"
               >
                 Approve &amp; send
