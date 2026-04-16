@@ -4,21 +4,28 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
-type ApprovalItem = {
+type ApprovalQueueItem = {
   id: string;
+  application_id: string;
   title: string;
   company: string;
   apply_channel: string | null;
+  /** Normalized handoff channel from API (email | linkedin | web). */
+  channel?: string;
   notes: string | null;
-  status: string;
+  application_status: string;
   package_draft?: {
     cover_letter?: string;
     linkedin_note?: string;
   } | null;
 };
 
+function isLinkedInChannel(item: ApprovalQueueItem) {
+  return item.apply_channel?.toLowerCase() === "linkedin" || item.channel === "linkedin";
+}
+
 export function ApprovalsBoard() {
-  const [items, setItems] = useState<ApprovalItem[]>([]);
+  const [items, setItems] = useState<ApprovalQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -27,19 +34,14 @@ export function ApprovalsBoard() {
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl("v1/me/applications"), { credentials: "same-origin" });
+      const r = await fetch(dauboBffUrl("v1/me/approvals"), { credentials: "same-origin" });
       if (!r.ok) {
         setItems([]);
         setError("Could not load pending approvals right now.");
         return;
       }
-      const list = (await r.json()) as ApprovalItem[];
-      setItems(
-        list.filter((a) => {
-          const s = (a.status || "").toLowerCase();
-          return s === "ready_to_apply" || s === "ready" || s === "package_ready";
-        }),
-      );
+      const list = (await r.json()) as ApprovalQueueItem[];
+      setItems(list);
     } catch {
       setItems([]);
       setError("Could not load pending approvals right now.");
@@ -48,23 +50,43 @@ export function ApprovalsBoard() {
     }
   }, []);
 
-  async function updateStatus(id: string, status: string) {
-    setActingId(id);
+  async function approve(approvalId: string) {
+    setActingId(approvalId);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl(`v1/me/applications/${id}`), {
-        method: "PATCH",
+      const r = await fetch(dauboBffUrl(`v1/me/approvals/${approvalId}/approve`), {
+        method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({}),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? "Could not update approval status.");
+        throw new Error((j as { detail?: string }).detail ?? "Could not approve this application.");
       }
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not update approval status.");
+      setError(e instanceof Error ? e.message : "Could not approve this application.");
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function reject(approvalId: string) {
+    setActingId(approvalId);
+    setError(null);
+    try {
+      const r = await fetch(dauboBffUrl(`v1/me/approvals/${approvalId}/reject`), {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error((j as { detail?: string }).detail ?? "Could not reject this approval.");
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not reject this approval.");
     } finally {
       setActingId(null);
     }
@@ -107,12 +129,12 @@ export function ApprovalsBoard() {
                 </div>
               </div>
               <span className="rounded-[6px] border border-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-                {item.apply_channel?.toLowerCase() === "linkedin" ? "👥 LinkedIn" : "✉ Email"}
+                {isLinkedInChannel(item) ? "👥 LinkedIn" : "✉ Email"}
               </span>
             </div>
             <p className="mt-3 text-xs text-zinc-500">
               Subject:{" "}
-              {item.apply_channel?.toLowerCase() === "linkedin"
+              {isLinkedInChannel(item)
                 ? "LinkedIn connection note"
                 : `Application: ${item.title}`}
             </p>
@@ -129,13 +151,13 @@ export function ApprovalsBoard() {
               <button
                 type="button"
                 disabled={actingId !== null}
-                onClick={() => void updateStatus(item.id, "applied")}
+                onClick={() => void approve(item.id)}
                 className="rounded-md border border-zinc-600 bg-zinc-100 px-3 py-1.5 text-[12px] font-semibold text-zinc-900 hover:bg-white active:scale-[0.98] disabled:opacity-60"
               >
                 Approve &amp; send
               </button>
               <Link
-                href={`/dashboard/pipeline?focus=${encodeURIComponent(item.id)}`}
+                href={`/dashboard/pipeline?focus=${encodeURIComponent(item.application_id)}`}
                 className="rounded-md border border-zinc-700 px-3 py-1.5 text-[12px] text-zinc-300 hover:bg-zinc-900 active:scale-[0.98]"
               >
                 Edit draft
@@ -143,7 +165,7 @@ export function ApprovalsBoard() {
               <button
                 type="button"
                 disabled={actingId !== null}
-                onClick={() => void updateStatus(item.id, "closed")}
+                onClick={() => void reject(item.id)}
                 className="rounded-md border border-zinc-700 px-3 py-1.5 text-[12px] text-zinc-300 hover:bg-zinc-900 active:scale-[0.98] disabled:opacity-60"
               >
                 Reject

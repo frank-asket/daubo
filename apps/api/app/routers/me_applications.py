@@ -32,6 +32,7 @@ from backend.app.schemas.me import (
     ApplicationUpdate,
     GmailDraftOut,
 )
+from backend.app.services.job_approval_sync import ensure_pending_approval_for_application
 from backend.app.services.profile_documents_context import profile_documents_prompt_block
 
 router = APIRouter(tags=["me"])
@@ -239,6 +240,7 @@ async def build_application_package(
         row.status = "package_ready"
     await session.commit()
     await session.refresh(row)
+    await ensure_pending_approval_for_application(session, row)
     return row
 
 

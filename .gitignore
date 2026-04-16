@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+.tmp-smoke/
 
 # next.js
 /.next/

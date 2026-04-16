@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, Boolean, Float, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import DateTime
 
@@ -207,6 +207,29 @@ class JobApplication(Base):
     package_draft: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     # Saved interview prep (questions, topics) after user runs prep workflow.
     interview_prep: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class JobApproval(Base):
+    """Human-in-the-loop gate before apply handoff (email draft / LinkedIn note)."""
+
+    __tablename__ = "job_approvals"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), index=True)
+    job_application_id: Mapped[UUID] = mapped_column(
+        ForeignKey("job_applications.id", ondelete="CASCADE"),
+        index=True,
+    )
+    approval_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    channel: Mapped[str] = mapped_column(String(32), nullable=False)
+    draft_body: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

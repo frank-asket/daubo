@@ -25,6 +25,7 @@ from app.routers import (
     health,
     jobs,
     me_applications,
+    me_approvals,
     me_ops,
     me_preferences,
     me_resume,
@@ -70,6 +71,7 @@ app.include_router(chunks.router, prefix="/v1", dependencies=protected)
 # Migrated /me routes (split routers); shared dashboard routes from backend.app.routers.me_status.
 app.include_router(me_resume.router, prefix="/v1", dependencies=protected)
 app.include_router(me_applications.router, prefix="/v1", dependencies=protected)
+app.include_router(me_approvals.router, prefix="/v1", dependencies=protected)
 app.include_router(me_ops.router, prefix="/v1", dependencies=protected)
 app.include_router(me_preferences.router, prefix="/v1", dependencies=protected)
 app.include_router(me_status.router, prefix="/v1", dependencies=protected)

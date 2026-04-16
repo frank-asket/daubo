@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import Settings
 from ..models import AutopilotRunItem, JobApplication, UserGmailCredentials, UserResume
 from .application_package import generate_application_package
+from .job_approval_sync import ensure_pending_approval_for_application
 from .gmail_integration import (
     create_draft_plain,
     draft_content_from_application,
@@ -140,6 +141,7 @@ async def run_autopilot_pass(
             session.add(item)
             await session.commit()
             await session.refresh(row)
+            await ensure_pending_approval_for_application(session, row)
             processed += 1
         except Exception as exc:  # noqa: BLE001
             await session.rollback()
