@@ -280,3 +280,23 @@ class AutopilotRunItemOut(BaseModel):
     latency_ms: int | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class AgentStatusItemOut(BaseModel):
+    agent_id: str = Field(..., max_length=64, description="Stable identifier for the agent")
+    name: str = Field(..., max_length=128)
+    description: str = Field(..., max_length=240)
+    state: str = Field(
+        ...,
+        pattern="^(active|working|idle)$",
+        description="UI status indicator (not a hard guarantee of background execution)",
+    )
+    last_run_at: datetime | None = Field(
+        default=None,
+        description="Most recent timestamp associated with this agent's work for the user",
+    )
+
+
+class AgentStatusOut(BaseModel):
+    last_orchestration_at: datetime | None = None
+    agents: list[AgentStatusItemOut] = Field(default_factory=list)

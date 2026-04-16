@@ -45,6 +45,8 @@ from app.schemas.me import (
     GmailOAuthCompleteIn,
     GmailOAuthCompleteOut,
     GmailStatusOut,
+    AgentStatusOut,
+    AgentStatusItemOut,
     ProfileDocumentOut,
     ResumeIn,
     ResumeOut,
@@ -287,6 +289,136 @@ async def _resolve_or_block_running_autopilot(
 class AgentMatchLatestResponse(BaseModel):
     run: dict | None = None
     created_at: str | None = None
+
+
+@router.get("/me/agents/status", response_model=AgentStatusOut)
+async def agent_status(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> AgentStatusOut:
+    """
+    Lightweight, dashboard-friendly snapshot of "agent status".
+
+    This is not a scheduler/worker heartbeat. It summarizes capability configuration plus the most
+    recent user-scoped timestamps we can infer from persisted runs and artifacts.
+    """
+    openrouter = bool((settings.openrouter_api_key or "").strip())
+
+    latest_match_ts: datetime | None = None
+    latest_pkg_ts: datetime | None = None
+    latest_prep_ts: datetime | None = None
+    latest_autopilot_ts: datetime | None = None
+    autopilot_running = False
+
+    try:
+        match_res = await session.execute(
+            select(AgentMatchRun.created_at)
+            .where(
+                AgentMatchRun.clerk_user_id == user_id,
+                AgentMatchRun.kind == _AUTODISCOVER_KIND,
+            )
+            .order_by(AgentMatchRun.created_at.desc())
+            .limit(1)
+        )
+        latest_match_ts = match_res.scalar_one_or_none()
+
+        pkg_res = await session.execute(
+            select(func.max(JobApplication.updated_at))
+            .where(
+                JobApplication.clerk_user_id == user_id,
+                JobApplication.package_draft.is_not(None),
+            )
+        )
+        latest_pkg_ts = pkg_res.scalar_one_or_none()
+
+        prep_res = await session.execute(
+            select(func.max(JobApplication.updated_at))
+            .where(
+                JobApplication.clerk_user_id == user_id,
+                JobApplication.interview_prep.is_not(None),
+            )
+        )
+        latest_prep_ts = prep_res.scalar_one_or_none()
+
+        ap_latest = await session.execute(
+            select(AutopilotRun.started_at, AutopilotRun.status)
+            .where(AutopilotRun.clerk_user_id == user_id)
+            .order_by(AutopilotRun.started_at.desc())
+            .limit(1)
+        )
+        row = ap_latest.first()
+        if row is not None:
+            latest_autopilot_ts = row[0]
+            autopilot_running = (row[1] or "").lower() == "running"
+    except SQLAlchemyError:
+        logger.exception("agent_status database error")
+        raise HTTPException(
+            status_code=503,
+            detail="Daubo is temporarily unavailable. Please try again in a moment.",
+        ) from None
+
+    has_resume = bool(
+        await session.scalar(
+            select(func.count())
+            .select_from(UserResume)
+            .where(UserResume.clerk_user_id == user_id)
+        )
+    )
+
+    agents: list[AgentStatusItemOut] = [
+        AgentStatusItemOut(
+            agent_id="discovery_agent",
+            name="Discovery agent",
+            description="Scans role opportunities based on your profile and preferences",
+            state="active",
+            last_run_at=latest_match_ts,
+        ),
+        AgentStatusItemOut(
+            agent_id="match_scorer",
+            name="Match scorer",
+            description="Runs fit scoring (1-5) against your resume profile",
+            state="idle" if not has_resume else "active",
+            last_run_at=latest_match_ts,
+        ),
+        AgentStatusItemOut(
+            agent_id="resume_tailor",
+            name="Resume tailor",
+            description="Generates ATS-optimized resume variants per job description",
+            state="active" if (openrouter and has_resume) else "idle",
+            last_run_at=latest_pkg_ts,
+        ),
+        AgentStatusItemOut(
+            agent_id="cover_letter_writer",
+            name="Cover letter writer",
+            description="Drafts personalized cover letters and LinkedIn notes",
+            state="active" if (openrouter and has_resume) else "idle",
+            last_run_at=latest_pkg_ts,
+        ),
+        AgentStatusItemOut(
+            agent_id="apply_agent",
+            name="Apply agent",
+            description="Executes channel-aware apply handoff after approval",
+            state="working" if autopilot_running else "idle",
+            last_run_at=latest_autopilot_ts,
+        ),
+        AgentStatusItemOut(
+            agent_id="prep_agent",
+            name="Prep agent",
+            description="Generates STAR-R interview questions and company briefs",
+            state="active" if (openrouter and has_resume) else "idle",
+            last_run_at=latest_prep_ts,
+        ),
+    ]
+
+    last_orch: datetime | None = None
+    for ts in [latest_match_ts, latest_pkg_ts, latest_prep_ts, latest_autopilot_ts]:
+        if ts is None:
+            continue
+        if last_orch is None or ts > last_orch:
+            last_orch = ts
+
+    return AgentStatusOut(last_orchestration_at=last_orch, agents=agents)
 
 
 @router.get("/me/stats")
