@@ -259,7 +259,7 @@ export function AgentStatusBoard() {
         <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3">
           {messages.length === 0 ? (
             <p className="text-xs text-zinc-500">
-              Try: "What should I do next for applications waiting approval?"
+              Try: &quot;What should I do next for applications waiting approval?&quot;
             </p>
           ) : (
             messages.map((m, i) => (

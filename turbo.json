@@ -9,6 +9,11 @@
       "dependsOn": [
         "^build"
       ],
+      "env": [
+        "CLERK_SECRET_KEY",
+        "DAUBO_API_URL",
+        "DAUBO_INTERNAL_API_SECRET"
+      ],
       "outputs": [
         ".next/**",
         "dist/**",
