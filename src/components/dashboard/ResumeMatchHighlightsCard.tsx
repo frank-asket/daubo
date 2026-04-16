@@ -67,6 +67,7 @@ export function ResumeMatchHighlightsCard({
   );
   const [err, setErr] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [preparingId, setPreparingId] = useState<string | null>(null);
   const [minFitThreshold, setMinFitThreshold] = useState(0);
   const triggerSent = useRef(false);
   const pollCount = useRef(0);
@@ -219,6 +220,49 @@ export function ResumeMatchHighlightsCard({
       setErr(e instanceof Error ? e.message : "Could not save role");
     } finally {
       setAddingId(null);
+    }
+  }
+
+  async function prepareListing(l: DiscoverResult["result"]["parsed_listings"][number]) {
+    const key = listingKey(l);
+    setPreparingId(key);
+    setErr(null);
+    try {
+      const create = await fetch(dauboBffUrl("v1/me/applications"), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: l.title.trim(),
+          company: (l.employer ?? "Unknown employer").trim(),
+          location: l.location?.trim() || null,
+          job_url: l.source_url?.trim() || null,
+          status: "shortlisted",
+          job_description: l.excerpt?.trim() || null,
+          apply_channel: l.source_url?.toLowerCase().includes("linkedin") ? "linkedin" : "email",
+        }),
+      });
+      if (!create.ok) {
+        const j = await create.json().catch(() => ({}));
+        throw new Error((j as { detail?: string }).detail ?? create.statusText);
+      }
+      const created = (await create.json()) as { id?: string };
+      const id = created.id?.trim();
+      if (!id) throw new Error("Could not prepare this role (missing application id).");
+
+      const prep = await fetch(dauboBffUrl(`v1/me/applications/${id}/application-package`), {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      if (!prep.ok) {
+        const j = await prep.json().catch(() => ({}));
+        throw new Error((j as { detail?: string }).detail ?? "Package generation failed.");
+      }
+      onUpdate.current?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not prepare application.");
+    } finally {
+      setPreparingId(null);
     }
   }
 
@@ -402,11 +446,19 @@ export function ResumeMatchHighlightsCard({
             </div>
             <button
               type="button"
-              disabled={addingId !== null}
+              disabled={addingId !== null || preparingId !== null}
               onClick={() => void addListing(l)}
               className="shrink-0 rounded-full border border-zinc-600 px-3 py-1.5 text-[11px] font-semibold text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-50"
             >
               {addingId === listingKey(l) ? "Saving…" : "Save to my jobs"}
+            </button>
+            <button
+              type="button"
+              disabled={addingId !== null || preparingId !== null}
+              onClick={() => void prepareListing(l)}
+              className="shrink-0 rounded-full bg-emerald-400 px-3 py-1.5 text-[11px] font-semibold text-zinc-950 hover:bg-emerald-300 disabled:opacity-50"
+            >
+              {preparingId === listingKey(l) ? "Preparing…" : "Prepare application"}
             </button>
           </li>
         ))}
