@@ -9,23 +9,23 @@ from datetime import datetime, timedelta, timezone
 from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy import func, select
 
-from app.config import Settings, get_settings
-from app.db import SessionLocal
-from app.models import AgentMatchRun, JobApplication, UserResume
-from app.schemas.jobs import (
+from ..config import Settings, get_settings
+from ..db import SessionLocal
+from ..models import AgentMatchRun, JobApplication, UserResume
+from ..schemas.jobs import (
     JobDiscoverLLMOut,
     JobDiscoverParams,
     JobDiscoverResponse,
     PortalGuide,
     ResumeSearchInference,
 )
-from app.services.adzuna_jobs import (
+from .adzuna_jobs import (
     build_adzuna_search_query,
     fetch_adzuna_listings,
     resolve_adzuna_country_slug,
 )
-from app.services.job_discover_live import run_job_discovery_with_optional_adzuna
-from app.services.llm import chat_llm
+from .job_discover_live import run_job_discovery_with_optional_adzuna
+from .llm import chat_llm
 
 logger = logging.getLogger("daubo")
 

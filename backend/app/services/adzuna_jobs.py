@@ -8,8 +8,8 @@ from typing import Any
 
 import httpx
 
-from app.config import Settings
-from app.schemas.jobs import JobDiscoverParams, ParsedListing
+from ..config import Settings
+from ..schemas.jobs import JobDiscoverParams, ParsedListing
 
 logger = logging.getLogger("daubo")
 

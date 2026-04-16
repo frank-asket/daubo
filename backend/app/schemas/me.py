@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.services.resume_profile_signals import ResumeProfileSignals
+from ..services.resume_profile_signals import ResumeProfileSignals
 
 
 class ResumeIn(BaseModel):

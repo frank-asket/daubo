@@ -1,6 +1,6 @@
 import httpx
 
-from app.config import Settings
+from ..config import Settings
 
 JINA_EMBEDDINGS_URL = "https://api.jina.ai/v1/embeddings"
 

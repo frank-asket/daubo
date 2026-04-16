@@ -10,10 +10,10 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import Settings
-from app.models import AutopilotRunItem, JobApplication, UserGmailCredentials, UserResume
-from app.services.application_package import generate_application_package
-from app.services.gmail_integration import (
+from ..config import Settings
+from ..models import AutopilotRunItem, JobApplication, UserGmailCredentials, UserResume
+from .application_package import generate_application_package
+from .gmail_integration import (
     create_draft_plain,
     draft_content_from_application,
     gmail_oauth_configured,

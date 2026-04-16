@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from app.services.llm import chat_llm
+from .llm import chat_llm
 
 if TYPE_CHECKING:
     from app.config import Settings

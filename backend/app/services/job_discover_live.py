@@ -5,16 +5,16 @@ from __future__ import annotations
 import logging
 import re
 
-from app.config import Settings
-from app.schemas.jobs import JobDiscoverLLMOut, JobDiscoverParams, ParsedListing
-from app.services.adzuna_jobs import (
+from ..config import Settings
+from ..schemas.jobs import JobDiscoverLLMOut, JobDiscoverParams, ParsedListing
+from .adzuna_jobs import (
     adzuna_country_slug,
     build_adzuna_search_query,
     fetch_adzuna_listings,
     format_listings_as_paste_block,
     resolve_adzuna_country_slug,
 )
-from app.services.job_discovery import run_job_discovery
+from .job_discovery import run_job_discovery
 
 logger = logging.getLogger("daubo")
 

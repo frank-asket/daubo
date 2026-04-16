@@ -9,7 +9,7 @@ from sqlalchemy import JSON, Boolean, Float, Integer, String, Text, UniqueConstr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import DateTime
 
-from app.config import get_settings
+from .config import get_settings
 
 _settings = get_settings()
 

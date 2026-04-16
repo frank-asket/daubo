@@ -10,11 +10,11 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import Settings, get_settings
-from app.db import get_db
-from app.deps.users import get_clerk_user_id
-from app.models import AgentMatchRun, AutopilotRun, JobApplication, UserGmailCredentials, UserResume
-from app.schemas.me import (
+from ..config import Settings, get_settings
+from ..db import get_db
+from ..deps.users import get_clerk_user_id
+from ..models import AgentMatchRun, AutopilotRun, JobApplication, UserGmailCredentials, UserResume
+from ..schemas.me import (
     AgentStatusItemOut,
     AgentStatusOut,
     MeStatsAgentsOut,

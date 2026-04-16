@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx
 
-from app.config import Settings
+from ..config import Settings
 
 logger = logging.getLogger("daubo")
 

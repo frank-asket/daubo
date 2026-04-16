@@ -8,8 +8,8 @@ from typing import Any
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 
-from app.config import Settings
-from app.services.llm import chat_llm
+from ..config import Settings
+from .llm import chat_llm
 
 logger = logging.getLogger("daubo")
 

@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import UserResume
-from app.services.resume_profile_signals import ResumeProfileSignals, extract_resume_profile_signals
+from ..models import UserResume
+from .resume_profile_signals import ResumeProfileSignals, extract_resume_profile_signals
 
 if TYPE_CHECKING:
-    from app.config import Settings
+    from ..config import Settings
 
 logger = logging.getLogger("daubo")
 

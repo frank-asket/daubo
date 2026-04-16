@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import UserProfileDocument
+from ..models import UserProfileDocument
 
 _MAX_PER_DOC = 6_000
 _MAX_TOTAL = 10_000

@@ -1,8 +1,8 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.config import Settings
-from app.schemas.jobs import JobDiscoverLLMOut, JobDiscoverParams
-from app.services.llm import chat_llm
+from ..config import Settings
+from ..schemas.jobs import JobDiscoverLLMOut, JobDiscoverParams
+from .llm import chat_llm
 
 SYSTEM = """You are Daubo's global labour-market assistant. Job seekers may target ANY industry \
 (healthcare, trades, logistics, education, hospitality, public sector, finance, retail, technology, \

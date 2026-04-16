@@ -10,7 +10,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import JobApplication
+from ..models import JobApplication
 
 logger = logging.getLogger("daubo")
 
