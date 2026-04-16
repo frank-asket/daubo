@@ -15,7 +15,7 @@ from backend.app.config import get_settings
 from backend.app.deps.security import require_internal_api_key
 from backend.app.routers import me
 
-from app.routers import chat, chunks, embeddings, health, jobs, me_applications, me_resume
+from app.routers import chat, chunks, embeddings, health, jobs, me_applications, me_ops, me_resume
 
 settings = get_settings()
 app = FastAPI(title="Daubo API")
@@ -36,4 +36,5 @@ app.include_router(chunks.router, prefix="/v1", dependencies=protected)
 # Moved me-slice routes first so they win over legacy duplicates during migration.
 app.include_router(me_resume.router, prefix="/v1", dependencies=protected)
 app.include_router(me_applications.router, prefix="/v1", dependencies=protected)
+app.include_router(me_ops.router, prefix="/v1", dependencies=protected)
 app.include_router(me.router, prefix="/v1", dependencies=protected)
