@@ -16,6 +16,7 @@ const nav = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const mobileNavId = "landing-mobile-nav";
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-black/90 backdrop-blur-md">
@@ -65,6 +66,8 @@ export function Header() {
             type="button"
             className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-200 md:hidden"
             aria-expanded={open}
+            aria-controls={mobileNavId}
+            aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((v) => !v)}
           >
             Menu
@@ -73,7 +76,7 @@ export function Header() {
       </div>
 
       {open ? (
-        <div className="border-t border-zinc-800 px-4 py-4 md:hidden">
+        <div id={mobileNavId} className="border-t border-zinc-800 px-4 py-4 md:hidden">
           <div className="flex flex-col gap-3">
             {nav.map((item) => (
               <Link

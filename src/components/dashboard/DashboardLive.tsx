@@ -24,6 +24,9 @@ import type { BalanceChartResumeSection } from "@/components/daubo/BalanceChart"
 const RESUME_MATCH_POLL_MS = 7000;
 const RESUME_MATCH_POLL_MAX = 18;
 const RESUME_MATCH_AUTO_CYCLES = 3;
+const SECTION_LABEL_CLASS = "text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500";
+const SECTION_LABEL_EMPHASIS_CLASS =
+  "text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-400/90";
 
 function runFingerprint(run: unknown): string | null {
   if (run == null || typeof run !== "object") return null;
@@ -69,7 +72,7 @@ function BottomRow() {
     <div className="grid gap-4 md:grid-cols-3">
       <Link
         href="/dashboard/applications"
-        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
+        className="rounded-2xl border border-zinc-900 bg-[#090909] px-4 py-5 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
         <span className="block text-emerald-400/90">My jobs</span>
         <span className="mt-1 block font-normal text-zinc-500">
@@ -78,7 +81,7 @@ function BottomRow() {
       </Link>
       <Link
         href="/dashboard/settings"
-        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
+        className="rounded-2xl border border-zinc-900 bg-[#090909] px-4 py-5 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
         <span className="block text-emerald-400/90">Gmail drafts</span>
         <span className="mt-1 block font-normal text-zinc-500">
@@ -87,7 +90,7 @@ function BottomRow() {
       </Link>
       <Link
         href="/dashboard/interviews"
-        className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-4 py-6 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
+        className="rounded-2xl border border-zinc-900 bg-[#090909] px-4 py-5 text-sm font-semibold text-zinc-300 transition hover:border-emerald-500/30 hover:text-white"
       >
         <span className="block text-emerald-400/90">Interview practice</span>
         <span className="mt-1 block font-normal text-zinc-500">
@@ -300,10 +303,20 @@ export function DashboardLive() {
       : "metrics";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-7">
       <DashboardOverview hasResume={stats?.has_resume ?? null} />
       <GettingStartedCard />
-      <CareerNextStepsCard />
+      <section
+        className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.08] to-transparent px-4 py-4.5"
+        aria-label="Next best action"
+      >
+        <p className={SECTION_LABEL_EMPHASIS_CLASS}>
+          Next best action
+        </p>
+        <div className="mt-3.5">
+          <CareerNextStepsCard />
+        </div>
+      </section>
       <ResumeMatchHighlightsCard
         onPipelineUpdated={() => {
           refreshPipelineData();
@@ -324,21 +337,26 @@ export function DashboardLive() {
           </button>
         </div>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <BalanceChart
-            compact
-            trackedRoles={trackedRolesCount}
-            resumeMatchListings={resumeMatchListings}
-            resumeMatchLoading={matchLoading}
-            resumeMatchPending={resumeMatchPending}
-            resumeSection={resumeSection}
-          />
+      <section aria-label="Overview metrics">
+        <p className={`mb-2.5 ${SECTION_LABEL_CLASS}`}>
+          Overview
+        </p>
+        <div className="grid gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <BalanceChart
+              compact
+              trackedRoles={trackedRolesCount}
+              resumeMatchListings={resumeMatchListings}
+              resumeMatchLoading={matchLoading}
+              resumeMatchPending={resumeMatchPending}
+              resumeSection={resumeSection}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <QuickSwapCard compact />
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          <QuickSwapCard compact />
-        </div>
-      </div>
+      </section>
       {stats && !stats.has_resume ? (
         <p className="rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-sm text-zinc-400">
           Add your résumé in{" "}
@@ -361,20 +379,30 @@ export function DashboardLive() {
           refreshPipelineData();
         }}
       />
-      <div className="grid gap-4 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <AssetsTableCard
-            applications={applications.slice(0, 8)}
-            loading={appsLoading}
-            error={appsError}
-            onRetry={loadApplications}
-          />
+      <section aria-label="Pipeline snapshot">
+        <p className={`mb-2.5 ${SECTION_LABEL_CLASS}`}>
+          Pipeline snapshot
+        </p>
+        <div className="grid gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <AssetsTableCard
+              applications={applications.slice(0, 8)}
+              loading={appsLoading}
+              error={appsError}
+              onRetry={loadApplications}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <RepartitionCard segments={segments} />
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          <RepartitionCard segments={segments} />
-        </div>
-      </div>
-      <BottomRow />
+      </section>
+      <section aria-label="Quick links">
+        <p className={`mb-2.5 ${SECTION_LABEL_CLASS}`}>
+          Quick links
+        </p>
+        <BottomRow />
+      </section>
     </div>
   );
 }

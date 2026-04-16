@@ -26,16 +26,24 @@ export function Hero() {
           Gmail connected we save <span className="text-zinc-200">draft emails</span> you review before anything
           goes out.
         </p>
-        <Link
-          href="/dashboard"
-          className="mt-8 inline-flex rounded-full bg-emerald-400 px-8 py-3.5 text-sm font-semibold text-zinc-950 shadow-[0_0_40px_-4px_rgba(74,222,128,0.65)] transition hover:bg-emerald-300"
-        >
-          Get started now
-        </Link>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/dashboard"
+            className="inline-flex rounded-full bg-emerald-400 px-8 py-3.5 text-sm font-semibold text-zinc-950 shadow-[0_0_40px_-4px_rgba(74,222,128,0.65)] transition hover:bg-emerald-300"
+          >
+            Get started now
+          </Link>
+          <Link
+            href="/pricing"
+            className="inline-flex rounded-full border border-zinc-600 px-7 py-3.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-400 hover:text-white"
+          >
+            See pricing
+          </Link>
+        </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-zinc-400">
           <span className="text-zinc-500">Daubo members</span>
-          <span className="flex gap-0.5">
+          <span className="flex gap-0.5" role="img" aria-label="5 out of 5 stars">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
@@ -44,7 +52,7 @@ export function Hero() {
               />
             ))}
           </span>
-          <span className="font-semibold text-white">4,9</span>
+          <span className="font-semibold text-white">4.9</span>
           <span
             className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-400 text-xs font-bold text-zinc-950"
             aria-hidden

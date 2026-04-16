@@ -14,8 +14,14 @@ import { Footer, FooterCTA } from "@/components/landing/Footer";
 export default function Home() {
   return (
     <>
+      <a
+        href="#landing-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:rounded-lg focus:bg-emerald-400 focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-zinc-950 focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <Header />
-      <main>
+      <main id="landing-main" tabIndex={-1}>
         <Hero />
         <Tagline />
         <FutureOfResumes />

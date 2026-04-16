@@ -8,7 +8,7 @@ type AgentRow = {
   agent_id: string;
   name: string;
   description: string;
-  state: "active" | "working" | "idle";
+  state: "active" | "working" | "idle" | "unknown";
   last_run_at?: string | null;
 };
 
@@ -28,43 +28,43 @@ const REQUIRED_AGENT_IDS = [
 const AGENT_FALLBACKS: Record<(typeof REQUIRED_AGENT_IDS)[number], Omit<AgentRow, "agent_id">> = {
   discovery_agent: {
     name: "Discovery agent",
-    description: "Scans role opportunities based on your profile and preferences",
-    state: "active",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   match_scorer: {
     name: "Match scorer",
-    description: "Runs fit scoring (1-5) against your resume profile",
-    state: "active",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   resume_tailor: {
     name: "Resume tailor",
-    description: "Generates ATS-optimized resume variants per job description",
-    state: "active",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   cover_letter_writer: {
     name: "Cover letter writer",
-    description: "Drafts personalized cover letters and LinkedIn notes",
-    state: "active",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   apply_agent: {
     name: "Apply agent",
-    description: "Executes channel-aware apply handoff post-approval",
-    state: "idle",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   prep_agent: {
     name: "Prep agent",
-    description: "Generates STAR-R interview questions and company briefings",
-    state: "active",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   pipeline_monitor: {
     name: "Pipeline monitor",
-    description: "Deduplicates, normalizes statuses, and flags stale applications",
-    state: "active",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
   orchestrator: {
     name: "Orchestrator",
-    description: "Coordinates specialized agents and routes actions by workflow stage",
-    state: "working",
+    description: "Status unavailable. Refresh to load this agent.",
+    state: "unknown",
   },
 };
 
@@ -82,7 +82,15 @@ function normalizeRows(rows: AgentRow[]): AgentRow[] {
 function stateStyle(state: AgentRow["state"]): string {
   if (state === "active") return "text-emerald-300";
   if (state === "working") return "text-amber-300";
+  if (state === "unknown") return "text-zinc-500";
   return "text-zinc-400";
+}
+
+function stateLabel(state: AgentRow["state"]): string {
+  if (state === "active") return "Ready";
+  if (state === "working") return "Running now";
+  if (state === "unknown") return "Unavailable";
+  return "Waiting";
 }
 
 function timeAgo(iso: string | null | undefined): string | null {
@@ -110,6 +118,7 @@ export function AgentStatusBoard() {
   const [chatSending, setChatSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Turn[]>([]);
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
   const inFlight = useRef(false);
 
   const load = useCallback(async () => {
@@ -164,6 +173,7 @@ export function AgentStatusBoard() {
       if (!prompt || chatSending) return;
       setChatError(null);
       setChatSending(true);
+      setLastPrompt(prompt);
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
       setMessages((prev) => [...prev, { role: "user", content: prompt }]);
       setChatInput("");
@@ -181,8 +191,12 @@ export function AgentStatusBoard() {
         const j = (await r.json()) as { reply: string };
         setMessages((prev) => [...prev, { role: "assistant", content: j.reply || "…" }]);
       } catch (e) {
-        setMessages((prev) => prev.slice(0, -1));
-        setChatError(e instanceof Error ? e.message : "Could not reach orchestrator.");
+        const err = e instanceof Error ? e.message : "Could not reach orchestrator.";
+        setChatError(err);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `I couldn't complete that request. ${err}` },
+        ]);
       } finally {
         setChatSending(false);
       }
@@ -193,7 +207,7 @@ export function AgentStatusBoard() {
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div aria-live="polite" aria-atomic="true">
           {loading ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -244,7 +258,7 @@ export function AgentStatusBoard() {
                 ) : (
                   <Circle className="h-4 w-4" />
                 )}
-                {row.state}
+                {stateLabel(row.state)}
               </p>
             </div>
           </article>
@@ -256,7 +270,13 @@ export function AgentStatusBoard() {
         <p className="mt-1 text-xs text-zinc-500">
           Ask the orchestrator what to do next across discover, pipeline, approvals, and prep.
         </p>
-        <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3">
+        <div
+          className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3"
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions text"
+          aria-label="Orchestrator conversation"
+        >
           {messages.length === 0 ? (
             <p className="text-xs text-zinc-500">
               Try: &quot;What should I do next for applications waiting approval?&quot;
@@ -277,7 +297,21 @@ export function AgentStatusBoard() {
           )}
           {chatSending ? <p className="text-xs text-zinc-500">Thinking…</p> : null}
         </div>
-        {chatError ? <p className="mt-2 text-xs text-red-400">{chatError}</p> : null}
+        {chatError ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-red-400" role="alert">
+            <span>{chatError}</span>
+            {lastPrompt ? (
+              <button
+                type="button"
+                onClick={() => void sendChat(lastPrompt)}
+                disabled={chatSending}
+                className="rounded-md border border-red-400/40 px-2 py-1 text-red-200 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                Retry last message
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <form
           className="mt-3 flex gap-2"
           onSubmit={(e) => {
