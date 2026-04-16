@@ -106,7 +106,7 @@ export function ApprovalsBoard() {
                   <p className="text-sm text-zinc-300">{item.title}</p>
                 </div>
               </div>
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-300">
+              <span className="rounded-[6px] border border-zinc-700 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
                 {item.apply_channel?.toLowerCase() === "linkedin" ? "👥 LinkedIn" : "✉ Email"}
               </span>
             </div>
@@ -130,13 +130,13 @@ export function ApprovalsBoard() {
                 type="button"
                 disabled={actingId !== null}
                 onClick={() => void updateStatus(item.id, "applied")}
-                className="rounded-xl border border-zinc-600 bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-900 hover:bg-white active:scale-[0.98] disabled:opacity-60"
+                className="rounded-md border border-zinc-600 bg-zinc-100 px-3 py-1.5 text-[12px] font-semibold text-zinc-900 hover:bg-white active:scale-[0.98] disabled:opacity-60"
               >
                 Approve &amp; send
               </button>
               <Link
                 href={`/dashboard/pipeline?focus=${encodeURIComponent(item.id)}`}
-                className="rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-900 active:scale-[0.98]"
+                className="rounded-md border border-zinc-700 px-3 py-1.5 text-[12px] text-zinc-300 hover:bg-zinc-900 active:scale-[0.98]"
               >
                 Edit draft
               </Link>
@@ -144,7 +144,7 @@ export function ApprovalsBoard() {
                 type="button"
                 disabled={actingId !== null}
                 onClick={() => void updateStatus(item.id, "closed")}
-                className="rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-900 active:scale-[0.98] disabled:opacity-60"
+                className="rounded-md border border-zinc-700 px-3 py-1.5 text-[12px] text-zinc-300 hover:bg-zinc-900 active:scale-[0.98] disabled:opacity-60"
               >
                 Reject
               </button>

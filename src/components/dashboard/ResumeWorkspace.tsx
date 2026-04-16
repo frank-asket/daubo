@@ -80,7 +80,8 @@ export function ResumeWorkspace() {
       if (!r.ok) return;
       const s = (await r.json()) as ProfileSignals;
       if (Array.isArray(s.target_roles) && s.target_roles.length) {
-        setTargetRole(s.target_roles[0] || targetRole);
+        const nextRole = s.target_roles[0]?.trim();
+        if (nextRole) setTargetRole(nextRole);
       }
       if (typeof s.locations_or_remote === "string" && s.locations_or_remote.trim()) {
         setLocationPref(s.locations_or_remote.trim());
@@ -97,7 +98,7 @@ export function ResumeWorkspace() {
     } catch {
       /* optional */
     }
-  }, [targetRole]);
+  }, []);
 
   useEffect(() => {
     void loadProfile();

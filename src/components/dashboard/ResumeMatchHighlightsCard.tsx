@@ -383,14 +383,14 @@ export function ResumeMatchHighlightsCard({
         <p className="mt-3 text-xs leading-relaxed text-zinc-400">{summary}</p>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[26px] font-semibold uppercase leading-none tracking-tight text-zinc-200">
+        <p className="text-[13px] font-medium uppercase tracking-[0.04em] text-zinc-400">
           Top matches
         </p>
         <div className="flex items-center gap-2">
           <select
             value={minFitThreshold}
             onChange={(e) => setMinFitThreshold(normalizeFitThreshold(e.target.value))}
-            className="rounded-xl border border-zinc-700 bg-black px-3 py-2 text-sm text-zinc-100"
+            className="rounded-md border border-zinc-700 bg-black px-2 py-1.5 text-[11px] text-zinc-100"
           >
             <option value={0}>All scores</option>
             <option value={4}>High fit (≥4.0)</option>
@@ -400,7 +400,7 @@ export function ResumeMatchHighlightsCard({
             type="button"
             onClick={() => void refreshMatches()}
             disabled={refreshing}
-            className="inline-flex items-center gap-1 rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-100 hover:bg-zinc-900 disabled:opacity-60"
+            className="inline-flex items-center gap-1 rounded-md border border-zinc-700 px-2.5 py-1.5 text-[11px] text-zinc-100 hover:bg-zinc-900 disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
             Refresh

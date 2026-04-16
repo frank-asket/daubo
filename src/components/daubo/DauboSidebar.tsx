@@ -121,8 +121,8 @@ export function DauboSidebar({
         <Logo href={logoHref} />
         <p className="mt-1 text-[12px] font-semibold uppercase tracking-wide text-emerald-400">Job Search AI</p>
       </div>
-      <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-4" aria-label="Dashboard">
-        <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Workspace</p>
+      <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-2" aria-label="Dashboard">
+        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500">Workspace</p>
         <div className="space-y-1">
           {mainItems.map((item) => {
           const Icon = item.icon;
@@ -134,7 +134,7 @@ export function DauboSidebar({
               href={item.href}
               onClick={onNavLinkClick}
               aria-current={isActive ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+              className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition ${
                 isActive
                   ? "bg-zinc-800/90 text-white"
                   : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
@@ -143,7 +143,7 @@ export function DauboSidebar({
               <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.8} />
               <span className="flex-1">{item.label}</span>
               {badge ? (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
+                <span className="rounded-[9px] bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-200">
                   {badge}
                 </span>
               ) : null}
@@ -152,7 +152,7 @@ export function DauboSidebar({
           })}
         </div>
 
-        <p className="mt-5 px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Setup</p>
+        <p className="mt-4 px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500">Setup</p>
         <div className="space-y-1">
           {setupItems.map((item) => {
             const Icon = item.icon;
@@ -163,7 +163,7 @@ export function DauboSidebar({
                 href={item.href}
                 onClick={onNavLinkClick}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition ${
                   isActive
                     ? "bg-zinc-800/90 text-white"
                     : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"

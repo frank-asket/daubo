@@ -626,7 +626,7 @@ export function ApplicationsBoard() {
               ))}
             </div>
             <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-zinc-800 md:block">
-              <table className="w-full min-w-[700px] text-left text-sm">
+              <table className="w-full min-w-[700px] text-left text-[13px]">
                 <thead className="border-b border-zinc-800 text-[11px] uppercase tracking-wide text-zinc-500">
                   <tr>
                     <th className="px-4 py-3 font-medium">Company</th>
@@ -647,10 +647,10 @@ export function ApplicationsBoard() {
                       tabIndex={-1}
                       className="border-b border-zinc-800/80 last:border-0"
                     >
-                      <td className="px-4 py-4 text-[34px] font-semibold leading-none text-white">
+                      <td className="px-4 py-3 text-[13px] font-medium text-white">
                         {row.company}
                       </td>
-                      <td className="px-4 py-4 text-zinc-100">
+                      <td className="px-4 py-3 text-[13px] text-zinc-100">
                         {row.job_url ? (
                           <a
                             href={row.job_url}
@@ -664,41 +664,41 @@ export function ApplicationsBoard() {
                           row.title
                         )}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3">
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${fitBadgeClass(
+                          className={`rounded-[9px] px-2 py-0.5 text-[11px] font-semibold ${fitBadgeClass(
                             parseFitScore(row),
                           )}`}
                         >
                           {parseFitScore(row) == null ? "—" : parseFitScore(row)!.toFixed(1)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-zinc-400">
+                      <td className="px-4 py-3 text-[13px] text-zinc-400">
                         {row.apply_channel?.trim() || "Company site"}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3">
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadgeClass(
+                          className={`rounded-[9px] px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(
                             row.status,
                           )}`}
                         >
                           {jobStageLabel(row.status)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-xs text-zinc-500">
+                      <td className="px-4 py-3 text-[12px] text-zinc-500">
                         {new Date(row.updated_at).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3">
                         <button
                           type="button"
                           onClick={() => setHandoffId(row.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-[11px] font-medium text-emerald-300"
+                          className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-[12px] font-medium text-emerald-300"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Apply yourself
                         </button>
                       </td>
-                      <td className="px-4 py-4 text-right">
+                      <td className="px-4 py-3 text-right">
                         <button
                           type="button"
                           onClick={() => remove(row.id)}
