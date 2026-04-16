@@ -315,7 +315,7 @@ export function ResumeMatchHighlightsCard({
           ) : null}
         </div>
         <Link
-          href="/dashboard/applications"
+          href="/dashboard/pipeline"
           className="shrink-0 text-[11px] font-semibold text-emerald-400 hover:underline"
         >
           My jobs →

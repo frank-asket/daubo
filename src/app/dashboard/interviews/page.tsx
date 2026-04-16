@@ -4,8 +4,8 @@ import { InterviewPrepBoard } from "@/components/dashboard/InterviewPrepBoard";
 export default function InterviewsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Interview preparation</h1>
-      <p className="mt-1 max-w-2xl text-sm text-zinc-400">
+      <h1 className="text-[2rem] font-semibold tracking-tight text-zinc-950">Interview preparation</h1>
+      <p className="mt-1 max-w-2xl text-lg text-zinc-700">
         AI-generated questions and STAR-R story bank
       </p>
       <div className="mt-8">

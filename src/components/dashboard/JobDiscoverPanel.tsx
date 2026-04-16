@@ -312,8 +312,8 @@ export function JobDiscoverPanel({
         location, nearby region, extra countries tied to your CV, and remote/global angles when it fits. Edit
         anything, then run discover. Daubo suggests search strategies and sample roles; paste real job ads
         below if you have them. Always confirm on the employer site. Found a role elsewhere? Add it under{" "}
-        <Link href="/dashboard/applications" className="font-semibold text-emerald-400/90 hover:underline">
-          My jobs
+        <Link href="/dashboard/pipeline" className="font-semibold text-emerald-400/90 hover:underline">
+          Pipeline
         </Link>{" "}
         with the posting URL so everything stays in one place.
       </p>

@@ -96,7 +96,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         Skip to main content
       </a>
       <DashboardCopilotKit>
-      <div className="flex min-h-screen bg-black text-zinc-50">
+      <div className="flex min-h-screen bg-[#efefec] text-zinc-900">
         <OnboardingWalkthrough />
         <PostOnboardingPlanModal />
 
@@ -117,14 +117,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           }`}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col bg-[#050505] lg:min-h-screen">
+        <div className="flex min-w-0 flex-1 flex-col bg-[#f7f5ef] lg:min-h-screen">
           <ResumeNudgeBanner />
-          <header className="sticky top-0 z-30 border-b border-zinc-800/90 bg-[#050505]/95 backdrop-blur-md">
+          <header className="sticky top-0 z-30 border-b border-zinc-200 bg-[#f7f5ef]/95 backdrop-blur-md">
             <div className="flex flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
               <div className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3">
                 <button
                   type="button"
-                  className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 hover:text-white lg:hidden"
+                  className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 lg:hidden"
                   aria-expanded={mobileNavOpen}
                   aria-controls="dashboard-sidebar-nav"
                   aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
@@ -133,8 +133,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {mobileNavOpen ? <X className="h-5 w-5" strokeWidth={1.75} /> : <Menu className="h-5 w-5" strokeWidth={1.75} />}
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-zinc-500 sm:text-[11px]">Daubo · {active}</p>
-                  <h2 className="truncate text-base font-semibold tracking-tight text-white sm:text-lg md:text-xl">
+                  <p className="text-[10px] text-zinc-500 sm:text-[11px]">Daubo</p>
+                  <h2 className="truncate text-base font-semibold tracking-tight text-zinc-950 sm:text-lg md:text-xl">
                     {active}
                   </h2>
                 </div>
@@ -143,10 +143,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto lg:max-w-[min(100%,42rem)] lg:flex-1">
                 <form
                   onSubmit={onSearchSubmit}
-                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5 sm:px-3 sm:py-2"
+                  className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:px-3 sm:py-2"
                   role="search"
                 >
-                  <Search className="h-4 w-4 shrink-0 text-zinc-500" strokeWidth={1.75} aria-hidden />
+                  <Search className="h-4 w-4 shrink-0 text-zinc-400" strokeWidth={1.75} aria-hidden />
                   <input
                     ref={searchInputRef}
                     type="search"
@@ -154,13 +154,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     value={searchDraft}
                     onChange={(e) => setSearchDraft(e.target.value)}
                     placeholder="Search my jobs… ( / to focus )"
-                    className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-zinc-900 placeholder:text-zinc-400 outline-none"
                     autoComplete="off"
                     aria-label="Search my jobs"
                   />
                   <button
                     type="submit"
-                    className="hidden shrink-0 rounded-lg bg-zinc-800 px-2 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700 sm:inline"
+                    className="hidden shrink-0 rounded-lg bg-zinc-950 px-2 py-1 text-[11px] font-medium text-white hover:bg-zinc-800 sm:inline"
                   >
                     Go
                   </button>
@@ -172,8 +172,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       type="button"
                       className={`rounded-xl border p-2 transition ${
                         notifOpen
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                          : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white"
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700"
+                          : "border-zinc-300 bg-white text-zinc-500 hover:text-zinc-900"
                       }`}
                       aria-label="Notifications"
                       aria-expanded={notifOpen}
@@ -184,15 +184,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     </button>
                     {notifOpen ? (
                       <div
-                        className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(calc(100vw-1.5rem),20rem)] rounded-xl border border-zinc-800 bg-[#111] p-3 shadow-xl shadow-black/40"
+                        className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(calc(100vw-1.5rem),20rem)] rounded-xl border border-zinc-200 bg-white p-3 shadow-xl shadow-zinc-300/50"
                         role="dialog"
                         aria-label="Notifications"
                       >
-                        <p className="text-xs font-semibold text-white">Notifications</p>
-                        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                        <p className="text-xs font-semibold text-zinc-950">Notifications</p>
+                        <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
                           Job reminders aren’t turned on yet. Use{" "}
-                          <strong className="text-zinc-400">Coach</strong> (bottom-right) for how-to help, or
-                          open <strong className="text-zinc-400">Web job search</strong> in the sidebar when
+                          <strong className="text-zinc-900">Coach</strong> (bottom-right) for how-to help, or
+                          open <strong className="text-zinc-900">Web job search</strong> in the sidebar when
                           it’s available for live posting search.
                         </p>
                         <div className="mt-3 flex flex-col gap-2">
@@ -205,7 +205,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                           </Link>
                           <Link
                             href="/dashboard/support"
-                            className="text-[11px] font-medium text-zinc-400 hover:text-emerald-400 hover:underline"
+                            className="text-[11px] font-medium text-zinc-600 hover:text-emerald-500 hover:underline"
                             onClick={closeNotif}
                           >
                             Help &amp; Support →
@@ -218,7 +218,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <UserButton
                     appearance={{
                       elements: {
-                        userButtonAvatarBox: "h-9 w-9 ring-1 ring-zinc-700 sm:h-10 sm:w-10",
+                        userButtonAvatarBox: "h-9 w-9 ring-1 ring-zinc-300 sm:h-10 sm:w-10",
                       },
                     }}
                   />

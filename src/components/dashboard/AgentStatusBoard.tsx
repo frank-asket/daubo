@@ -13,9 +13,9 @@ type AgentRow = {
 };
 
 function stateStyle(state: AgentRow["state"]): string {
-  if (state === "active") return "text-emerald-300";
-  if (state === "working") return "text-amber-300";
-  return "text-zinc-400";
+  if (state === "active") return "text-emerald-700";
+  if (state === "working") return "text-amber-700";
+  return "text-zinc-500";
 }
 
 function timeAgo(iso: string | null | undefined): string | null {
@@ -89,7 +89,7 @@ export function AgentStatusBoard() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-col gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {loading ? (
             <span className="inline-flex items-center gap-2">
@@ -113,7 +113,7 @@ export function AgentStatusBoard() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-50 hover:bg-emerald-400/15 disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-60"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} strokeWidth={2} />
           Refresh
@@ -122,11 +122,11 @@ export function AgentStatusBoard() {
 
       <div className="space-y-3">
         {rows.map((row) => (
-          <article key={row.agent_id || row.name} className="rounded-2xl border border-zinc-800 bg-[#101010] px-4 py-4">
+          <article key={row.agent_id || row.name} className="rounded-[28px] border border-zinc-200 bg-white px-5 py-5 shadow-[0_1px_0_rgba(255,255,255,0.8),0_18px_40px_rgba(24,24,27,0.04)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-lg font-semibold text-zinc-100">{row.name}</p>
-                <p className="text-sm text-zinc-400">{row.description}</p>
+                <p className="text-2xl font-semibold tracking-tight text-zinc-950">{row.name}</p>
+                <p className="text-sm text-zinc-600">{row.description}</p>
                 {row.last_run_at ? (
                   <p className="mt-2 text-xs text-zinc-500">Last run: {timeAgo(row.last_run_at) ?? "—"}</p>
                 ) : (

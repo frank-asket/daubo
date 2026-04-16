@@ -160,7 +160,7 @@ export function ApplicationsBoard() {
       if (q) params.set("q", q);
       else params.delete("q");
       const tail = params.toString();
-      router.replace(tail ? `/dashboard/applications?${tail}` : "/dashboard/applications", {
+      router.replace(tail ? `/dashboard/pipeline?${tail}` : "/dashboard/pipeline", {
         scroll: false,
       });
     }, 320);
@@ -463,7 +463,7 @@ export function ApplicationsBoard() {
               className="font-medium text-emerald-400 hover:underline"
               onClick={() => {
                 setFilterText("");
-                router.replace("/dashboard/applications", { scroll: false });
+                router.replace("/dashboard/pipeline", { scroll: false });
               }}
             >
               Clear filter
