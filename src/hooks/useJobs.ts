@@ -38,7 +38,8 @@ export function useJobs({
     page: String(page),
     page_size: String(pageSize),
   });
-  if ((location || "").trim()) params.set("location", location.trim());
+  const loc = (location ?? "").trim();
+  if (loc) params.set("location", loc);
   const key = dauboBffUrl(`v1/jobs?${params.toString()}`);
   const swr = useSWR<JobListOut>(key, fetcher, {
     refreshInterval: 30_000,
