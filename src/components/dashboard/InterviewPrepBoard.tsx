@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { dauboBffUrl } from "@/lib/daubo-api";
+import { dauboBffUrl, detailFromApiJson } from "@/lib/daubo-api";
 import { jobStageLabel } from "@/lib/job-stages";
 
 type Application = {
@@ -19,13 +19,37 @@ function asStringList(v: unknown): string[] {
   return v.filter((x): x is string => typeof x === "string");
 }
 
+type StarStory = {
+  headline?: string;
+  situation?: string;
+  task?: string;
+  action?: string;
+  result?: string;
+  reflection?: string;
+};
+
+function asStarStories(v: unknown): StarStory[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is StarStory => x !== null && typeof x === "object");
+}
+
+type CompanyBrief = {
+  summary?: string;
+  tech_stack_signals?: unknown;
+  culture_signals?: unknown;
+  recent_momentum?: unknown;
+};
+
+function asCompanyBrief(v: unknown): CompanyBrief | null {
+  if (!v || typeof v !== "object") return null;
+  return v as CompanyBrief;
+}
+
 export function InterviewPrepBoard() {
   const [items, setItems] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [aiById, setAiById] = useState<Record<string, { star?: string; brief?: string }>>({});
-  const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,57 +82,21 @@ export function InterviewPrepBoard() {
     setGeneratingId(id);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl(`v1/me/applications/${id}/interview-prep`), {
+      const r = await fetch(dauboBffUrl("v1/me/prep/generate"), {
         method: "POST",
         credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ application_id: id }),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? r.statusText);
+        throw new Error(detailFromApiJson(j, r.statusText));
       }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn’t refresh practice questions. Try again.");
     } finally {
       setGeneratingId(null);
-    }
-  }
-
-  async function runAssistant(
-    row: Application,
-    kind: "star" | "brief",
-  ) {
-    const key = `${row.id}:${kind}`;
-    setAiLoadingKey(key);
-    setError(null);
-    try {
-      const prompt =
-        kind === "star"
-          ? `Generate 3 tailored STAR-R stories for a ${row.title} role at ${row.company}. Keep each story concise and practical for interview delivery.`
-          : `Generate a concise company brief for ${row.company} focused on interview prep for a ${row.title} candidate. Include products, recent momentum, and what to emphasize in answers.`;
-      const r = await fetch(dauboBffUrl("v1/chat"), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: prompt, history: [] }),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error((j as { detail?: string }).detail ?? "Could not generate response.");
-      }
-      const j = (await r.json()) as { reply?: string };
-      const text = (j.reply ?? "").trim();
-      setAiById((prev) => ({
-        ...prev,
-        [row.id]: {
-          ...(prev[row.id] ?? {}),
-          [kind]: text || "No response received.",
-        },
-      }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn’t generate assistant output.");
-    } finally {
-      setAiLoadingKey(null);
     }
   }
 
@@ -146,6 +134,8 @@ export function InterviewPrepBoard() {
             const questions = asStringList(prep?.likely_questions);
             const topics = asStringList(prep?.study_topics);
             const gaps = asStringList(prep?.weakness_gaps);
+            const starStories = asStarStories(prep?.star_stories);
+            const brief = asCompanyBrief(prep?.company_brief);
             const disc =
               typeof prep?.disclaimer === "string" ? (prep.disclaimer as string) : null;
 
@@ -198,33 +188,87 @@ export function InterviewPrepBoard() {
                   </div>
                 ) : null}
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={aiLoadingKey != null}
-                    onClick={() => void runAssistant(row, "star")}
-                    className="rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-900 disabled:opacity-60"
-                  >
-                    {aiLoadingKey === `${row.id}:star` ? "Generating…" : "Generate STAR-R stories ↗"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={aiLoadingKey != null}
-                    onClick={() => void runAssistant(row, "brief")}
-                    className="rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-900 disabled:opacity-60"
-                  >
-                    {aiLoadingKey === `${row.id}:brief` ? "Generating…" : "Company brief ↗"}
-                  </button>
-                </div>
-
-                {aiById[row.id]?.star ? (
-                  <div className="mt-3 rounded-xl border border-zinc-800 bg-black/30 px-3 py-3 text-sm text-zinc-300">
-                    {aiById[row.id].star}
+                {starStories.length > 0 ? (
+                  <div className="mt-4 space-y-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                      STAR-R stories (from your résumé)
+                    </p>
+                    {starStories.map((s, idx) => (
+                      <div
+                        key={`${row.id}-star-${idx}`}
+                        className="rounded-xl border border-zinc-800 bg-black/30 px-3 py-3 text-sm text-zinc-300"
+                      >
+                        <p className="font-medium text-zinc-100">
+                          {(s.headline ?? `Story ${idx + 1}`).trim()}
+                        </p>
+                        <ul className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-zinc-400">
+                          {s.situation ? (
+                            <li>
+                              <span className="text-zinc-500">Situation:</span> {s.situation}
+                            </li>
+                          ) : null}
+                          {s.task ? (
+                            <li>
+                              <span className="text-zinc-500">Task:</span> {s.task}
+                            </li>
+                          ) : null}
+                          {s.action ? (
+                            <li>
+                              <span className="text-zinc-500">Action:</span> {s.action}
+                            </li>
+                          ) : null}
+                          {s.result ? (
+                            <li>
+                              <span className="text-zinc-500">Result:</span> {s.result}
+                            </li>
+                          ) : null}
+                          {s.reflection ? (
+                            <li>
+                              <span className="text-zinc-500">Reflection:</span> {s.reflection}
+                            </li>
+                          ) : null}
+                        </ul>
+                      </div>
+                    ))}
                   </div>
                 ) : null}
-                {aiById[row.id]?.brief ? (
-                  <div className="mt-3 rounded-xl border border-zinc-800 bg-black/30 px-3 py-3 text-sm text-zinc-300">
-                    {aiById[row.id].brief}
+
+                {brief?.summary ? (
+                  <div className="mt-4 rounded-xl border border-zinc-800 bg-black/30 px-3 py-3 text-sm text-zinc-300">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                      Company brief
+                    </p>
+                    <p className="mt-2 leading-relaxed text-zinc-300">{brief.summary}</p>
+                    {asStringList(brief.tech_stack_signals).length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-[11px] font-medium text-zinc-500">Tech &amp; product</p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-[13px] text-zinc-400">
+                          {asStringList(brief.tech_stack_signals).map((t) => (
+                            <li key={t}>{t}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {asStringList(brief.culture_signals).length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-[11px] font-medium text-zinc-500">Culture signals</p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-[13px] text-zinc-400">
+                          {asStringList(brief.culture_signals).map((t) => (
+                            <li key={t}>{t}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {asStringList(brief.recent_momentum).length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-[11px] font-medium text-zinc-500">Recent momentum</p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-[13px] text-zinc-400">
+                          {asStringList(brief.recent_momentum).map((t) => (
+                            <li key={t}>{t}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 

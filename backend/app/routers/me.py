@@ -58,6 +58,7 @@ from app.services.application_package import (
     generate_interview_prep,
     package_summary_text,
 )
+from app.services.prep_session_service import record_prep_generation
 from app.services.autopilot import run_autopilot_pass
 from app.services.pipeline_integrity import run_pipeline_integrity_pass
 from app.services.gmail_integration import (
@@ -871,7 +872,12 @@ async def build_interview_prep(
         logger.exception("build_interview_prep failed")
         raise HTTPException(status_code=502, detail="Could not generate interview prep") from exc
 
-    row.interview_prep = prep
+    await record_prep_generation(
+        session,
+        clerk_user_id=user_id,
+        application=row,
+        prep_payload=prep,
+    )
     await session.commit()
     await session.refresh(row)
     return row

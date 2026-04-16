@@ -215,6 +215,22 @@ class JobApplication(Base):
     )
 
 
+class PrepSession(Base):
+    """Append-only history of generated interview prep per application (Phase 5)."""
+
+    __tablename__ = "prep_sessions"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), index=True, nullable=False)
+    job_application_id: Mapped[UUID] = mapped_column(
+        ForeignKey("job_applications.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class JobApproval(Base):
     """Human-in-the-loop gate before apply handoff (email draft / LinkedIn note)."""
 

@@ -46,12 +46,52 @@ class ApplicationPackageLLM(BaseModel):
     )
 
 
+class StarStoryLLM(BaseModel):
+    headline: str = Field(
+        ...,
+        description="Short label for the story (e.g. cross-team delivery).",
+    )
+    situation: str = Field(..., description="STAR: context in 1–2 sentences.")
+    task: str = Field(..., description="STAR: what you were responsible for.")
+    action: str = Field(..., description="STAR: what you did (concrete).")
+    result: str = Field(..., description="STAR: measurable or qualitative outcome.")
+    reflection: str = Field(
+        ...,
+        description="STAR-R: what you learned or would tweak next time.",
+    )
+
+
+class CompanyBriefLLM(BaseModel):
+    summary: str = Field(
+        ...,
+        description="2–4 sentences: what the company does and why it matters for this role.",
+    )
+    tech_stack_signals: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=10,
+        description="Stack, platform, or engineering culture hints grounded in JD or public facts.",
+    )
+    culture_signals: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=8,
+        description="How teams seem to work; avoid stereotypes.",
+    )
+    recent_momentum: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=6,
+        description="Recent launches, funding, or news if inferable; otherwise say so plainly.",
+    )
+
+
 class InterviewPrepLLM(BaseModel):
     likely_questions: list[str] = Field(
         ...,
-        min_length=8,
-        max_length=14,
-        description="Behavioral and role-specific interview questions.",
+        min_length=5,
+        max_length=8,
+        description="Tailored behavioral and role-specific interview questions.",
     )
     study_topics: list[str] = Field(
         ...,
@@ -63,6 +103,16 @@ class InterviewPrepLLM(BaseModel):
         default_factory=list,
         max_length=6,
         description="Potential gaps vs the job; user should prepare stories or honest framing.",
+    )
+    star_stories: list[StarStoryLLM] = Field(
+        ...,
+        min_length=3,
+        max_length=5,
+        description="STAR-R stories anchored in the resume; no fabrication.",
+    )
+    company_brief: CompanyBriefLLM = Field(
+        ...,
+        description="Interview-oriented company snapshot grounded in JD + well-known facts.",
     )
 
 
@@ -168,9 +218,11 @@ Optional context from application drafts:
 {extra or "None."}
 
 Return:
-- likely_questions: varied behavioral and technical/role questions they may face.
+- likely_questions: exactly 5–8 varied behavioral and technical/role questions.
 - study_topics: concrete topics to review.
 - weakness_gaps: where resume may be thinner vs the job (for honest prep, not fabrication).
+- star_stories: 3–5 STAR-R stories (headline + situation, task, action, result, reflection) tied to resume achievements.
+- company_brief: summary plus tech_stack_signals, culture_signals, recent_momentum lists (if facts unknown, state uncertainty instead of inventing).
 """
     llm = chat_llm(settings).with_structured_output(InterviewPrepLLM)
     try:

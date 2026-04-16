@@ -28,6 +28,7 @@ from app.routers import (
     me_approvals,
     me_ops,
     me_preferences,
+    me_prep,
     me_resume,
 )
 
@@ -74,4 +75,5 @@ app.include_router(me_applications.router, prefix="/v1", dependencies=protected)
 app.include_router(me_approvals.router, prefix="/v1", dependencies=protected)
 app.include_router(me_ops.router, prefix="/v1", dependencies=protected)
 app.include_router(me_preferences.router, prefix="/v1", dependencies=protected)
+app.include_router(me_prep.router, prefix="/v1", dependencies=protected)
 app.include_router(me_status.router, prefix="/v1", dependencies=protected)

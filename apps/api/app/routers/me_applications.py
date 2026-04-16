@@ -33,6 +33,7 @@ from backend.app.schemas.me import (
     GmailDraftOut,
 )
 from backend.app.services.job_approval_sync import ensure_pending_approval_for_application
+from backend.app.services.prep_session_service import record_prep_generation
 from backend.app.services.profile_documents_context import profile_documents_prompt_block
 
 router = APIRouter(tags=["me"])
@@ -285,7 +286,12 @@ async def build_interview_prep(
     except Exception as exc:
         logger.exception("build_interview_prep failed")
         raise HTTPException(status_code=502, detail="Could not generate interview prep") from exc
-    row.interview_prep = prep
+    await record_prep_generation(
+        session,
+        clerk_user_id=user_id,
+        application=row,
+        prep_payload=prep,
+    )
     await session.commit()
     await session.refresh(row)
     return row
