@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { Logo } from "@/components/Logo";
-import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { useDashboardStatsOptional } from "@/components/dashboard/DashboardStatsContext";
 import {
   DASHBOARD_NAV_MAIN,
   DASHBOARD_NAV_SECONDARY,
@@ -65,9 +65,17 @@ const secondaryItems = DASHBOARD_NAV_SECONDARY.map((n) => ({
   icon: ICON_SECONDARY[n.href] ?? User,
 }));
 
-function routeCount(route: string, stats: ReturnType<typeof useDashboardStats>["stats"]): string | null {
-  const total = stats?.application_count ?? 0;
-  const career = stats?.career;
+function routeCount(
+  route: string,
+  stats: ReturnType<typeof useDashboardStatsOptional> extends { stats: infer S } ? S : unknown,
+): string | null {
+  if (!stats || typeof stats !== "object") return null;
+  const s = stats as {
+    application_count?: number;
+    career?: { exploring?: number; ready_to_submit?: number; package_ready?: number };
+  };
+  const total = s.application_count ?? 0;
+  const career = s.career;
   switch (route) {
     case "/dashboard":
       return String(Math.max(total, career?.exploring ?? 0));
@@ -96,7 +104,8 @@ export function DauboSidebar({
   className?: string;
   onNavLinkClick?: () => void;
 }) {
-  const { stats } = useDashboardStats();
+  const statsCtx = useDashboardStatsOptional();
+  const stats = statsCtx?.stats ?? null;
   const { user } = useUser();
   const displayName = user?.fullName?.trim() || user?.firstName?.trim() || "Daubo member";
 

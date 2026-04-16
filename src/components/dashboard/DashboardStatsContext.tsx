@@ -108,3 +108,8 @@ export function useDashboardStats(): DashboardStatsContextValue {
   }
   return ctx;
 }
+
+/** Non-throwing variant for components that can render outside the dashboard shell (marketing previews, etc). */
+export function useDashboardStatsOptional(): DashboardStatsContextValue | null {
+  return useContext(DashboardStatsContext);
+}
