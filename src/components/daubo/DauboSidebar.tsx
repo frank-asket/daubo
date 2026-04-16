@@ -113,7 +113,7 @@ export function DauboSidebar({
     <aside
       id="dashboard-sidebar-nav"
       className={mergeClassNames(
-        "flex w-[min(280px,92vw)] shrink-0 flex-col border-r border-zinc-800/90 bg-[#0a0a0a] text-zinc-50 lg:w-[270px]",
+        "flex w-[min(240px,88vw)] shrink-0 flex-col border-r border-zinc-800/90 bg-[#0a0a0a] text-zinc-50 lg:w-[220px]",
         className,
       )}
     >
@@ -121,7 +121,7 @@ export function DauboSidebar({
         <Logo href={logoHref} />
         <p className="mt-1 text-[12px] font-semibold uppercase tracking-wide text-emerald-400">Job Search AI</p>
       </div>
-      <nav className="flex flex-1 flex-col overflow-y-auto px-4 py-6" aria-label="Dashboard">
+      <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-2" aria-label="Dashboard">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Workspace</p>
         <div className="space-y-1">
           {mainItems.map((item) => {
@@ -152,7 +152,7 @@ export function DauboSidebar({
           })}
         </div>
 
-        <p className="mt-8 px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Setup</p>
+        <p className="mt-5 px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Setup</p>
         <div className="space-y-1">
           {setupItems.map((item) => {
             const Icon = item.icon;

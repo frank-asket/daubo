@@ -45,6 +45,8 @@ type IntegrityReport = {
   changes: IntegrityChange[];
 };
 
+type PipelineTab = "all" | "applied" | "interview" | "pending";
+
 export function ApplicationsBoard() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,6 +68,7 @@ export function ApplicationsBoard() {
   const [integrityApplying, setIntegrityApplying] = useState(false);
   const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
   const [staleOnly, setStaleOnly] = useState(false);
+  const [pipelineTab, setPipelineTab] = useState<PipelineTab>("all");
   const autoPreviewTriggered = useRef(false);
 
   const load = useCallback(async () => {
@@ -144,12 +147,39 @@ export function ApplicationsBoard() {
         (row.location ?? "").toLowerCase().includes(needle) ||
         (row.notes ?? "").toLowerCase().includes(needle);
       if (!textMatch) return false;
+      const status = (row.status || "").toLowerCase();
+      if (pipelineTab === "applied" && status !== "applied") return false;
+      if (pipelineTab === "interview" && status !== "interview") return false;
+      if (
+        pipelineTab === "pending" &&
+        !["ready_to_apply", "ready", "package_ready", "shortlisted", "draft"].includes(status)
+      ) {
+        return false;
+      }
       if (!staleOnly) return true;
       const updated = new Date(row.updated_at).getTime();
       if (!Number.isFinite(updated)) return false;
       return now - updated > staleCutoffMs;
     });
-  }, [items, filterText, staleOnly, staleCutoffMs]);
+  }, [items, filterText, staleOnly, staleCutoffMs, pipelineTab]);
+
+  const tabCounts = useMemo(() => {
+    const statusCounts = {
+      all: items.length,
+      applied: 0,
+      interview: 0,
+      pending: 0,
+    };
+    for (const row of items) {
+      const s = (row.status || "").toLowerCase();
+      if (s === "applied") statusCounts.applied += 1;
+      if (s === "interview") statusCounts.interview += 1;
+      if (["ready_to_apply", "ready", "package_ready", "shortlisted", "draft"].includes(s)) {
+        statusCounts.pending += 1;
+      }
+    }
+    return statusCounts;
+  }, [items]);
 
   useEffect(() => {
     const q = filterText.trim();
@@ -398,6 +428,46 @@ export function ApplicationsBoard() {
       ) : null}
 
       <div>
+        <div className="mb-4 rounded-lg bg-zinc-900 p-1">
+          <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => setPipelineTab("all")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                pipelineTab === "all" ? "bg-black text-white" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              All ({tabCounts.all})
+            </button>
+            <button
+              type="button"
+              onClick={() => setPipelineTab("applied")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                pipelineTab === "applied" ? "bg-black text-white" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Applied
+            </button>
+            <button
+              type="button"
+              onClick={() => setPipelineTab("interview")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                pipelineTab === "interview" ? "bg-black text-white" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Interview
+            </button>
+            <button
+              type="button"
+              onClick={() => setPipelineTab("pending")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                pipelineTab === "pending" ? "bg-black text-white" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Pending
+            </button>
+          </div>
+        </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="text-sm font-semibold text-white">Your jobs</h2>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
