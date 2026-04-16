@@ -2,13 +2,25 @@
   "name": "daubo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "postinstall": "patch-package",
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "turbo run dev --parallel",
+    "dev:web": "next dev",
+    "dev:legacy": "next dev",
+    "dev:mono": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "build:web": "next build",
+    "build:legacy": "next build",
+    "build:mono": "turbo run build",
     "start": "next start",
-    "lint": "next lint",
-    "backend:dev": "cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    "lint": "turbo run lint",
+    "lint:web": "next lint",
+    "backend:dev": "cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "api:dev": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.5",
@@ -32,6 +44,7 @@
     "eslint-config-next": "14.2.35",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
+    "turbo": "^2.0.0",
     "typescript": "^5"
   }
 }
