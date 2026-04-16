@@ -66,6 +66,8 @@ class AutopilotRunEndpointIdempotencyTest(unittest.TestCase):
         self.assertEqual(result.status, "completed")
         self.assertEqual(result.processed, 3)
         self.assertEqual(result.gmail_drafts_created, 1)
+        self.assertFalse(result.fresh_run)
+        self.assertIsNotNone(result.replayed_at)
 
     def test_conflict_on_same_key_different_payload(self) -> None:
         started = datetime.now(timezone.utc) - timedelta(minutes=5)

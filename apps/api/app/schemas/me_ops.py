@@ -60,6 +60,14 @@ class AutopilotRunOut(BaseModel):
     processed: int
     gmail_drafts_created: int
     errors: list[str] = Field(default_factory=list)
+    fresh_run: bool = Field(
+        default=True,
+        description="False when this response replays a prior run under the same Idempotency-Key.",
+    )
+    replayed_at: datetime | None = Field(
+        default=None,
+        description="When fresh_run is false, timestamp of this replay response.",
+    )
 
 
 class AutopilotProfileOut(BaseModel):

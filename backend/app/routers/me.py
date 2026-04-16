@@ -1143,6 +1143,8 @@ async def run_prep_autopilot(
                 processed=prev.processed,
                 gmail_drafts_created=prev.gmail_drafts_created,
                 errors=prev.errors if isinstance(prev.errors, list) else [],
+                fresh_run=False,
+                replayed_at=datetime.now(timezone.utc),
             )
     # From this point to run creation commit, do not call helpers that may commit before
     # the new "running" row is inserted; that would release the launch lock too early.
@@ -1199,6 +1201,8 @@ async def run_prep_autopilot(
         processed=out["processed"],
         gmail_drafts_created=out["gmail_drafts_created"],
         errors=out["errors"],
+        fresh_run=True,
+        replayed_at=None,
     )
 
 

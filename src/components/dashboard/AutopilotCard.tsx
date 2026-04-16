@@ -16,6 +16,8 @@ type RunResult = {
   processed: number;
   gmail_drafts_created: number;
   errors: string[];
+  fresh_run?: boolean;
+  replayed_at?: string | null;
 };
 
 type RunRecord = {
@@ -381,6 +383,11 @@ export function AutopilotCard({
       ) : null}
       {runResult ? (
         <div className="mt-3 rounded-lg border border-zinc-800 bg-black/30 px-3 py-2 text-xs text-zinc-400">
+          {runResult.fresh_run === false ? (
+            <p className="mb-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-1.5 text-[11px] text-emerald-100/95">
+              Same Smart prep result as before (idempotent replay)—no duplicate run was executed.
+            </p>
+          ) : null}
           <p>
             Packages generated:{" "}
             <strong className="text-zinc-200">{runResult.processed}</strong> · Gmail drafts:{" "}

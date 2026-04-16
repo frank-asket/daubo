@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Circle, Dot, Loader2, RefreshCw, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { dauboBffUrl } from "@/lib/daubo-api";
+import { dauboBffUrl, detailFromApiJson } from "@/lib/daubo-api";
 import { useAgentStream } from "@/hooks/useAgentStream";
 
 type AgentRow = {
@@ -14,6 +14,79 @@ type AgentRow = {
 };
 
 type Turn = { role: "user" | "assistant"; content: string };
+
+type AutopilotRunRow = {
+  id: string;
+  status: string;
+  started_at: string;
+  processed: number;
+};
+
+async function streamAgentsChat(
+  message: string,
+  history: { role: "user" | "assistant"; content: string }[],
+): Promise<string> {
+  const r = await fetch(dauboBffUrl("v1/agents/chat"), {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "content-type": "application/json",
+      accept: "text/event-stream",
+    },
+    body: JSON.stringify({ message, history }),
+  });
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error(detailFromApiJson(j, r.statusText));
+  }
+  if (!r.body) throw new Error("No response body");
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let acc = "";
+    const parseLine = (line: string) => {
+      if (!line.startsWith("data:")) return;
+      const raw = line.replace(/^data:\s*/, "").trim();
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw) as {
+          type?: string;
+          text?: string;
+          message?: string;
+        };
+        if (parsed.type === "token" && parsed.text) acc += parsed.text;
+        if (parsed.type === "error") {
+          throw new Error(parsed.message ?? "Stream error");
+        }
+      } catch (e) {
+        if (e instanceof SyntaxError) return;
+        throw e;
+      }
+    };
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split(/\n\n/);
+      buffer = parts.pop() ?? "";
+      for (const block of parts) {
+        const lines = block.split(/\n/).filter((l) => l.length > 0);
+        for (const line of lines) {
+          parseLine(line);
+        }
+      }
+    }
+    for (const line of buffer.split("\n")) {
+      if (line.trim()) parseLine(line);
+    }
+    return acc.trim() || "…";
+}
+
+const SUGGESTED_PROMPTS = [
+  "What should I prioritize in my pipeline this week?",
+  "Which statuses usually mean I'm blocked before approval?",
+  "How should I prepare for interview prep after applying?",
+];
 
 const REQUIRED_AGENT_IDS = [
   "discovery_agent",
@@ -120,6 +193,8 @@ export function AgentStatusBoard() {
   const [chatError, setChatError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Turn[]>([]);
   const [lastPrompt, setLastPrompt] = useState<string | null>(null);
+  const [recentRuns, setRecentRuns] = useState<AutopilotRunRow[]>([]);
+  const [runsLoading, setRunsLoading] = useState(false);
   const inFlight = useRef(false);
   const { event: streamEvent, streamError } = useAgentStream(true);
 
@@ -152,9 +227,32 @@ export function AgentStatusBoard() {
     }
   }, []);
 
+  const loadRecentRuns = useCallback(async () => {
+    setRunsLoading(true);
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/autopilot/runs?limit=8"), {
+        credentials: "same-origin",
+      });
+      if (!r.ok) {
+        setRecentRuns([]);
+        return;
+      }
+      const j = (await r.json()) as AutopilotRunRow[];
+      setRecentRuns(Array.isArray(j) ? j : []);
+    } catch {
+      setRecentRuns([]);
+    } finally {
+      setRunsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadRecentRuns();
+  }, [loadRecentRuns]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -188,18 +286,8 @@ export function AgentStatusBoard() {
       setMessages((prev) => [...prev, { role: "user", content: prompt }]);
       setChatInput("");
       try {
-        const r = await fetch(dauboBffUrl("v1/chat"), {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ message: prompt, history }),
-        });
-        if (!r.ok) {
-          const j = await r.json().catch(() => ({}));
-          throw new Error((j as { detail?: string }).detail ?? "Could not reach orchestrator.");
-        }
-        const j = (await r.json()) as { reply: string };
-        setMessages((prev) => [...prev, { role: "assistant", content: j.reply || "…" }]);
+        const reply = await streamAgentsChat(prompt, history);
+        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       } catch (e) {
         const err = e instanceof Error ? e.message : "Could not reach orchestrator.";
         setChatError(err);
@@ -281,10 +369,52 @@ export function AgentStatusBoard() {
       </div>
 
       <section className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-4">
+        <p className="text-sm font-semibold text-white">Recent Smart prep runs</p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Observability: latest autopilot batches (same data as the Smart prep card).
+        </p>
+        {runsLoading ? (
+          <p className="mt-2 text-xs text-zinc-500">Loading…</p>
+        ) : recentRuns.length === 0 ? (
+          <p className="mt-2 text-xs text-zinc-500">No runs yet.</p>
+        ) : (
+          <ul className="mt-2 space-y-1.5 text-xs text-zinc-400">
+            {recentRuns.map((run) => (
+              <li
+                key={run.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-800/80 bg-black/30 px-2 py-1.5"
+              >
+                <span className="font-mono text-[10px] text-zinc-500">{run.id.slice(0, 8)}…</span>
+                <span className="text-zinc-300">{run.status}</span>
+                <span className="text-zinc-500">{run.processed} items</span>
+                <span className="text-zinc-600">{timeAgo(run.started_at) ?? "—"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-4">
         <p className="text-sm font-semibold text-white">Orchestrator chat</p>
         <p className="mt-1 text-xs text-zinc-500">
-          Ask the orchestrator what to do next across discover, pipeline, approvals, and prep.
+          Pipeline-aware assistant (streams). Ask what to do next across discover, pipeline, approvals,
+          and prep.
         </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {SUGGESTED_PROMPTS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              disabled={chatSending}
+              onClick={() => {
+                void sendChat(p);
+              }}
+              className="rounded-full border border-zinc-700 px-3 py-1 text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 disabled:opacity-50"
+            >
+              {p}
+            </button>
+          ))}
+        </div>
         <div
           className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-zinc-800 bg-black/40 p-3"
           role="log"

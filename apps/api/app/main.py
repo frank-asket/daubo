@@ -19,6 +19,7 @@ from backend.app.deps.security import require_internal_api_key
 from backend.app.routers import me_status
 
 from app.routers import (
+    agents_chat,
     chat,
     chunks,
     embeddings,
@@ -67,6 +68,7 @@ protected = [Depends(require_internal_api_key)] if settings.daubo_internal_api_s
 app.include_router(health.router, prefix="/v1")
 app.include_router(jobs.router, prefix="/v1", dependencies=protected)
 app.include_router(chat.router, prefix="/v1", dependencies=protected)
+app.include_router(agents_chat.router, prefix="/v1", dependencies=protected)
 app.include_router(embeddings.router, prefix="/v1", dependencies=protected)
 app.include_router(chunks.router, prefix="/v1", dependencies=protected)
 # Migrated /me routes (split routers); shared dashboard routes from backend.app.routers.me_status.

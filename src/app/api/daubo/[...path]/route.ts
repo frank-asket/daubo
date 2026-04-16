@@ -84,10 +84,22 @@ async function handle(req: NextRequest, segments: string[]): Promise<NextRespons
     return NextResponse.json({ error: "Upstream API unreachable" }, { status: 502 });
   }
 
-  const out = new NextResponse(await upstream.arrayBuffer(), { status: upstream.status });
+  const resCt = upstream.headers.get("content-type") || "";
   const rid = upstream.headers.get("x-request-id");
+
+  if (resCt.includes("text/event-stream") && upstream.body) {
+    const out = new NextResponse(upstream.body, { status: upstream.status });
+    if (rid) out.headers.set("x-request-id", rid);
+    out.headers.set("content-type", resCt);
+    out.headers.set("cache-control", "no-cache");
+    out.headers.set("connection", "keep-alive");
+    const xab = upstream.headers.get("x-accel-buffering");
+    if (xab) out.headers.set("x-accel-buffering", xab);
+    return out;
+  }
+
+  const out = new NextResponse(await upstream.arrayBuffer(), { status: upstream.status });
   if (rid) out.headers.set("x-request-id", rid);
-  const resCt = upstream.headers.get("content-type");
   if (resCt) out.headers.set("content-type", resCt);
   const cd = upstream.headers.get("content-disposition");
   if (cd) out.headers.set("content-disposition", cd);
