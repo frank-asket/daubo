@@ -22,7 +22,8 @@
     "lint": "turbo run lint --filter=@daubo/web",
     "lint:web": "next lint",
     "backend:dev": "cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "api:dev": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    "api:dev": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "smoke:api:matrix": "bash scripts/smoke-api-matrix.sh"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.5",
