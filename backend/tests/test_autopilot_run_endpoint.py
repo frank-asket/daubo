@@ -19,6 +19,22 @@ class _ScalarResult:
         return self._row
 
 
+class _ReplaySession:
+    """Minimal session stub for idempotent replay path (add + commit)."""
+
+    def __init__(self, prev_row):
+        self._prev_row = prev_row
+
+    async def execute(self, *_args, **_kwargs):
+        return _ScalarResult(self._prev_row)
+
+    def add(self, _obj) -> None:
+        return None
+
+    async def commit(self) -> None:
+        return None
+
+
 class AutopilotRunEndpointIdempotencyTest(unittest.TestCase):
     def _profile(self):
         return SimpleNamespace(daily_apply_limit=10)
@@ -45,7 +61,7 @@ class AutopilotRunEndpointIdempotencyTest(unittest.TestCase):
             gmail_drafts_created=1,
             errors=[],
         )
-        session = SimpleNamespace(execute=AsyncMock(return_value=_ScalarResult(prev_run)))
+        session = _ReplaySession(prev_run)
         with (
             patch("app.routers.me._get_or_create_autopilot_profile", new=AsyncMock(return_value=self._profile())),
             patch(

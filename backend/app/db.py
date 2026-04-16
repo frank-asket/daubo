@@ -88,6 +88,11 @@ async def init_db() -> None:
                     "ON autopilot_runs (idempotency_key)"
                 )
             )
+            await conn.execute(
+                text(
+                    "ALTER TABLE autopilot_runs ADD COLUMN IF NOT EXISTS last_replayed_at TIMESTAMPTZ"
+                )
+            )
         db_init_ok = True
     except Exception:
         logger.exception(

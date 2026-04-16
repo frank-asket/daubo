@@ -109,6 +109,10 @@ class AutopilotRunRecordOut(BaseModel):
     errors: list[str] = Field(default_factory=list)
     started_at: datetime
     finished_at: datetime | None = None
+    last_replayed_at: datetime | None = Field(
+        default=None,
+        description="Last time an idempotent replay returned this run without re-executing work.",
+    )
 
 
 class AutopilotRunItemOut(BaseModel):

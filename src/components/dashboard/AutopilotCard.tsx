@@ -28,6 +28,7 @@ type RunRecord = {
   started_at: string;
   finished_at: string | null;
   errors: string[];
+  last_replayed_at?: string | null;
 };
 
 type RunItem = {
@@ -55,6 +56,22 @@ type AutopilotConflictDetail = {
   active_run_id?: string;
   started_at?: string;
 };
+
+function timeAgo(iso: string | null | undefined): string | null {
+  const s = (iso || "").trim();
+  if (!s) return null;
+  const t = new Date(s).getTime();
+  if (Number.isNaN(t)) return null;
+  const deltaMs = Date.now() - t;
+  if (deltaMs < 0) return "just now";
+  const mins = Math.floor(deltaMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 export function AutopilotCard({
   onAutopilotComplete,
@@ -414,14 +431,26 @@ export function AutopilotCard({
               <button
                 key={run.id}
                 type="button"
+                title={
+                  run.last_replayed_at
+                    ? `Last idempotent replay at ${run.last_replayed_at}`
+                    : undefined
+                }
                 onClick={() => setSelectedRunId(run.id)}
-                className={`rounded-full border px-3 py-1 text-[11px] font-medium ${
+                className={`flex flex-col items-start gap-0.5 rounded-full border px-3 py-1.5 text-left text-[11px] font-medium ${
                   selectedRunId === run.id
                     ? "border-amber-400/60 bg-amber-500/10 text-amber-200"
                     : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
                 }`}
               >
-                {run.status} · {run.processed}
+                <span>
+                  {run.status} · {run.processed}
+                </span>
+                {run.last_replayed_at ? (
+                  <span className="text-[9px] font-normal text-emerald-500/85">
+                    Replay {timeAgo(run.last_replayed_at) ?? "—"}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>

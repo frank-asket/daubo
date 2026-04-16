@@ -20,12 +20,15 @@ type AutopilotRunRow = {
   status: string;
   started_at: string;
   processed: number;
+  last_replayed_at?: string | null;
 };
 
+/** Stream orchestrator tokens; invokes `onToken` for each delta (incremental UI). */
 async function streamAgentsChat(
   message: string,
   history: { role: "user" | "assistant"; content: string }[],
-): Promise<string> {
+  onToken: (chunk: string) => void,
+): Promise<void> {
   const r = await fetch(dauboBffUrl("v1/agents/chat"), {
     method: "POST",
     credentials: "same-origin",
@@ -43,43 +46,43 @@ async function streamAgentsChat(
   const reader = r.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let acc = "";
-    const parseLine = (line: string) => {
-      if (!line.startsWith("data:")) return;
-      const raw = line.replace(/^data:\s*/, "").trim();
-      if (!raw) return;
-      try {
-        const parsed = JSON.parse(raw) as {
-          type?: string;
-          text?: string;
-          message?: string;
-        };
-        if (parsed.type === "token" && parsed.text) acc += parsed.text;
-        if (parsed.type === "error") {
-          throw new Error(parsed.message ?? "Stream error");
-        }
-      } catch (e) {
-        if (e instanceof SyntaxError) return;
-        throw e;
+
+  const parseLine = (line: string) => {
+    if (!line.startsWith("data:")) return;
+    const raw = line.replace(/^data:\s*/, "").trim();
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        type?: string;
+        text?: string;
+        message?: string;
+      };
+      if (parsed.type === "token" && parsed.text) onToken(parsed.text);
+      if (parsed.type === "error") {
+        throw new Error(parsed.message ?? "Stream error");
       }
-    };
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split(/\n\n/);
-      buffer = parts.pop() ?? "";
-      for (const block of parts) {
-        const lines = block.split(/\n/).filter((l) => l.length > 0);
-        for (const line of lines) {
-          parseLine(line);
-        }
+    } catch (e) {
+      if (e instanceof SyntaxError) return;
+      throw e;
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split(/\n\n/);
+    buffer = parts.pop() ?? "";
+    for (const block of parts) {
+      const lines = block.split("\n").filter((l) => l.length > 0);
+      for (const line of lines) {
+        parseLine(line);
       }
     }
-    for (const line of buffer.split("\n")) {
-      if (line.trim()) parseLine(line);
-    }
-    return acc.trim() || "…";
+  }
+  for (const line of buffer.split("\n")) {
+    if (line.trim()) parseLine(line);
+  }
 }
 
 const SUGGESTED_PROMPTS = [
@@ -283,18 +286,48 @@ export function AgentStatusBoard() {
       setChatSending(true);
       setLastPrompt(prompt);
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
-      setMessages((prev) => [...prev, { role: "user", content: prompt }]);
+      setMessages((prev) => [...prev, { role: "user", content: prompt }, { role: "assistant", content: "" }]);
       setChatInput("");
       try {
-        const reply = await streamAgentsChat(prompt, history);
-        setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+        await streamAgentsChat(prompt, history, (chunk) => {
+          setMessages((prev) => {
+            if (prev.length === 0) return prev;
+            const next = [...prev];
+            const i = next.length - 1;
+            const last = next[i];
+            if (!last || last.role !== "assistant") return prev;
+            next[i] = { role: "assistant", content: last.content + chunk };
+            return next;
+          });
+        });
+        setMessages((prev) => {
+          const next = [...prev];
+          const i = next.length - 1;
+          const last = next[i];
+          if (last?.role === "assistant" && !last.content.trim()) {
+            next[i] = { role: "assistant", content: "…" };
+          }
+          return next;
+        });
       } catch (e) {
         const err = e instanceof Error ? e.message : "Could not reach orchestrator.";
         setChatError(err);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: `I couldn't complete that request. ${err}` },
-        ]);
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === "assistant") {
+            next[next.length - 1] = {
+              role: "assistant",
+              content:
+                last.content.trim().length > 0
+                  ? `${last.content}\n\n(Stopped: ${err})`
+                  : `I couldn't complete that request. ${err}`,
+            };
+          } else {
+            next.push({ role: "assistant", content: `I couldn't complete that request. ${err}` });
+          }
+          return next;
+        });
       } finally {
         setChatSending(false);
       }
@@ -382,12 +415,20 @@ export function AgentStatusBoard() {
             {recentRuns.map((run) => (
               <li
                 key={run.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-800/80 bg-black/30 px-2 py-1.5"
+                className="flex flex-col gap-1 rounded-lg border border-zinc-800/80 bg-black/30 px-2 py-1.5"
               >
-                <span className="font-mono text-[10px] text-zinc-500">{run.id.slice(0, 8)}…</span>
-                <span className="text-zinc-300">{run.status}</span>
-                <span className="text-zinc-500">{run.processed} items</span>
-                <span className="text-zinc-600">{timeAgo(run.started_at) ?? "—"}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] text-zinc-500">{run.id.slice(0, 8)}…</span>
+                  <span className="text-zinc-300">{run.status}</span>
+                  <span className="text-zinc-500">{run.processed} items</span>
+                  <span className="text-zinc-600">{timeAgo(run.started_at) ?? "—"}</span>
+                </div>
+                {run.last_replayed_at ? (
+                  <p className="text-[10px] text-emerald-500/90">
+                    Idempotent replay {timeAgo(run.last_replayed_at) ?? "recently"} — same run, no duplicate
+                    work
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -437,10 +478,15 @@ export function AgentStatusBoard() {
                 }`}
               >
                 {m.content}
+                {chatSending && m.role === "assistant" && i === messages.length - 1 ? (
+                  <span
+                    className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-emerald-400/90 align-middle"
+                    aria-hidden
+                  />
+                ) : null}
               </div>
             ))
           )}
-          {chatSending ? <p className="text-xs text-zinc-500">Thinking…</p> : null}
         </div>
         {chatError ? (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-red-400" role="alert">

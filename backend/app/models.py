@@ -146,6 +146,8 @@ class AutopilotRun(Base):
     errors: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Updated when POST /me/autopilot/run returns an idempotent replay for this row (no duplicate work).
+    last_replayed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class AutopilotRunItem(Base):
