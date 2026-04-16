@@ -231,7 +231,7 @@
         <div class="notice notice-info">
           <strong>Integrity check available</strong> — 2 possible duplicate entries and 1 stale application detected. <a href="#" onclick="runIntegrity()" style="color:var(--c-info-text);text-decoration:underline;">Run cleanup preview</a>
         </div>
-        <div id="integrity-output" style="display:none;" class="ai-output" style="margin-bottom:14px;"></div>
+        <div id="integrity-output" class="ai-output" style="display:none;margin-bottom:14px;"></div>
 
         <div class="tab-bar">
           <div class="tab active" onclick="filterPipeline('all',this)">All (7)</div>
@@ -393,11 +393,18 @@ const PIPELINE_DATA = [
   { company:'Langfuse', role:'Lead LLMOps Engineer', fit:4.2, channel:'Email', status:'pending', date:'—' },
 ];
 
-function showPanel(id) {
+function showPanel(id, triggerEl) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-  event.currentTarget.classList.add('active');
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  const source = triggerEl || (window.event && window.event.currentTarget ? window.event.currentTarget : null);
+  if (source && source.classList) {
+    source.classList.add('active');
+    return;
+  }
+  const fallback = document.querySelector(`.nav-item[onclick*="showPanel('${id}'"]`);
+  if (fallback) fallback.classList.add('active');
 }
 
 function fitClass(f) { return f >= 4 ? 'fit-high' : f >= 3 ? 'fit-mid' : 'fit-low'; }
@@ -531,8 +538,8 @@ function renderPrep() {
         ${p.questions.map((q,i) => `<div class="question-item"><span class="q-num">Q${i+1}</span><span class="q-text">${q}</span></div>`).join('')}
       </div>
       <div class="action-bar" style="margin-top:10px;">
-        <button class="btn" onclick="generateStarStory('${p.company}')">Generate STAR-R stories ↗</button>
-        <button class="btn" onclick="generateBrief('${p.company}')">Company brief ↗</button>
+        <button class="btn" data-company="${encodeURIComponent(p.company)}" onclick="generateStarStory(decodeURIComponent(this.dataset.company||''))">Generate STAR-R stories ↗</button>
+        <button class="btn" data-company="${encodeURIComponent(p.company)}" onclick="generateBrief(decodeURIComponent(this.dataset.company||''))">Company brief ↗</button>
       </div>
       <div class="ai-output" id="prep-out-${p.company.replace(/\s/g,'_')}" style="margin-top:10px;display:none;"></div>
     </div>
@@ -541,45 +548,23 @@ function renderPrep() {
 
 async function callClaude(prompt, outputEl, onDone) {
   outputEl.style.display = 'block';
-  outputEl.innerHTML = '<span class="stream-cursor"></span>';
+  outputEl.textContent = 'Thinking...';
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('/v1/chat', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        stream: true,
-        system: 'You are Daubo, an AI-powered job search assistant. Be concise, specific, and professional. Write in first person where appropriate. Limit to 3-5 sentences unless asked otherwise.',
-        messages:[{role:'user', content: prompt}]
+        message: prompt,
+        history: []
       })
     });
-
-    if (!resp.ok) { outputEl.textContent = '⚠ Could not reach Daubo AI. Check connection.'; return; }
-
-    const reader = resp.body.getReader();
-    const dec = new TextDecoder();
-    let text = '';
-    outputEl.innerHTML = '';
-
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) break;
-      const lines = dec.decode(value).split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5).trim();
-        if (data === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-            text += parsed.delta.text;
-            outputEl.textContent = text;
-          }
-        } catch(e) {}
-      }
+    if (!resp.ok) {
+      outputEl.textContent = '⚠ Could not reach Daubo AI. Check connection.';
+      return;
     }
-    if (!text) outputEl.textContent = 'No response received.';
+    const data = await resp.json();
+    const text = (data && typeof data.reply === 'string' ? data.reply : '').trim();
+    outputEl.textContent = text || 'No response received.';
     if (onDone) onDone(text);
   } catch(err) {
     outputEl.textContent = `⚠ Error: ${err.message}`;
@@ -588,6 +573,10 @@ async function callClaude(prompt, outputEl, onDone) {
 
 function queueApply(id) {
   const job = JOBS.find(j => j.id === id);
+  if (!job) {
+    alert('Could not prepare application: job not found.');
+    return;
+  }
   alert(`Preparing application for ${job.title} at ${job.company}.\n\nDaubo will draft a tailored cover letter and email. Once ready, it will appear in your Approvals queue for your review before anything is sent.`);
 }
 
@@ -597,7 +586,10 @@ function dismissJob(id) {
 
 function generatePrep(id) {
   const job = JOBS.find(j => j.id === id);
-  const panel = document.getElementById('panel-prep');
+  if (!job) {
+    alert('Could not generate prep: job not found.');
+    return;
+  }
   showNavPanel('prep');
   setTimeout(() => {
     const key = job.company.replace(/\s/g,'_');
