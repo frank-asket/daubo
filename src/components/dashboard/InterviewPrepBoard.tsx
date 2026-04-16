@@ -74,29 +74,29 @@ export function InterviewPrepBoard() {
 
   return (
     <div className="space-y-8">
-      <p className="max-w-2xl text-sm text-zinc-600">
+      <p className="max-w-2xl text-sm text-zinc-500">
         After you apply, get practice questions for each role. Daubo uses your résumé and the job
         context—then you rehearse answers before the real conversation.
       </p>
-      <p className="max-w-2xl text-sm text-zinc-600">
+      <p className="max-w-2xl text-sm text-zinc-500">
         Roles listed here have status{" "}
-        <strong className="text-zinc-900">{jobStageLabel("applied")}</strong> or{" "}
-        <strong className="text-zinc-900">{jobStageLabel("interview")}</strong>. Update status in{" "}
-        <Link href="/dashboard/pipeline" className="text-emerald-600 hover:underline">
+        <strong className="text-zinc-300">{jobStageLabel("applied")}</strong> or{" "}
+        <strong className="text-zinc-300">{jobStageLabel("interview")}</strong>. Update status in{" "}
+        <Link href="/dashboard/pipeline" className="text-emerald-400 hover:underline">
           Pipeline
         </Link>
         .
       </p>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-zinc-600">
+        <div className="flex items-center gap-2 text-zinc-500">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading…
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-zinc-500">
           No active prep targets yet. Mark a role as applied or interview in Pipeline first.
         </p>
       ) : (
@@ -112,23 +112,22 @@ export function InterviewPrepBoard() {
             return (
               <li
                 key={row.id}
-                className="rounded-[28px] border border-zinc-200 bg-white px-5 py-5 shadow-[0_1px_0_rgba(255,255,255,0.8),0_18px_40px_rgba(24,24,27,0.04)]"
+                className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-5 py-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-2xl font-semibold tracking-tight text-zinc-950">
-                      {row.company}
+                    <p className="font-semibold text-white">
+                      {row.title} <span className="text-zinc-500">· {row.company}</span>
                     </p>
-                    <p className="text-base text-zinc-700">{row.title}</p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      Status: <span className="font-medium text-zinc-700">{jobStageLabel(row.status)}</span>
+                      Status: <span className="font-medium text-zinc-400">{jobStageLabel(row.status)}</span>
                     </p>
                   </div>
                   <button
                     type="button"
                     disabled={generatingId !== null}
                     onClick={() => void runPrep(row.id)}
-                    className="shrink-0 rounded-2xl border border-zinc-300 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-900 transition hover:bg-zinc-50 disabled:opacity-50"
+                    className="shrink-0 rounded-full border border-emerald-500/40 px-4 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50"
                   >
                     {generatingId === row.id ? (
                       <span className="inline-flex items-center gap-2">
@@ -144,7 +143,7 @@ export function InterviewPrepBoard() {
                 </div>
 
                 {disc ? (
-                  <p className="mt-3 text-[11px] text-amber-700">{disc}</p>
+                  <p className="mt-3 text-[11px] text-amber-200/80">{disc}</p>
                 ) : null}
 
                 {questions.length > 0 ? (
@@ -152,7 +151,7 @@ export function InterviewPrepBoard() {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
                       Likely questions
                     </p>
-                    <ul className="mt-2 list-inside list-decimal space-y-2 text-sm text-zinc-800">
+                    <ul className="mt-2 list-inside list-decimal space-y-1.5 text-sm text-zinc-300">
                       {questions.map((q) => (
                         <li key={q}>{q}</li>
                       ))}
@@ -165,7 +164,7 @@ export function InterviewPrepBoard() {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
                       Study topics
                     </p>
-                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-700">
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-400">
                       {topics.map((t) => (
                         <li key={t}>{t}</li>
                       ))}
@@ -178,7 +177,7 @@ export function InterviewPrepBoard() {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
                       Gaps to address honestly
                     </p>
-                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-600">
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-500">
                       {gaps.map((g) => (
                         <li key={g}>{g}</li>
                       ))}

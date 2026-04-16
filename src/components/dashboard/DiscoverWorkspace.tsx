@@ -35,10 +35,10 @@ function MetricCard({
   caption: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-zinc-200 bg-[#f1f0e9] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
+    <div className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] px-5 py-4">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500">{label}</p>
-      <p className="mt-2 text-[2rem] font-semibold leading-none text-zinc-950">{value}</p>
-      <p className="mt-2 text-sm text-zinc-600">{caption}</p>
+      <p className="mt-2 text-[2rem] font-semibold leading-none text-white">{value}</p>
+      <p className="mt-2 text-sm text-zinc-500">{caption}</p>
     </div>
   );
 }
@@ -70,24 +70,24 @@ export function DiscoverWorkspace() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-[0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(24,24,27,0.04)]">
+      <section className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h1 className="text-[2rem] font-semibold tracking-tight text-zinc-950">Job discovery</h1>
-            <p className="mt-1 text-lg text-zinc-700">
+            <h1 className="text-[2rem] font-semibold tracking-tight text-white">Job discovery</h1>
+            <p className="mt-1 text-lg text-zinc-500">
               AI-matched roles based on your resume and preferences
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/dashboard/resume"
-              className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
+              className="rounded-full border border-zinc-700 bg-black px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white"
             >
               Update resume
             </Link>
             <Link
               href="/dashboard/pipeline"
-              className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300"
             >
               Open pipeline
             </Link>

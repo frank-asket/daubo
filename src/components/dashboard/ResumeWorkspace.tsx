@@ -146,7 +146,7 @@ export function ResumeWorkspace() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-zinc-600">
+      <div className="flex items-center gap-2 text-zinc-500">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading resume…
       </div>
@@ -155,11 +155,11 @@ export function ResumeWorkspace() {
 
   return (
     <div className="space-y-4">
-      <p className="max-w-2xl text-sm text-zinc-600">
-        Upload a <span className="font-medium text-zinc-900">PDF, Word (.docx),</span> or{" "}
-        <span className="font-medium text-zinc-900">picture of a document</span>—or paste text below. We pull out
+      <p className="max-w-2xl text-sm text-zinc-500">
+        Upload a <span className="text-zinc-300">PDF, Word (.docx),</span> or{" "}
+        <span className="text-zinc-300">picture of a document</span>—or paste text below. We pull out
         the wording so Daubo can mirror your real roles and dates.{" "}
-        <span className="text-zinc-500">
+        <span className="text-zinc-400">
           Always skim the result: formatting can be imperfect, especially from scans or photos.
         </span>{" "}
         Edit the text, then tap Save.
@@ -176,10 +176,10 @@ export function ResumeWorkspace() {
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setDragActive(false)}
         onDrop={onDrop}
-        className={`rounded-[28px] border-2 border-dashed px-5 py-10 text-center transition ${
+        className={`rounded-2xl border-2 border-dashed px-5 py-8 text-center transition ${
           dragActive
-            ? "border-emerald-500/70 bg-emerald-50"
-            : "border-zinc-300 bg-white hover:border-zinc-400"
+            ? "border-emerald-500/70 bg-emerald-500/5"
+            : "border-zinc-700 bg-zinc-900/20 hover:border-zinc-600"
         }`}
       >
         <input
@@ -190,23 +190,20 @@ export function ResumeWorkspace() {
           onChange={onFileInputChange}
         />
         <FileUp className="mx-auto h-8 w-8 text-zinc-500" strokeWidth={1.5} />
-        <p className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950">
-          Drop your resume here
-        </p>
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className="mt-3 text-sm text-zinc-300">
           Drop a file here or{" "}
           <button
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="font-semibold text-emerald-600 hover:underline disabled:opacity-50"
+            className="font-semibold text-emerald-400 hover:underline disabled:opacity-50"
           >
             browse
           </button>
         </p>
-        <p className="mt-1 text-xs text-zinc-500">PDF or DOCX · Up to 12 MB</p>
+        <p className="mt-1 text-xs text-zinc-500">Max 12 MB · .doc (legacy Word) is not supported</p>
         {uploading ? (
-          <p className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-600">
+          <p className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-400">
             <Loader2 className="h-4 w-4 animate-spin" />
             Reading your file…
           </p>
@@ -214,8 +211,8 @@ export function ResumeWorkspace() {
       </div>
 
       {agentReply ? (
-        <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100/95">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-400/90">
             Quick note
           </p>
           <p className="mt-1 leading-relaxed">{agentReply}</p>
@@ -227,7 +224,7 @@ export function ResumeWorkspace() {
           File name (optional)
         </span>
         <input
-          className="mt-1 w-full max-w-md rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900"
+          className="mt-1 w-full max-w-md rounded-xl border border-zinc-800 bg-black px-3 py-2 text-sm text-white"
           placeholder="e.g. Resume_Jan_2025.pdf"
           value={fileName}
           onChange={(e) => setFileName(e.target.value)}
@@ -238,7 +235,7 @@ export function ResumeWorkspace() {
           Your résumé text (edit freely)
         </span>
         <textarea
-          className="mt-1 min-h-[320px] w-full rounded-[28px] border border-zinc-300 bg-white px-4 py-4 font-mono text-sm leading-relaxed text-zinc-800 outline-none focus:border-zinc-400"
+          className="mt-1 min-h-[320px] w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 font-mono text-sm leading-relaxed text-zinc-200 outline-none focus:border-zinc-600"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Upload a file above or paste your experience, education, skills…"
@@ -249,21 +246,21 @@ export function ResumeWorkspace() {
           type="button"
           onClick={save}
           disabled={saving || uploading}
-          className="rounded-full bg-zinc-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+          className="rounded-full bg-emerald-400 px-6 py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save resume"}
+          {saving ? "Saving…" : "Save résumé"}
         </button>
         <button
           type="button"
           onClick={load}
           disabled={uploading}
-          className="rounded-full border border-zinc-300 px-6 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-white disabled:opacity-50"
+          className="rounded-full border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-300 disabled:opacity-50"
         >
           Reload
         </button>
       </div>
-      {ok ? <p className="text-sm text-emerald-700">{ok}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {ok ? <p className="text-sm text-emerald-400">{ok}</p> : null}
+      {error ? <p className="text-sm text-red-400">{error}</p> : null}
     </div>
   );
 }

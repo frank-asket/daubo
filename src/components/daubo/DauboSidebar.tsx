@@ -113,13 +113,13 @@ export function DauboSidebar({
     <aside
       id="dashboard-sidebar-nav"
       className={mergeClassNames(
-        "flex w-[min(280px,92vw)] shrink-0 flex-col border-r border-zinc-200 bg-[#efefec] text-zinc-900 lg:w-[270px]",
+        "flex w-[min(280px,92vw)] shrink-0 flex-col border-r border-zinc-800/90 bg-[#0a0a0a] text-zinc-50 lg:w-[270px]",
         className,
       )}
     >
-      <div className="flex h-28 flex-col items-start justify-center border-b border-zinc-300 px-6">
+      <div className="flex h-28 flex-col items-start justify-center border-b border-zinc-800/90 px-6">
         <Logo href={logoHref} />
-        <p className="mt-1 text-[12px] font-semibold uppercase tracking-wide text-emerald-700">Job Search AI</p>
+        <p className="mt-1 text-[12px] font-semibold uppercase tracking-wide text-emerald-400">Job Search AI</p>
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto px-4 py-6" aria-label="Dashboard">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Workspace</p>
@@ -136,14 +136,14 @@ export function DauboSidebar({
               aria-current={isActive ? "page" : undefined}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
-                  ? "bg-white text-zinc-950 shadow-sm"
-                  : "text-zinc-700 hover:bg-white/70 hover:text-zinc-950"
+                  ? "bg-zinc-800/90 text-white"
+                  : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.8} />
               <span className="flex-1">{item.label}</span>
               {badge ? (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
                   {badge}
                 </span>
               ) : null}
@@ -165,8 +165,8 @@ export function DauboSidebar({
                 aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   isActive
-                    ? "bg-white text-zinc-950 shadow-sm"
-                    : "text-zinc-700 hover:bg-white/70 hover:text-zinc-950"
+                    ? "bg-zinc-800/90 text-white"
+                    : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
@@ -176,7 +176,7 @@ export function DauboSidebar({
           })}
         </div>
       </nav>
-      <div className="border-t border-zinc-300 p-3">
+      <div className="border-t border-zinc-800/90 p-3">
         <nav className="flex flex-col gap-0.5">
           {secondaryItems.map((item) => {
             const Icon = item.icon;
@@ -189,8 +189,8 @@ export function DauboSidebar({
                 aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   isActive
-                    ? "bg-white text-zinc-900"
-                    : "text-zinc-600 hover:bg-white/70 hover:text-zinc-900"
+                    ? "bg-zinc-800/60 text-zinc-200"
+                    : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
@@ -199,11 +199,11 @@ export function DauboSidebar({
             );
           })}
         </nav>
-        <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/70 px-3 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-800">
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 px-3 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-semibold text-emerald-200">
             {(user?.firstName?.[0] ?? "D").toUpperCase()}
           </div>
-          <p className="text-sm font-medium text-zinc-800">
+          <p className="text-sm font-medium text-zinc-200">
             {displayName}
             <span className="block text-xs font-normal text-zinc-500">Pro plan</span>
           </p>
