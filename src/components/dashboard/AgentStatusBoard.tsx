@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, Circle, Dot, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Circle, Dot, Loader2, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type AgentRow = {
@@ -39,8 +39,11 @@ export function AgentStatusBoard() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<AgentRow[]>([]);
   const [lastOrchestrationAt, setLastOrchestrationAt] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   const load = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -63,11 +66,19 @@ export function AgentStatusBoard() {
       setLastOrchestrationAt(null);
     } finally {
       setLoading(false);
+      inFlight.current = false;
     }
   }, []);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void load();
+    }, 30_000);
+    return () => window.clearInterval(id);
   }, [load]);
 
   const orchestrationLabel = useMemo(() => {
@@ -78,23 +89,35 @@ export function AgentStatusBoard() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-        {loading ? (
-          <span className="inline-flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Syncing orchestration state…
-          </span>
-        ) : error ? (
-          <span className="inline-flex items-center gap-2">
-            <Circle className="h-4 w-4" />
-            {error}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            All agents operational · Last orchestration run: {orchestrationLabel}
-          </span>
-        )}
+      <div className="flex flex-col gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Syncing orchestration state…
+            </span>
+          ) : error ? (
+            <span className="inline-flex items-center gap-2">
+              <Circle className="h-4 w-4" />
+              {error}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              All agents operational · Last orchestration run: {orchestrationLabel}
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void load()}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-50 hover:bg-emerald-400/15 disabled:opacity-60"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} strokeWidth={2} />
+          Refresh
+        </button>
       </div>
 
       <div className="space-y-3">
