@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # During migration, apps/api reuses the existing backend implementation.
 # This avoids code drift while we progressively move backend modules into apps/api.
@@ -10,13 +11,28 @@ _LEGACY_BACKEND = _REPO_ROOT / "backend"
 if str(_LEGACY_BACKEND) not in sys.path:
     sys.path.insert(0, str(_LEGACY_BACKEND))
 
-try:
-    from backend.app.main import app as legacy_app
-except Exception:
-    legacy_app = FastAPI(title="Daubo API (migration scaffold)")
+from backend.app.config import get_settings
+from backend.app.deps.security import require_internal_api_key
+from backend.app.routers import me
 
-    @legacy_app.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok", "service": "api"}
+from app.routers import chat, chunks, embeddings, health, jobs, me_resume
 
-app = legacy_app
+settings = get_settings()
+app = FastAPI(title="Daubo API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list() or ["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+protected = [Depends(require_internal_api_key)] if settings.daubo_internal_api_secret else []
+app.include_router(health.router, prefix="/v1")
+app.include_router(jobs.router, prefix="/v1", dependencies=protected)
+app.include_router(chat.router, prefix="/v1", dependencies=protected)
+app.include_router(embeddings.router, prefix="/v1", dependencies=protected)
+app.include_router(chunks.router, prefix="/v1", dependencies=protected)
+# Moved me-slice routes first so they win over legacy duplicates during migration.
+app.include_router(me_resume.router, prefix="/v1", dependencies=protected)
+app.include_router(me.router, prefix="/v1", dependencies=protected)
