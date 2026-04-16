@@ -29,7 +29,7 @@ from backend.app.models import (
     UserAutopilotProfile,
     UserGmailCredentials,
 )
-from backend.app.schemas.me import (
+from app.schemas.me_ops import (
     AutopilotProfileOut,
     AutopilotProfilePatch,
     AutopilotRunIn,
