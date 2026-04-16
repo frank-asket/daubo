@@ -2,11 +2,12 @@ import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import Settings, get_settings
@@ -16,6 +17,9 @@ from app.middleware.request_context import RequestContextMiddleware
 from app.routers import chat, chunks, embeddings, health, jobs, me
 
 logger = logging.getLogger("daubo")
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_MODELUI_DIR = _REPO_ROOT / "docs" / "modelui"
+_MODELUI_DEFAULT = "Multi-agent Job Search Assistant.html"
 
 
 def _configure_logging() -> None:
@@ -96,6 +100,32 @@ def _mount_job_search_ag_ui(app: FastAPI, settings: Settings) -> None:
     )
     add_langgraph_fastapi_endpoint(app, agent, path="/v1/ag-ui/job-search")
     logger.info("Mounted AG-UI job-search agent at /v1/ag-ui/job-search")
+
+
+def _mount_modelui_preview(app: FastAPI) -> None:
+    if not _MODELUI_DIR.exists():
+        logger.info("modelui preview not mounted (missing %s)", _MODELUI_DIR)
+        return
+
+    @app.get("/modelui", include_in_schema=False)
+    async def modelui_default() -> FileResponse:
+        target = (_MODELUI_DIR / _MODELUI_DEFAULT).resolve()
+        if not target.exists():
+            raise HTTPException(status_code=404, detail="modelui default file not found")
+        return FileResponse(target, media_type="text/html; charset=utf-8")
+
+    @app.get("/modelui/{name:path}", include_in_schema=False)
+    async def modelui_by_name(name: str) -> FileResponse:
+        requested = (name or "").strip()
+        if not requested:
+            raise HTTPException(status_code=404, detail="modelui file not specified")
+        target = (_MODELUI_DIR / requested).resolve()
+        if _MODELUI_DIR not in target.parents or not target.is_file():
+            raise HTTPException(status_code=404, detail="modelui file not found")
+        media = "text/html; charset=utf-8" if target.suffix.lower() == ".html" else None
+        return FileResponse(target, media_type=media)
+
+    logger.info("Mounted modelui preview at /modelui")
 
 
 def create_app() -> FastAPI:
@@ -217,6 +247,7 @@ def create_app() -> FastAPI:
             )
 
     _mount_job_search_ag_ui(app, s)
+    _mount_modelui_preview(app)
 
     return app
 

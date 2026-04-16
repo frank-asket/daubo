@@ -403,7 +403,7 @@ function showPanel(id, triggerEl) {
     source.classList.add('active');
     return;
   }
-  const fallback = document.querySelector(`.nav-item[onclick*="showPanel('${id}'"]`);
+  const fallback = document.querySelector(`.nav-item[onclick*="showPanel('${id}')"]`);
   if (fallback) fallback.classList.add('active');
 }
 
