@@ -300,3 +300,37 @@ class AgentStatusItemOut(BaseModel):
 class AgentStatusOut(BaseModel):
     last_orchestration_at: datetime | None = None
     agents: list[AgentStatusItemOut] = Field(default_factory=list)
+
+
+class MeStatsCareerOut(BaseModel):
+    ready_to_submit: int
+    package_ready: int
+    exploring: int
+    applied_or_interview: int
+
+
+class MeStatsOnboardingOut(BaseModel):
+    resume_added: bool
+    job_saved: bool
+    gmail_connected: bool
+    setup_complete: bool
+
+
+class MeStatsLimitsOut(BaseModel):
+    max_tracked_jobs: int | None
+    tracked_jobs: int
+
+
+class MeStatsAgentsOut(BaseModel):
+    openrouter_configured: bool
+    tavily_configured: bool
+    job_web_search_copilot: bool
+
+
+class MeStatsOut(BaseModel):
+    application_count: int
+    has_resume: bool
+    career: MeStatsCareerOut
+    onboarding: MeStatsOnboardingOut
+    limits: MeStatsLimitsOut
+    agents: MeStatsAgentsOut

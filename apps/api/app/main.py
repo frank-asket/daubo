@@ -13,7 +13,7 @@ if str(_LEGACY_BACKEND) not in sys.path:
 
 from backend.app.config import get_settings
 from backend.app.deps.security import require_internal_api_key
-from backend.app.routers import me
+from backend.app.routers import me_status
 
 from app.routers import chat, chunks, embeddings, health, jobs, me_applications, me_ops, me_resume
 
@@ -33,8 +33,8 @@ app.include_router(jobs.router, prefix="/v1", dependencies=protected)
 app.include_router(chat.router, prefix="/v1", dependencies=protected)
 app.include_router(embeddings.router, prefix="/v1", dependencies=protected)
 app.include_router(chunks.router, prefix="/v1", dependencies=protected)
-# Moved me-slice routes first so they win over legacy duplicates during migration.
+# Migrated /me routes (split routers); shared dashboard routes from backend.app.routers.me_status.
 app.include_router(me_resume.router, prefix="/v1", dependencies=protected)
 app.include_router(me_applications.router, prefix="/v1", dependencies=protected)
 app.include_router(me_ops.router, prefix="/v1", dependencies=protected)
-app.include_router(me.router, prefix="/v1", dependencies=protected)
+app.include_router(me_status.router, prefix="/v1", dependencies=protected)

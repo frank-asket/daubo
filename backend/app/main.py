@@ -14,7 +14,7 @@ from app.config import Settings, get_settings
 from app.db import engine, init_db
 from app.deps.security import require_internal_api_key
 from app.middleware.request_context import RequestContextMiddleware
-from app.routers import chat, chunks, embeddings, health, jobs, me
+from app.routers import chat, chunks, embeddings, health, jobs, me, me_status
 
 logger = logging.getLogger("daubo")
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -232,6 +232,7 @@ def create_app() -> FastAPI:
     app.include_router(embeddings.router, prefix="/v1", dependencies=protected)
     app.include_router(chunks.router, prefix="/v1", dependencies=protected)
     app.include_router(jobs.router, prefix="/v1", dependencies=protected)
+    app.include_router(me_status.router, prefix="/v1", dependencies=protected)
     app.include_router(me.router, prefix="/v1", dependencies=protected)
 
     for route in app.routes:
