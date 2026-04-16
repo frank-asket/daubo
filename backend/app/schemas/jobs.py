@@ -179,3 +179,24 @@ class DiscoverHintsOut(BaseModel):
     additional_country_codes: list[str]
     emphasize_remote_global: bool
     resume_excerpt: str = Field(..., max_length=16_000)
+
+
+class JobListItem(BaseModel):
+    id: str
+    source: str
+    external_id: str
+    title: str
+    company: str
+    location: str | None = None
+    url: str | None = None
+    fit_score: float | None = None
+    fit_reasons: list[str] = Field(default_factory=list)
+    risk_flags: list[str] = Field(default_factory=list)
+    discovered_at: str
+
+
+class JobListOut(BaseModel):
+    items: list[JobListItem] = Field(default_factory=list)
+    page: int = 1
+    page_size: int = 20
+    total: int = 0

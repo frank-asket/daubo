@@ -2,7 +2,9 @@ import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from uuid import uuid4
 
+from redis.asyncio import from_url as redis_from_url
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +12,7 @@ from backend.app.models import AutopilotRun, UserAutopilotProfile, UserWorkspace
 
 _AUTOPILOT_RUNNING_STALE_AFTER = timedelta(minutes=30)
 _AUTOPILOT_IDEMPOTENCY_TTL = timedelta(hours=8)
+_AUTOPILOT_LOCK_TTL_SECONDS = 5 * 60
 
 
 def _is_autopilot_run_stale(started_at: datetime) -> bool:
@@ -183,4 +186,27 @@ async def resolve_or_block_running_autopilot(
         await session.commit()
         return None
     return running
+
+
+async def acquire_autopilot_overlap_lock(redis_url: str, user_id: str) -> str | None:
+    """Distributed short lock to block overlapping launches across workers."""
+    token = str(uuid4())
+    key = f"autopilot:lock:{user_id}"
+    client = redis_from_url(redis_url, encoding="utf-8", decode_responses=True)
+    try:
+        ok = await client.set(key, token, ex=_AUTOPILOT_LOCK_TTL_SECONDS, nx=True)
+        return token if ok else None
+    finally:
+        await client.aclose()
+
+
+async def release_autopilot_overlap_lock(redis_url: str, user_id: str, token: str) -> None:
+    key = f"autopilot:lock:{user_id}"
+    client = redis_from_url(redis_url, encoding="utf-8", decode_responses=True)
+    try:
+        current = await client.get(key)
+        if current == token:
+            await client.delete(key)
+    finally:
+        await client.aclose()
 

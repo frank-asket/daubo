@@ -21,6 +21,13 @@ type ProfileSignals = {
   locations_or_remote?: string | null;
   summary?: string | null;
 };
+type PreferencesBody = {
+  target_role?: string | null;
+  location_preference?: string | null;
+  min_salary_usd?: number | null;
+  seniority?: string | null;
+  skills_highlight?: string | null;
+};
 
 export function ResumeWorkspace() {
   const { reload: reloadStats } = useDashboardStats();
@@ -70,9 +77,38 @@ export function ResumeWorkspace() {
     }
   }, []);
 
+  const loadPreferences = useCallback(async () => {
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/preferences"), { credentials: "same-origin" });
+      if (!r.ok) return;
+      const p = (await r.json()) as PreferencesBody;
+      if (typeof p.target_role === "string" && p.target_role.trim()) {
+        setTargetRole(p.target_role.trim());
+      }
+      if (typeof p.location_preference === "string" && p.location_preference.trim()) {
+        setLocationPref(p.location_preference.trim());
+      }
+      if (typeof p.min_salary_usd === "number" && Number.isFinite(p.min_salary_usd)) {
+        setMinSalary(String(Math.trunc(p.min_salary_usd)));
+      }
+      if (typeof p.seniority === "string" && p.seniority.trim()) {
+        setSeniority(p.seniority.trim());
+      }
+      if (typeof p.skills_highlight === "string" && p.skills_highlight.trim()) {
+        setSkillsHighlight(p.skills_highlight.trim());
+      }
+    } catch {
+      /* optional */
+    }
+  }, []);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    void loadPreferences();
+  }, [loadPreferences]);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -129,6 +165,19 @@ export function ResumeWorkspace() {
       }
       const body = await r.json();
       setUpdated((body as ResumeBody).updated_at ?? null);
+      const minSalaryInt = Number.parseInt(minSalary.replace(/[^0-9]/g, ""), 10);
+      await fetch(dauboBffUrl("v1/me/preferences"), {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          target_role: targetRole.trim() || null,
+          location_preference: locationPref.trim() || null,
+          min_salary_usd: Number.isFinite(minSalaryInt) ? minSalaryInt : null,
+          seniority: seniority.trim() || null,
+          skills_highlight: skillsHighlight.trim() || null,
+        }),
+      });
       setOk("Résumé saved");
       await reloadStats();
     } catch (e) {

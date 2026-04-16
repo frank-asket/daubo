@@ -3,6 +3,7 @@
 import { CheckCircle2, Circle, Dot, Loader2, RefreshCw, Send } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
+import { useAgentStream } from "@/hooks/useAgentStream";
 
 type AgentRow = {
   agent_id: string;
@@ -120,6 +121,7 @@ export function AgentStatusBoard() {
   const [messages, setMessages] = useState<Turn[]>([]);
   const [lastPrompt, setLastPrompt] = useState<string | null>(null);
   const inFlight = useRef(false);
+  const { event: streamEvent, streamError } = useAgentStream(true);
 
   const load = useCallback(async () => {
     if (inFlight.current) return;
@@ -160,6 +162,14 @@ export function AgentStatusBoard() {
     }, 30_000);
     return () => window.clearInterval(id);
   }, [load]);
+
+  useEffect(() => {
+    if (!streamEvent) return;
+    setRows(normalizeRows(Array.isArray(streamEvent.agents) ? streamEvent.agents : []));
+    setLastOrchestrationAt(streamEvent.last_orchestration_at ?? null);
+    setLoading(false);
+    setError(null);
+  }, [streamEvent]);
 
   const orchestrationLabel = useMemo(() => {
     const ago = timeAgo(lastOrchestrationAt);
@@ -217,6 +227,11 @@ export function AgentStatusBoard() {
             <span className="inline-flex items-center gap-2">
               <Circle className="h-4 w-4" />
               {error}
+            </span>
+          ) : streamError ? (
+            <span className="inline-flex items-center gap-2">
+              <Circle className="h-4 w-4" />
+              {streamError}
             </span>
           ) : (
             <span className="inline-flex items-center gap-2">

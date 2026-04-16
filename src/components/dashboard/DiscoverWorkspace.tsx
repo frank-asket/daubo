@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { JobDiscoverPanel, type DiscoverResult } from "@/components/dashboard/JobDiscoverPanel";
 import { ResumeMatchHighlightsCard } from "@/components/dashboard/ResumeMatchHighlightsCard";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { useJobs } from "@/hooks/useJobs";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 type MatchSnapshot = {
@@ -45,6 +46,7 @@ function MetricCard({
 
 export function DiscoverWorkspace() {
   const { stats, reload: reloadStats } = useDashboardStats();
+  const { data: jobsData } = useJobs({ page: 1, pageSize: 100 });
   const [latestRun, setLatestRun] = useState<DiscoverResult | null>(null);
   const [matchStatus, setMatchStatus] = useState<"idle" | "queued" | "polling" | "ready" | "error">("idle");
 
@@ -135,6 +137,8 @@ export function DiscoverWorkspace() {
   }, [reloadStats, stats?.has_resume]);
 
   const metrics = useMemo(() => snapshotFromRun(latestRun), [latestRun]);
+  const liveJobs = jobsData?.items ?? [];
+  const jobsHighFit = liveJobs.filter((j) => (typeof j.fit_score === "number" ? j.fit_score >= 4 : false)).length;
   const applied = stats?.career?.applied_or_interview ?? 0;
 
   return (
@@ -171,7 +175,7 @@ export function DiscoverWorkspace() {
           />
           <MetricCard
             label="High fit ≥4.0"
-            value={String(metrics.highFit)}
+            value={String(Math.max(metrics.highFit, jobsHighFit))}
             caption="ready to review"
           />
           <MetricCard

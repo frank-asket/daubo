@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps.users import get_clerk_user_id
 from app.services.autopilot import run_autopilot_pass
 from app.services.me_autopilot_helpers import (
+    acquire_autopilot_overlap_lock,
     autopilot_conflict_detail,
     autopilot_idempotency_active,
     autopilot_idempotency_decision,
@@ -19,6 +20,7 @@ from app.services.me_autopilot_helpers import (
     get_or_create_autopilot_profile,
     get_or_create_workspace_settings,
     normalize_idempotency_key,
+    release_autopilot_overlap_lock,
     resolve_or_block_running_autopilot,
 )
 from backend.app.config import Settings, get_settings
@@ -237,57 +239,69 @@ async def run_prep_autopilot(
                 gmail_drafts_created=prev.gmail_drafts_created,
                 errors=prev.errors if isinstance(prev.errors, list) else [],
             )
-    running = await resolve_or_block_running_autopilot(session, user_id)
-    if running is not None:
-        raise HTTPException(status_code=409, detail=autopilot_conflict_detail(running))
-    run = AutopilotRun(
-        clerk_user_id=user_id,
-        idempotency_key=idem_key,
-        request_fingerprint=req_fingerprint,
-        status="running",
-        requested_limit=effective_limit,
-        create_gmail_drafts=do_gmail,
-    )
-    session.add(run)
-    await session.commit()
-    await session.refresh(run)
-    try:
-        out = await run_autopilot_pass(
-            session,
-            user_id,
-            settings,
-            limit=effective_limit,
-            create_gmail_drafts=do_gmail,
-            run_id=run.id,
-            retry_scope=req.retry_scope,
-            source_run_id=req.source_run_id,
+    lock_token = await acquire_autopilot_overlap_lock(settings.redis_url, user_id)
+    if lock_token is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "autopilot_run_overlap_locked",
+                "message": "Another autopilot launch is currently in progress. Try again shortly.",
+            },
         )
-    except ValueError as exc:
-        run.status = "failed"
-        run.errors = [str(exc)]
+    try:
+        running = await resolve_or_block_running_autopilot(session, user_id)
+        if running is not None:
+            raise HTTPException(status_code=409, detail=autopilot_conflict_detail(running))
+        run = AutopilotRun(
+            clerk_user_id=user_id,
+            idempotency_key=idem_key,
+            request_fingerprint=req_fingerprint,
+            status="running",
+            requested_limit=effective_limit,
+            create_gmail_drafts=do_gmail,
+        )
+        session.add(run)
+        await session.commit()
+        await session.refresh(run)
+        try:
+            out = await run_autopilot_pass(
+                session,
+                user_id,
+                settings,
+                limit=effective_limit,
+                create_gmail_drafts=do_gmail,
+                run_id=run.id,
+                retry_scope=req.retry_scope,
+                source_run_id=req.source_run_id,
+            )
+        except ValueError as exc:
+            run.status = "failed"
+            run.errors = [str(exc)]
+            run.finished_at = datetime.now(timezone.utc)
+            await session.commit()
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception:
+            run.status = "failed"
+            run.errors = ["Autopilot run failed unexpectedly."]
+            run.finished_at = datetime.now(timezone.utc)
+            await session.commit()
+            raise
+        run.status = "completed"
+        run.processed = out["processed"]
+        run.gmail_drafts_created = out["gmail_drafts_created"]
+        run.errors = out["errors"]
         run.finished_at = datetime.now(timezone.utc)
         await session.commit()
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception:
-        run.status = "failed"
-        run.errors = ["Autopilot run failed unexpectedly."]
-        run.finished_at = datetime.now(timezone.utc)
-        await session.commit()
-        raise
-    run.status = "completed"
-    run.processed = out["processed"]
-    run.gmail_drafts_created = out["gmail_drafts_created"]
-    run.errors = out["errors"]
-    run.finished_at = datetime.now(timezone.utc)
-    await session.commit()
-    await session.refresh(run)
-    return AutopilotRunOut(
-        run_id=run.id,
-        status=run.status,
-        processed=out["processed"],
-        gmail_drafts_created=out["gmail_drafts_created"],
-        errors=out["errors"],
-    )
+        await session.refresh(run)
+        return AutopilotRunOut(
+            run_id=run.id,
+            status=run.status,
+            processed=out["processed"],
+            gmail_drafts_created=out["gmail_drafts_created"],
+            errors=out["errors"],
+        )
+    finally:
+        await release_autopilot_overlap_lock(settings.redis_url, user_id, lock_token)
 
 
 @router.get("/me/autopilot/profile", response_model=AutopilotProfileOut)

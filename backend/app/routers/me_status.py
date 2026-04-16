@@ -1,8 +1,11 @@
 """Dashboard agent snapshot and aggregate stats (shared by backend and apps/api)."""
 
+import asyncio
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,11 +30,11 @@ logger = logging.getLogger("daubo")
 _AUTODISCOVER_KIND = "resume_autodiscover"
 
 
-@router.get("/me/agents/status", response_model=AgentStatusOut)
-async def agent_status(
-    user_id: str = Depends(get_clerk_user_id),
-    session: AsyncSession = Depends(get_db),
-    settings: Settings = Depends(get_settings),
+async def _build_agent_status(
+    *,
+    user_id: str,
+    session: AsyncSession,
+    settings: Settings,
 ) -> AgentStatusOut:
     """
     Lightweight, dashboard-friendly snapshot of "agent status".
@@ -155,6 +158,39 @@ async def agent_status(
             last_orch = ts
 
     return AgentStatusOut(last_orchestration_at=last_orch, agents=agents)
+
+
+@router.get("/me/agents/status", response_model=AgentStatusOut)
+async def agent_status(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> AgentStatusOut:
+    return await _build_agent_status(user_id=user_id, session=session, settings=settings)
+
+
+@router.get("/agents/status")
+async def agents_status_stream(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    async def event_gen():
+        while True:
+            payload = await _build_agent_status(user_id=user_id, session=session, settings=settings)
+            data = json.dumps(payload.model_dump(mode="json"))
+            yield f"event: agent_status\ndata: {data}\n\n"
+            await asyncio.sleep(5)
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/me/stats", response_model=MeStatsOut)

@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, Boolean, String, Text, func
+from sqlalchemy import JSON, Boolean, Float, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import DateTime
 
@@ -83,6 +83,24 @@ class UserWorkspaceSettings(Base):
     clerk_user_id: Mapped[str] = mapped_column(String(256), primary_key=True)
     autopilot_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     autopilot_auto_gmail_drafts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class UserPreferences(Base):
+    """Per-user job-search preferences used by onboarding and discovery."""
+
+    __tablename__ = "user_preferences"
+
+    clerk_user_id: Mapped[str] = mapped_column(String(256), primary_key=True)
+    target_role: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    location_preference: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    min_salary_usd: Mapped[int | None] = mapped_column(nullable=True)
+    seniority: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    skills_highlight: Mapped[str | None] = mapped_column(Text, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -190,6 +208,35 @@ class JobApplication(Base):
     # Saved interview prep (questions, topics) after user runs prep workflow.
     interview_prep: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class JobListing(Base):
+    """Per-user discovered job listing with cached fit score."""
+
+    __tablename__ = "job_listings"
+    __table_args__ = (
+        UniqueConstraint("clerk_user_id", "source", "external_id", name="uq_job_listings_user_source_external"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    clerk_user_id: Mapped[str] = mapped_column(String(256), index=True)
+    source: Mapped[str] = mapped_column(String(64), nullable=False, default="discover")
+    external_id: Mapped[str] = mapped_column(String(512), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    company: Mapped[str] = mapped_column(String(500), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    fit_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fit_reasons: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    risk_flags: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    page_hint: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    discovered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
