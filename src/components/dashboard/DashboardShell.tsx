@@ -119,7 +119,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col bg-[#050505] lg:min-h-screen">
           <ResumeNudgeBanner />
-          <header className="sticky top-0 z-30 border-b border-zinc-800/90 bg-[#050505]/95 backdrop-blur-md">
+          <header className="sticky top-0 z-30 border-b border-zinc-800/90 bg-[#050505]/95 backdrop-blur-md lg:hidden">
             <div className="flex flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
               <div className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3">
                 <button
@@ -230,7 +230,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             id="dashboard-main"
             role="main"
             tabIndex={-1}
-            className="flex-1 scroll-mt-2 overflow-auto pb-[env(safe-area-inset-bottom)] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+            className="flex-1 scroll-mt-2 overflow-auto pb-[env(safe-area-inset-bottom)] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 lg:pt-0"
           >
             {children}
           </div>

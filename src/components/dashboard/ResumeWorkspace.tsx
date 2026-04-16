@@ -12,6 +12,15 @@ type ResumeBody = {
 };
 
 type UploadBody = ResumeBody & { agent_reply?: string | null };
+type ProfileSignals = {
+  headline?: string | null;
+  skills?: string[];
+  target_roles?: string[];
+  seniority?: string | null;
+  industries?: string[];
+  locations_or_remote?: string | null;
+  summary?: string | null;
+};
 
 export function ResumeWorkspace() {
   const { reload: reloadStats } = useDashboardStats();
@@ -25,6 +34,14 @@ export function ResumeWorkspace() {
   const [ok, setOk] = useState<string | null>(null);
   const [agentReply, setAgentReply] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [targetRole, setTargetRole] = useState("AI/ML Engineer");
+  const [locationPref, setLocationPref] = useState("Remote / Europe");
+  const [minSalary, setMinSalary] = useState("140,000");
+  const [seniority, setSeniority] = useState("Senior");
+  const [skillsHighlight, setSkillsHighlight] = useState("RAG, LLMs, Python, FastAPI, MLOps");
+  const [profileSummary, setProfileSummary] = useState<string>(
+    "Upload your resume to see AI-powered analysis of your profile, skill gaps, and match archetypes.",
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -56,6 +73,35 @@ export function ResumeWorkspace() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const r = await fetch(dauboBffUrl("v1/me/resume/profile-signals"), { credentials: "same-origin" });
+      if (!r.ok) return;
+      const s = (await r.json()) as ProfileSignals;
+      if (Array.isArray(s.target_roles) && s.target_roles.length) {
+        setTargetRole(s.target_roles[0] || targetRole);
+      }
+      if (typeof s.locations_or_remote === "string" && s.locations_or_remote.trim()) {
+        setLocationPref(s.locations_or_remote.trim());
+      }
+      if (typeof s.seniority === "string" && s.seniority.trim()) {
+        setSeniority(s.seniority.trim());
+      }
+      if (Array.isArray(s.skills) && s.skills.length) {
+        setSkillsHighlight(s.skills.slice(0, 7).join(", "));
+      }
+      if (typeof s.summary === "string" && s.summary.trim()) {
+        setProfileSummary(s.summary.trim());
+      }
+    } catch {
+      /* optional */
+    }
+  }, [targetRole]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   async function save() {
     if (!text.trim()) {
@@ -155,15 +201,6 @@ export function ResumeWorkspace() {
 
   return (
     <div className="space-y-4">
-      <p className="max-w-2xl text-sm text-zinc-500">
-        Upload a <span className="text-zinc-300">PDF, Word (.docx),</span> or{" "}
-        <span className="text-zinc-300">picture of a document</span>—or paste text below. We pull out
-        the wording so Daubo can mirror your real roles and dates.{" "}
-        <span className="text-zinc-400">
-          Always skim the result: formatting can be imperfect, especially from scans or photos.
-        </span>{" "}
-        Edit the text, then tap Save.
-      </p>
       {updated ? (
         <p className="text-xs text-zinc-500">Last updated: {new Date(updated).toLocaleString()}</p>
       ) : null}
@@ -190,8 +227,14 @@ export function ResumeWorkspace() {
           onChange={onFileInputChange}
         />
         <FileUp className="mx-auto h-8 w-8 text-zinc-500" strokeWidth={1.5} />
+        <p className="mt-3 text-2xl text-zinc-100">
+          Drop your resume here
+        </p>
+        <p className="mt-1 text-lg text-zinc-400">
+          PDF or DOCX · Up to 5 MB
+        </p>
         <p className="mt-3 text-sm text-zinc-300">
-          Drop a file here or{" "}
+          Or{" "}
           <button
             type="button"
             disabled={uploading}
@@ -218,6 +261,61 @@ export function ResumeWorkspace() {
           <p className="mt-1 leading-relaxed">{agentReply}</p>
         </div>
       ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-lg text-zinc-300">Target role</span>
+          <input
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-2xl text-white"
+            value={targetRole}
+            onChange={(e) => setTargetRole(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-lg text-zinc-300">Location preference</span>
+          <input
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-2xl text-white"
+            value={locationPref}
+            onChange={(e) => setLocationPref(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-lg text-zinc-300">Min salary (USD)</span>
+          <input
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-2xl text-white"
+            value={minSalary}
+            onChange={(e) => setMinSalary(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-lg text-zinc-300">Seniority</span>
+          <select
+            className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-2xl text-white"
+            value={seniority}
+            onChange={(e) => setSeniority(e.target.value)}
+          >
+            <option>Senior</option>
+            <option>Lead</option>
+            <option>Staff</option>
+            <option>Principal</option>
+          </select>
+        </label>
+      </div>
+      <label className="block">
+        <span className="text-lg text-zinc-300">Skills to highlight</span>
+        <input
+          className="mt-1 w-full rounded-xl border border-zinc-800 bg-black px-3 py-2 text-2xl text-white"
+          value={skillsHighlight}
+          onChange={(e) => setSkillsHighlight(e.target.value)}
+        />
+      </label>
+
+      <div className="space-y-2">
+        <p className="text-3xl font-semibold uppercase tracking-wide text-zinc-400">AI profile analysis</p>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 px-4 py-4 text-xl leading-relaxed text-zinc-300">
+          {profileSummary}
+        </div>
+      </div>
 
       <label className="block">
         <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">

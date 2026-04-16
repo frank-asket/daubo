@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
 import type { DiscoverResult } from "@/components/dashboard/JobDiscoverPanel";
 import { dauboBffUrl } from "@/lib/daubo-api";
@@ -69,6 +69,7 @@ export function ResumeMatchHighlightsCard({
   const [addingId, setAddingId] = useState<string | null>(null);
   const [preparingId, setPreparingId] = useState<string | null>(null);
   const [minFitThreshold, setMinFitThreshold] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const triggerSent = useRef(false);
   const pollCount = useRef(0);
   const onUpdate = useRef(onPipelineUpdated);
@@ -266,6 +267,22 @@ export function ResumeMatchHighlightsCard({
     }
   }
 
+  async function refreshMatches() {
+    setRefreshing(true);
+    setErr(null);
+    try {
+      await fetch(dauboBffUrl("v1/me/resume/trigger-auto-match"), {
+        method: "POST",
+        credentials: "same-origin",
+      });
+      await fetchLatest();
+    } catch {
+      setErr("Could not refresh matches right now.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   if (!statsReady || !stats?.has_resume) return null;
 
   const listings = [...(run?.result?.parsed_listings ?? [])].sort(byFitThenTitle);
@@ -358,33 +375,37 @@ export function ResumeMatchHighlightsCard({
             </p>
           ) : null}
         </div>
-        <Link
-          href="/dashboard/pipeline"
-          className="shrink-0 text-[11px] font-semibold text-emerald-400 hover:underline"
-        >
-          My jobs →
+        <Link href="/dashboard/pipeline" className="shrink-0 text-[11px] text-zinc-500 hover:text-zinc-300">
+          My jobs
         </Link>
       </div>
       {summary ? (
         <p className="mt-3 text-xs leading-relaxed text-zinc-400">{summary}</p>
       ) : null}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] text-zinc-500">Sorted by estimated fit (highest first).</p>
-        <label className="text-[11px] text-zinc-500">
-          Min fit score
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[26px] font-semibold uppercase leading-none tracking-tight text-zinc-200">
+          Top matches
+        </p>
+        <div className="flex items-center gap-2">
           <select
             value={minFitThreshold}
             onChange={(e) => setMinFitThreshold(normalizeFitThreshold(e.target.value))}
-            className="ml-2 rounded-md border border-zinc-700 bg-black px-2 py-1 text-[11px] text-zinc-200"
+            className="rounded-xl border border-zinc-700 bg-black px-3 py-2 text-sm text-zinc-100"
           >
-            <option value={0}>All</option>
-            <option value={2.5}>2.5+</option>
-            <option value={3}>3.0+</option>
-            <option value={3.5}>3.5+</option>
-            <option value={4}>4.0+</option>
-            <option value={4.5}>4.5+</option>
+            <option value={0}>All scores</option>
+            <option value={4}>High fit (≥4.0)</option>
+            <option value={3}>Mid fit (3-3.9)</option>
           </select>
-        </label>
+          <button
+            type="button"
+            onClick={() => void refreshMatches()}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1 rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-100 hover:bg-zinc-900 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
       {err ? <p className="mt-2 text-xs text-red-400">{err}</p> : null}
       {filteredListings.length === 0 ? (

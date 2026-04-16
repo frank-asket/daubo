@@ -47,6 +47,30 @@ type IntegrityReport = {
 
 type PipelineTab = "all" | "applied" | "interview" | "pending";
 
+function fitBadgeClass(score: number | null): string {
+  if (score == null) return "bg-zinc-800 text-zinc-300";
+  if (score >= 4) return "bg-emerald-500/15 text-emerald-200";
+  if (score >= 3.2) return "bg-amber-500/15 text-amber-100";
+  return "bg-rose-500/15 text-rose-100";
+}
+
+function statusBadgeClass(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "interview") return "bg-violet-500/12 text-violet-200";
+  if (s === "applied") return "bg-sky-500/12 text-sky-200";
+  if (s === "pending" || s === "ready_to_apply" || s === "package_ready") return "bg-amber-500/12 text-amber-100";
+  if (s === "rejected" || s === "closed") return "bg-rose-500/12 text-rose-200";
+  return "bg-zinc-700/40 text-zinc-300";
+}
+
+function parseFitScore(row: Application): number | null {
+  const draft = row.package_draft as { fit_score?: unknown } | null;
+  if (draft && typeof draft.fit_score === "number" && Number.isFinite(draft.fit_score)) {
+    return draft.fit_score;
+  }
+  return null;
+}
+
 export function ApplicationsBoard() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -602,13 +626,15 @@ export function ApplicationsBoard() {
               ))}
             </div>
             <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-zinc-800 md:block">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[700px] text-left text-sm">
                 <thead className="border-b border-zinc-800 text-[11px] uppercase tracking-wide text-zinc-500">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Role</th>
                     <th className="px-4 py-3 font-medium">Company</th>
+                    <th className="px-4 py-3 font-medium">Role</th>
+                    <th className="px-4 py-3 font-medium">Fit</th>
+                    <th className="px-4 py-3 font-medium">Channel</th>
                     <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Updated</th>
+                    <th className="px-4 py-3 font-medium">Last update</th>
                     <th className="px-4 py-3 font-medium">Apply</th>
                     <th className="px-4 py-3 font-medium" />
                   </tr>
@@ -621,7 +647,10 @@ export function ApplicationsBoard() {
                       tabIndex={-1}
                       className="border-b border-zinc-800/80 last:border-0"
                     >
-                      <td className="px-4 py-3 font-medium text-white">
+                      <td className="px-4 py-4 text-[34px] font-semibold leading-none text-white">
+                        {row.company}
+                      </td>
+                      <td className="px-4 py-4 text-zinc-100">
                         {row.job_url ? (
                           <a
                             href={row.job_url}
@@ -635,24 +664,31 @@ export function ApplicationsBoard() {
                           row.title
                         )}
                       </td>
-                      <td className="px-4 py-3 text-zinc-400">{row.company}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          className="rounded-lg border border-zinc-800 bg-black px-2 py-1 text-xs text-white"
-                          value={row.status}
-                          onChange={(e) => updateStatus(row.id, e.target.value)}
+                      <td className="px-4 py-4">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${fitBadgeClass(
+                            parseFitScore(row),
+                          )}`}
                         >
-                          {JOB_STAGE_VALUES.map((s) => (
-                            <option key={s} value={s}>
-                              {jobStageLabel(s)}
-                            </option>
-                          ))}
-                        </select>
+                          {parseFitScore(row) == null ? "—" : parseFitScore(row)!.toFixed(1)}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-zinc-500">
+                      <td className="px-4 py-4 text-zinc-400">
+                        {row.apply_channel?.trim() || "Company site"}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadgeClass(
+                            row.status,
+                          )}`}
+                        >
+                          {jobStageLabel(row.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-xs text-zinc-500">
                         {new Date(row.updated_at).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-4">
                         <button
                           type="button"
                           onClick={() => setHandoffId(row.id)}
@@ -662,7 +698,7 @@ export function ApplicationsBoard() {
                           Apply yourself
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-4 text-right">
                         <button
                           type="button"
                           onClick={() => remove(row.id)}

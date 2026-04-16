@@ -97,12 +97,17 @@ export function ApprovalsBoard() {
         {items.map((item) => (
           <article key={item.id} className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-5">
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-lg font-semibold text-white">{item.company}</p>
-                <p className="text-sm text-zinc-300">{item.title}</p>
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-semibold text-emerald-200">
+                  {item.company.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-white">{item.company}</p>
+                  <p className="text-sm text-zinc-300">{item.title}</p>
+                </div>
               </div>
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-300">
-                {(item.apply_channel || "company site").trim()}
+                {item.apply_channel?.toLowerCase() === "linkedin" ? "👥 LinkedIn" : "✉ Email"}
               </span>
             </div>
             <p className="mt-3 text-xs text-zinc-500">
@@ -111,12 +116,15 @@ export function ApprovalsBoard() {
                 ? "LinkedIn connection note"
                 : `Application: ${item.title}`}
             </p>
-            <p className="mt-3 rounded-xl bg-zinc-900/70 px-4 py-4 text-sm leading-relaxed text-zinc-300">
-              {item.package_draft?.cover_letter?.trim() ||
-                item.package_draft?.linkedin_note?.trim() ||
-                item.notes?.trim() ||
-                "Draft generated. Review and approve in pipeline handoff."}
-            </p>
+            <div className="relative mt-3 overflow-hidden rounded-xl bg-zinc-900/70 px-4 py-4">
+              <p className="max-h-36 overflow-hidden text-sm leading-relaxed text-zinc-300">
+                {item.package_draft?.cover_letter?.trim() ||
+                  item.package_draft?.linkedin_note?.trim() ||
+                  item.notes?.trim() ||
+                  "Draft generated. Review and approve in pipeline handoff."}
+              </p>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-zinc-900/95 to-transparent" />
+            </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
