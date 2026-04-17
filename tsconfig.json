@@ -30,13 +30,20 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "*.mts",
+    "*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "apps/web1/**",
+    "apps/api/**",
+    "backend/**",
+    "e2e/**"
   ]
 }

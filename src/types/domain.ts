@@ -36,14 +36,14 @@ export type Application = {
   id: string;
   title: string;
   company: string;
-  location?: string | null;
+  location: string | null;
   status: ApplicationStatus;
-  notes?: string | null;
-  job_url?: string | null;
-  apply_channel?: Channel | null;
-  job_description?: string | null;
-  package_draft?: Record<string, unknown> | null;
-  interview_prep?: Record<string, unknown> | null;
+  notes: string | null;
+  job_url: string | null;
+  apply_channel: Channel | null;
+  job_description: string | null;
+  package_draft: Record<string, unknown> | null;
+  interview_prep: Record<string, unknown> | null;
   updated_at: string;
 };
 
