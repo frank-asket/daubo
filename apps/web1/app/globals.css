@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-width: 224px;
+    --header-height: 56px;
+  }
+
+  * {
+    @apply border-surface-200;
+  }
+
+  body {
+    @apply bg-surface-50 text-surface-800 antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-surface-400; }
+}
+
+@layer components {
+  /* Card */
+  .card {
+    @apply bg-white rounded-lg border border-surface-200 shadow-card;
+  }
+  .card-hover {
+    @apply card transition-shadow duration-200 hover:shadow-card-hover hover:border-surface-300;
+  }
+
+  /* Fit score colors */
+  .fit-high { @apply bg-brand-50 text-brand-800 border-brand-100; }
+  .fit-mid  { @apply bg-warning-bg text-warning-text; }
+  .fit-low  { @apply bg-danger-bg text-danger-text; }
+
+  /* Status badges */
+  .badge { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium; }
+  .badge-applied   { @apply bg-info-bg text-info-text; }
+  .badge-interview { @apply bg-purple-bg text-purple-text; }
+  .badge-pending   { @apply bg-warning-bg text-warning-text; }
+  .badge-rejected  { @apply bg-danger-bg text-danger-text; }
+  .badge-offer     { @apply bg-brand-50 text-brand-800; }
+  .badge-saved     { @apply bg-surface-100 text-surface-500; }
+
+  /* Channel badges */
+  .ch-email    { @apply bg-info-bg text-info-text; }
+  .ch-linkedin { @apply bg-purple-bg text-purple-text; }
+  .ch-site     { @apply bg-surface-100 text-surface-500; }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium
+           border border-surface-200 bg-white text-surface-700
+           hover:bg-surface-50 hover:border-surface-300
+           active:scale-[0.98] transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-brand-400/20;
+  }
+  .btn-primary {
+    @apply bg-brand-400 text-white border-brand-400
+           hover:bg-brand-600 hover:border-brand-600;
+  }
+  .btn-danger {
+    @apply border-danger-border text-danger-text
+           hover:bg-danger-bg;
+  }
+  .btn-ghost {
+    @apply border-transparent bg-transparent
+           hover:bg-surface-100 hover:border-surface-200;
+  }
+
+  /* Input */
+  .field {
+    @apply w-full px-3 py-2 text-sm rounded-md border border-surface-200 bg-white
+           text-surface-800 placeholder-surface-400
+           focus:outline-none focus:ring-2 focus:ring-brand-400/20 focus:border-brand-400
+           transition-colors duration-150;
+  }
+
+  /* Shimmer skeleton */
+  .skeleton {
+    @apply bg-gradient-to-r from-surface-100 via-surface-200 to-surface-100
+           bg-[length:200%_100%] animate-shimmer rounded;
+  }
+
+  /* AI stream cursor */
+  .stream-cursor::after {
+    content: '';
+    @apply inline-block w-0.5 h-[1em] bg-brand-400 ml-0.5 align-text-bottom animate-pulse;
+  }
+}

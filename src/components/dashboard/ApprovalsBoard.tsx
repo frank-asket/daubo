@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { dauboBffUrl, detailFromApiJson } from "@/lib/daubo-api";
+import { useDomainApprovals } from "@/hooks/useDomainData";
+import { domainApi } from "@/lib/domain-api";
 import { makeIdempotencyKey } from "@/lib/idempotency-key";
 import {
   ApprovalCard,
@@ -9,6 +10,7 @@ import {
   type DraftEdits,
   isLinkedInChannel,
 } from "@/components/dashboard/ApprovalCard";
+import { useDomainApprovalsStore } from "@/stores/domainStores";
 
 function initialEditsForItem(item: ApprovalQueueItem): DraftEdits {
   const pkg = item.package_draft;
@@ -23,33 +25,22 @@ function initialEditsForItem(item: ApprovalQueueItem): DraftEdits {
 }
 
 export function ApprovalsBoard() {
-  const [items, setItems] = useState<ApprovalQueueItem[]>([]);
+  const items = useDomainApprovalsStore((s) => s.approvals) as ApprovalQueueItem[];
+  const { isLoading: loading, mutate: reloadApprovals } = useDomainApprovals();
   const [draftEdits, setDraftEdits] = useState<Record<string, DraftEdits>>({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
   const pendingIdempotencyKeys = useRef<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl("v1/me/approvals"), { credentials: "same-origin" });
-      if (!r.ok) {
-        setItems([]);
-        setError("Could not load pending approvals right now.");
-        return;
-      }
-      const list = (await r.json()) as ApprovalQueueItem[];
-      setItems(list);
+      await reloadApprovals();
     } catch {
-      setItems([]);
       setError("Could not load pending approvals right now.");
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [reloadApprovals]);
 
   useEffect(() => {
     const next: Record<string, DraftEdits> = {};
@@ -74,30 +65,7 @@ export function ApprovalsBoard() {
         pendingIdempotencyKeys.current[actionTag] ??
         makeIdempotencyKey(`approval-${actionTag}`);
       pendingIdempotencyKeys.current[actionTag] = idempotencyKey;
-      const r = await fetch(dauboBffUrl(`v1/me/approvals/${item.id}/approve`), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "content-type": "application/json",
-          "Idempotency-Key": idempotencyKey,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(
-          detailFromApiJson(j, "Could not approve this application."),
-        );
-      }
-      const data = (await r.json()) as {
-        gmail_draft?: { gmail_web_url?: string };
-        gmail_warning?: string | null;
-        linkedin_handoff?: {
-          note_text: string;
-          job_url?: string | null;
-          context_line?: string;
-        } | null;
-      };
+      const data = await domainApi.approvals.approve(item.id, body, idempotencyKey);
       if (data.gmail_warning?.trim()) {
         setError(data.gmail_warning.trim());
       }
@@ -136,15 +104,7 @@ export function ApprovalsBoard() {
         pendingIdempotencyKeys.current[actionTag] ??
         makeIdempotencyKey(`approval-${actionTag}`);
       pendingIdempotencyKeys.current[actionTag] = idempotencyKey;
-      const r = await fetch(dauboBffUrl(`v1/me/approvals/${approvalId}/reject`), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Idempotency-Key": idempotencyKey },
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(detailFromApiJson(j, "Could not reject this approval."));
-      }
+      await domainApi.approvals.reject(approvalId, idempotencyKey);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not reject this approval.");

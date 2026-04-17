@@ -6,45 +6,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
 import { ResumeProfileStrip } from "@/components/dashboard/ResumeProfileStrip";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { useDomainApplications } from "@/hooks/useDomainData";
+import { domainApi } from "@/lib/domain-api";
 import { usePipelineStream } from "@/hooks/usePipelineStream";
-import { formatApiErrorMessage } from "@/lib/api-error-message";
-import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
-
-type Application = {
-  id: string;
-  title: string;
-  company: string;
-  location: string | null;
-  status: string;
-  notes: string | null;
-  job_url: string | null;
-  apply_channel: string | null;
-  job_description: string | null;
-  package_draft: PackageDraft;
-  interview_prep: Record<string, unknown> | null;
-  updated_at: string;
-};
-
-type IntegrityChange = {
-  application_id: string;
-  action: string;
-  reason: string;
-  before?: string | null;
-  after?: string | null;
-  duplicate_of_id?: string | null;
-};
-
-type IntegrityReport = {
-  dry_run: boolean;
-  stale_days: number;
-  scanned: number;
-  duplicates_found: number;
-  duplicates_removed: number;
-  statuses_normalized: number;
-  stale_flagged: number;
-  changes: IntegrityChange[];
-};
+import { useDomainPipelineStore } from "@/stores/domainStores";
+import type { Application, IntegrityReport } from "@/types/domain";
 
 type PipelineTab = "all" | "applied" | "interview" | "pending";
 
@@ -78,9 +45,9 @@ export function ApplicationsBoard() {
   const qFromUrl = searchParams.get("q") ?? "";
   const { stats, reload: reloadStats } = useDashboardStats();
   const { event: pipelineEvent } = usePipelineStream(true);
+  const items = useDomainPipelineStore((s) => s.applications) as Array<Application & { package_draft: PackageDraft }>;
+  const { isLoading: loading, mutate: reloadApplications } = useDomainApplications();
 
-  const [items, setItems] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [filterText, setFilterText] = useState(qFromUrl);
@@ -99,41 +66,25 @@ export function ApplicationsBoard() {
 
   const load = useCallback(async () => {
     setError(null);
-    setLoading(true);
     try {
-      const r = await fetch(dauboBffUrl("v1/me/applications"), { credentials: "same-origin" });
-      if (!r.ok) {
-        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
-        throw new Error(formatApiErrorMessage(j.detail, `Could not load jobs (${r.status}). Try again.`));
-      }
-      const raw = (await r.json()) as Application[];
-      setItems(
-        raw.map((row) => ({
-          ...row,
-          status: row.status === "ready" ? "ready_to_apply" : row.status,
-          apply_channel: row.apply_channel ?? null,
-          job_description: row.job_description ?? null,
-          package_draft: row.package_draft ?? null,
-          interview_prep: row.interview_prep ?? null,
-        })),
-      );
+      await reloadApplications();
     } catch (e) {
       setError(e instanceof Error ? e.message : "We couldn’t load your jobs. Try again.");
-    } finally {
-      setLoading(false);
     }
-  }, []);
+  }, [reloadApplications]);
+
+  const reloadBoardAndStats = useCallback(async () => {
+    await load();
+    void reloadStats();
+  }, [load, reloadStats]);
 
   const exportCsv = useCallback(async () => {
     setExporting(true);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl("v1/me/applications/export"), {
-        credentials: "same-origin",
-      });
+      const r = await domainApi.applications.exportCsv();
       if (!r.ok) {
-        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
-        throw new Error(formatApiErrorMessage(j.detail, "Could not export. Try again."));
+        throw new Error("Could not export. Try again.");
       }
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
@@ -235,28 +186,18 @@ export function ApplicationsBoard() {
     setSaving(true);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl("v1/me/applications"), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          company: company.trim(),
-          location: location.trim() || null,
-          job_url: jobUrl.trim() || null,
-          status: "draft",
-        }),
+      await domainApi.applications.create({
+        title: title.trim(),
+        company: company.trim(),
+        location: location.trim() || null,
+        job_url: jobUrl.trim() || null,
+        status: "draft",
       });
-      if (!r.ok) {
-        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
-        throw new Error(formatApiErrorMessage(j.detail, "Could not save this job. Try again."));
-      }
       setTitle("");
       setCompany("");
       setLocation("");
       setJobUrl("");
-      await load();
-      void reloadStats();
+      await reloadBoardAndStats();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -265,15 +206,11 @@ export function ApplicationsBoard() {
   }
 
   async function updateStatus(id: string, status: string) {
-    const r = await fetch(dauboBffUrl(`v1/me/applications/${id}`), {
-      method: "PATCH",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (r.ok) {
-      await load();
-      void reloadStats();
+    try {
+      await domainApi.applications.update(id, { status });
+      await reloadBoardAndStats();
+    } catch {
+      setError("Could not update status.");
     }
   }
 
@@ -284,13 +221,11 @@ export function ApplicationsBoard() {
 
   async function remove(id: string) {
     if (!confirm("Remove this job from your list?")) return;
-    const r = await fetch(dauboBffUrl(`v1/me/applications/${id}`), {
-      method: "DELETE",
-      credentials: "same-origin",
-    });
-    if (r.ok) {
-      await load();
-      void reloadStats();
+    try {
+      await domainApi.applications.remove(id);
+      await reloadBoardAndStats();
+    } catch {
+      setError("Could not remove this job.");
     }
   }
 
@@ -299,21 +234,10 @@ export function ApplicationsBoard() {
     else setIntegrityApplying(true);
     setError(null);
     try {
-      const r = await fetch(dauboBffUrl("v1/me/applications/integrity-check"), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ dry_run: dryRun, stale_days: 21 }),
-      });
-      if (!r.ok) {
-        const j = (await r.json().catch(() => ({}))) as { detail?: unknown };
-        throw new Error(formatApiErrorMessage(j.detail, "Could not run pipeline cleanup. Try again."));
-      }
-      const report = (await r.json()) as IntegrityReport;
+      const report = await domainApi.applications.integrityCheck({ dry_run: dryRun, stale_days: 21 });
       setIntegrityReport(report);
       if (!dryRun) {
-        await load();
-        void reloadStats();
+        await reloadBoardAndStats();
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Pipeline cleanup failed");
@@ -321,7 +245,7 @@ export function ApplicationsBoard() {
       if (dryRun) setIntegrityLoading(false);
       else setIntegrityApplying(false);
     }
-  }, [load, reloadStats]);
+  }, [reloadBoardAndStats]);
 
   function jumpToApplicationRow(applicationId: string) {
     const el = document.getElementById(`app-row-${applicationId}`);
