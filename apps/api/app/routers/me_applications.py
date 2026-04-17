@@ -42,6 +42,29 @@ router = APIRouter(tags=["me"])
 logger = logging.getLogger("daubo")
 
 
+async def _applications_stream_snapshot(session: AsyncSession, user_id: str) -> dict[str, object]:
+    total = int(
+        await session.scalar(
+            select(func.count()).select_from(JobApplication).where(JobApplication.clerk_user_id == user_id)
+        )
+        or 0
+    )
+    max_updated = await session.scalar(
+        select(func.max(JobApplication.updated_at)).where(JobApplication.clerk_user_id == user_id)
+    )
+    status_rows = await session.execute(
+        select(JobApplication.status, func.count())
+        .where(JobApplication.clerk_user_id == user_id)
+        .group_by(JobApplication.status)
+    )
+    by_status = {str(status): int(count) for status, count in status_rows.all()}
+    return {
+        "total": total,
+        "max_updated_at": max_updated.isoformat() if max_updated else None,
+        "by_status": by_status,
+    }
+
+
 @router.get("/me/applications", response_model=list[ApplicationOut])
 async def list_applications(
     user_id: str = Depends(get_clerk_user_id),
@@ -192,32 +215,10 @@ async def applications_stream(
     user_id: str = Depends(get_clerk_user_id),
     session: AsyncSession = Depends(get_db),
 ):
-    async def _snapshot() -> dict[str, object]:
-        total = int(
-            await session.scalar(
-                select(func.count()).select_from(JobApplication).where(JobApplication.clerk_user_id == user_id)
-            )
-            or 0
-        )
-        max_updated = await session.scalar(
-            select(func.max(JobApplication.updated_at)).where(JobApplication.clerk_user_id == user_id)
-        )
-        status_rows = await session.execute(
-            select(JobApplication.status, func.count())
-            .where(JobApplication.clerk_user_id == user_id)
-            .group_by(JobApplication.status)
-        )
-        by_status = {str(status): int(count) for status, count in status_rows.all()}
-        return {
-            "total": total,
-            "max_updated_at": max_updated.isoformat() if max_updated else None,
-            "by_status": by_status,
-        }
-
     async def event_gen():
         last_sig: str | None = None
         while True:
-            payload = await _snapshot()
+            payload = await _applications_stream_snapshot(session, user_id)
             sig = json.dumps(payload, sort_keys=True)
             if sig != last_sig:
                 yield f"event: pipeline_update\ndata: {sig}\n\n"
