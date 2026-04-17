@@ -152,6 +152,46 @@ class Settings(BaseSettings):
 
     expose_openapi: bool = True
 
+    # Phase 7 — rate limiting (Redis recommended for multi-worker; memory fallback is per-process)
+    rate_limit_enabled: bool = Field(
+        default=True,
+        description="Global HTTP rate limit (skips /health, /metrics, /docs, /modelui).",
+    )
+    rate_limit_per_minute: int = Field(
+        default=240,
+        ge=0,
+        description="Max requests per minute per user (X-Daubo-User-Id) or per IP. 0 disables.",
+    )
+    rate_limit_use_redis: bool = Field(
+        default=True,
+        description="Use Redis for shared counters; if false or Redis errors, use memory (single worker).",
+    )
+
+    # Observability
+    log_json: bool = Field(
+        default=False,
+        description="Emit JSON logs (structlog). Defaults on when APP_ENVIRONMENT=production.",
+    )
+    sentry_dsn: str = Field(default="", description="Optional Sentry DSN for error reporting.")
+    sentry_traces_sample_rate: float = Field(default=0.1, ge=0.0, le=1.0)
+    sentry_profiles_sample_rate: float = Field(default=0.0, ge=0.0, le=1.0)
+    expose_prometheus_metrics: bool = Field(
+        default=True,
+        description="Expose Prometheus metrics at /metrics (skips OpenAPI schema).",
+    )
+
+    # Local QA: when not production, allow missing X-Daubo-User-Id to fall back to this Clerk id
+    dev_fallback_user_id: str = Field(
+        default="",
+        description="Non-production only: use as X-Daubo-User-Id when the header is absent (curl/Postman QA).",
+    )
+
+    # Stored URLs (job postings) — allow private hosts only in dev (never in production)
+    allow_private_job_urls: bool = Field(
+        default=False,
+        description="If true, skip private-host blocking for job_url fields (development only).",
+    )
+
     @field_validator("log_level")
     @classmethod
     def log_level_upper(cls, v: str) -> str:
@@ -183,6 +223,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_environment == "production"
+
+    @property
+    def effective_log_json(self) -> bool:
+        return bool(self.log_json or self.is_production)
 
     @property
     def internal_api_secret(self) -> str:

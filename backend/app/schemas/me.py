@@ -4,7 +4,17 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ..config import get_settings
+from ..security.url_safety import validate_public_http_url
 from ..services.resume_profile_signals import ResumeProfileSignals
+
+
+def _validate_job_url_field(v: str | None) -> str | None:
+    if v is None or not str(v).strip():
+        return None
+    s = get_settings()
+    allow_private = bool(s.allow_private_job_urls and not s.is_production)
+    return validate_public_http_url(v.strip(), allow_private_hosts=allow_private)
 
 
 class ResumeIn(BaseModel):
@@ -79,6 +89,11 @@ class ApplicationCreate(BaseModel):
             return "ready_to_apply"
         return v
 
+    @field_validator("job_url")
+    @classmethod
+    def job_url_safe_on_create(cls, v: str | None) -> str | None:
+        return _validate_job_url_field(v)
+
 
 class ApplicationUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=500)
@@ -96,6 +111,11 @@ class ApplicationUpdate(BaseModel):
         if v == "ready":
             return "ready_to_apply"
         return v
+
+    @field_validator("job_url")
+    @classmethod
+    def job_url_safe_on_update(cls, v: str | None) -> str | None:
+        return _validate_job_url_field(v)
 
 
 class ApplicationOut(BaseModel):

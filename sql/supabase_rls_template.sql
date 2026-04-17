@@ -1,0 +1,10 @@
+-- Supabase row-level security template for tables keyed by clerk_user_id.
+-- Apply only if the Postgres role used by PostgREST / Supabase Realtime matches your auth model.
+-- When the API uses a single service role (FastAPI + asyncpg), isolation is enforced in application
+-- code; RLS matters when clients query Postgres directly with JWT-based roles.
+--
+-- Example (adjust role and JWT claim name to your IdP):
+--   ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
+--   CREATE POLICY job_applications_isolation ON job_applications
+--     FOR ALL TO authenticated
+--     USING (clerk_user_id = (auth.jwt()->>'sub'));

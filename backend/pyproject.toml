@@ -2,7 +2,7 @@
 name = "daubo-backend"
 version = "0.1.0"
 description = "Daubo FastAPI backend — LangGraph, OpenRouter, Jina embeddings, pgvector"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "python-multipart>=0.0.9",
     "fastapi>=0.115.0",
@@ -22,6 +22,10 @@ dependencies = [
     "tavily-python>=0.7.23",
     "copilotkit>=0.1.86",
     "langgraph-checkpoint-postgres>=3.0.5",
+    "redis>=5.0.0",
+    "structlog>=24.0.0",
+    "sentry-sdk[fastapi]>=2.0.0",
+    "prometheus-fastapi-instrumentator>=7.0.0",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +35,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [build-system]
 requires = ["hatchling"]

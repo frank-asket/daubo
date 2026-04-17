@@ -23,7 +23,8 @@
     "lint:web": "next lint",
     "backend:dev": "cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "api:dev": "cd apps/api && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "smoke:api:matrix": "bash scripts/smoke-api-matrix.sh"
+    "smoke:api:matrix": "bash scripts/smoke-api-matrix.sh",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.5",
@@ -41,6 +42,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

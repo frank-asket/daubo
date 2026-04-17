@@ -1,0 +1,22 @@
+# Fly.io app config for the Daubo API (backend/Dockerfile).
+# Create the app: fly apps create daubo-api
+# Set secrets: fly secrets set DATABASE_URL=... DAUBO_INTERNAL_API_SECRET=...
+
+app = "daubo-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "backend/Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

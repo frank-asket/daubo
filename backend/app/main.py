@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,7 +12,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import Settings, get_settings
 from app.db import engine, init_db
 from app.deps.security import require_internal_api_key
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.request_context import RequestContextMiddleware
+from app.observability import init_sentry, setup_logging
 from app.routers import chat, chunks, embeddings, health, jobs, me, me_status
 
 logger = logging.getLogger("daubo")
@@ -23,18 +24,12 @@ _MODELUI_DEFAULT = "Multi-agent Job Search Assistant.html"
 
 
 def _configure_logging() -> None:
-    settings = get_settings()
-    level = getattr(logging, settings.log_level, logging.INFO)
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-        stream=sys.stdout,
-        force=True,
-    )
+    setup_logging(get_settings())
 
 
 _configure_logging()
 settings = get_settings()
+init_sentry(settings)
 
 
 @asynccontextmanager
@@ -143,6 +138,7 @@ def create_app() -> FastAPI:
         openapi_url=openapi_url,
     )
 
+    app.add_middleware(RateLimitMiddleware, settings=s)
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -249,6 +245,15 @@ def create_app() -> FastAPI:
 
     _mount_job_search_ag_ui(app, s)
     _mount_modelui_preview(app)
+
+    if s.expose_prometheus_metrics:
+        from prometheus_fastapi_instrumentator import Instrumentator
+
+        Instrumentator().instrument(app).expose(
+            app,
+            endpoint="/metrics",
+            include_in_schema=False,
+        )
 
     return app
 
