@@ -6,8 +6,8 @@ import { GmailConnectCard } from "@/components/dashboard/GmailConnectCard";
 
 export default function SettingsPage() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <section className="rounded-2xl border border-zinc-800 bg-[#080808] p-5 sm:p-6">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <section className="rounded-3xl border border-zinc-800 bg-[#080808] p-5 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Settings</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Account and integrations
@@ -23,7 +23,7 @@ export default function SettingsPage() {
         </Link>
       </section>
 
-      <div className="mt-6 space-y-8">
+      <div className="space-y-8">
         <DashboardPrivacyNoteCard />
         <Suspense
           fallback={
@@ -39,7 +39,7 @@ export default function SettingsPage() {
 
       <Link
         href="/dashboard"
-        className="mt-8 inline-flex text-sm font-semibold text-zinc-500 hover:text-zinc-300"
+        className="inline-flex text-sm font-semibold text-zinc-500 hover:text-zinc-300"
       >
         ← Back to home
       </Link>

@@ -2,8 +2,8 @@ import { AgentStatusBoard } from "@/components/dashboard/AgentStatusBoard";
 
 export default function AgentStatusPage() {
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <section className="rounded-2xl border border-zinc-800 bg-[#080808] p-5 sm:p-6">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      <section className="rounded-3xl border border-zinc-800 bg-[#080808] p-5 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">Agents</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Agent status
@@ -12,7 +12,7 @@ export default function AgentStatusPage() {
           Monitor orchestration health, availability, and backend execution state.
         </p>
       </section>
-      <div className="mt-6">
+      <div>
         <AgentStatusBoard />
       </div>
     </div>
