@@ -11,10 +11,10 @@ import {
   User,
   Settings,
   LifeBuoy,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { Logo } from "@/components/Logo";
 import { useDashboardStatsOptional } from "@/components/dashboard/DashboardStatsContext";
 import {
   DASHBOARD_NAV_MAIN,
@@ -118,7 +118,18 @@ export function DauboSidebar({
       )}
     >
       <div className="flex h-28 flex-col items-start justify-center border-b border-zinc-800/90 px-6">
-        <Logo href={logoHref} />
+        <Link
+          href={logoHref}
+          onClick={onNavLinkClick}
+          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+        >
+          <span className="inline-flex items-center gap-2 font-semibold tracking-tight text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-400">
+              <ChevronRight size={14} className="text-zinc-950" strokeWidth={3} />
+            </span>
+            Daubo
+          </span>
+        </Link>
         <p className="mt-1 text-[12px] font-semibold uppercase tracking-wide text-emerald-400">Job Search AI</p>
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-2" aria-label="Dashboard">
