@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { JobDiscoverPanel, type DiscoverResult } from "@/components/dashboard/JobDiscoverPanel";
 import { ResumeMatchHighlightsCard } from "@/components/dashboard/ResumeMatchHighlightsCard";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { useDiscoverStream } from "@/hooks/useDiscoverStream";
 import { useJobs } from "@/hooks/useJobs";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
@@ -47,6 +48,7 @@ function MetricCard({
 export function DiscoverWorkspace() {
   const { stats, reload: reloadStats } = useDashboardStats();
   const { data: jobsData } = useJobs({ page: 1, pageSize: 100 });
+  const { event: discoverEvent } = useDiscoverStream(true);
   const [latestRun, setLatestRun] = useState<DiscoverResult | null>(null);
   const [matchStatus, setMatchStatus] = useState<"idle" | "queued" | "polling" | "ready" | "error">("idle");
 
@@ -67,6 +69,12 @@ export function DiscoverWorkspace() {
   useEffect(() => {
     void loadLatest();
   }, [loadLatest]);
+
+  useEffect(() => {
+    if (!discoverEvent) return;
+    void loadLatest();
+    void reloadStats();
+  }, [discoverEvent, loadLatest, reloadStats]);
 
   useEffect(() => {
     if (!stats?.has_resume) {

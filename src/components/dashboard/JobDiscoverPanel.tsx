@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { useDiscoverStream } from "@/hooks/useDiscoverStream";
 import { dauboBffUrl } from "@/lib/daubo-api";
 
 export type DiscoverResult = {
@@ -89,6 +90,7 @@ export function JobDiscoverPanel({
   onCompleteRef.current = onDiscoveryComplete;
 
   const { stats } = useDashboardStats();
+  const { event: discoverEvent } = useDiscoverStream(true);
   const [country, setCountry] = useState("");
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [cityOrRegion, setCityOrRegion] = useState("");
@@ -260,6 +262,12 @@ export function JobDiscoverPanel({
       clearTimeout(b);
     };
   }, [fetchLatestPlan]);
+
+  useEffect(() => {
+    if (!discoverEvent) return;
+    // Refresh the discover panel when backend listing/scoring snapshot changes.
+    void fetchLatestPlan();
+  }, [discoverEvent, fetchLatestPlan]);
 
   useEffect(() => {
     if (!stats?.has_resume || hintsPrefilled.current) return;

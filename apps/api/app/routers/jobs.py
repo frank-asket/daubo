@@ -1,8 +1,10 @@
 import hashlib
 import json
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from redis.asyncio import from_url as redis_from_url
 from sqlalchemy import func, select
 
@@ -37,6 +39,33 @@ def _jobs_cache_key(*, user_id: str, min_fit: float, location: str | None, page:
         sort_keys=True,
     )
     return f"jobs:list:{hashlib.sha256(payload.encode('utf-8')).hexdigest()}"
+
+
+async def _jobs_stream_snapshot(session: AsyncSession, user_id: str) -> dict[str, object]:
+    total = int(
+        await session.scalar(select(func.count()).select_from(JobListing).where(JobListing.clerk_user_id == user_id))
+        or 0
+    )
+    max_discovered = await session.scalar(
+        select(func.max(JobListing.discovered_at)).where(JobListing.clerk_user_id == user_id)
+    )
+    high_fit = int(
+        await session.scalar(
+            select(func.count())
+            .select_from(JobListing)
+            .where(
+                JobListing.clerk_user_id == user_id,
+                JobListing.fit_score.is_not(None),
+                JobListing.fit_score >= 4.0,
+            )
+        )
+        or 0
+    )
+    return {
+        "total": total,
+        "high_fit": high_fit,
+        "max_discovered_at": max_discovered.isoformat() if max_discovered else None,
+    }
 
 
 @router.post("/jobs/discover", response_model=JobDiscoverResponse)
@@ -165,4 +194,32 @@ async def list_jobs(
     finally:
         await redis.aclose()
     return out
+
+
+@router.get("/jobs/stream")
+async def jobs_stream(
+    user_id: str = Depends(get_clerk_user_id),
+    session: AsyncSession = Depends(get_db),
+):
+    async def event_gen():
+        last_sig: str | None = None
+        while True:
+            payload = await _jobs_stream_snapshot(session, user_id)
+            sig = json.dumps(payload, sort_keys=True)
+            if sig != last_sig:
+                yield f"event: discovery_update\ndata: {sig}\n\n"
+                last_sig = sig
+            else:
+                yield "event: ping\ndata: {}\n\n"
+            await asyncio.sleep(5)
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 

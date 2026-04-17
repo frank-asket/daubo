@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApplyHandoffPanel, type PackageDraft } from "@/components/dashboard/ApplyHandoffPanel";
 import { ResumeProfileStrip } from "@/components/dashboard/ResumeProfileStrip";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
+import { usePipelineStream } from "@/hooks/usePipelineStream";
 import { formatApiErrorMessage } from "@/lib/api-error-message";
 import { dauboBffUrl } from "@/lib/daubo-api";
 import { JOB_STAGE_VALUES, jobStageLabel } from "@/lib/job-stages";
@@ -76,6 +77,7 @@ export function ApplicationsBoard() {
   const searchParams = useSearchParams();
   const qFromUrl = searchParams.get("q") ?? "";
   const { stats, reload: reloadStats } = useDashboardStats();
+  const { event: pipelineEvent } = usePipelineStream(true);
 
   const [items, setItems] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,6 +155,12 @@ export function ApplicationsBoard() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!pipelineEvent) return;
+    // Stream only sends changed snapshots; refresh board state when backend pipeline mutates.
+    void load();
+  }, [pipelineEvent, load]);
 
   useEffect(() => {
     setFilterText(qFromUrl);
