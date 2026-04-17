@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { dauboBffUrl } from "@/lib/daubo-api";
+import { useSseEventStream } from "@/hooks/useSseEventStream";
 
 export type DiscoverStreamEvent = {
   total: number;
@@ -10,29 +10,11 @@ export type DiscoverStreamEvent = {
 };
 
 export function useDiscoverStream(enabled = true) {
-  const [event, setEvent] = useState<DiscoverStreamEvent | null>(null);
-  const [streamError, setStreamError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled || typeof window === "undefined") return;
-    const url = dauboBffUrl("v1/jobs/stream");
-    const es = new EventSource(url);
-    es.addEventListener("discovery_update", (evt) => {
-      try {
-        const payload = JSON.parse((evt as MessageEvent).data) as DiscoverStreamEvent;
-        setEvent(payload);
-        setStreamError(null);
-      } catch {
-        setStreamError("Could not parse live discovery update.");
-      }
-    });
-    es.onerror = () => {
-      setStreamError("Live discovery updates paused. Refresh to reconnect.");
-    };
-    return () => {
-      es.close();
-    };
-  }, [enabled]);
-
-  return { event, streamError };
+  return useSseEventStream<DiscoverStreamEvent>({
+    enabled,
+    url: dauboBffUrl("v1/jobs/stream"),
+    eventName: "discovery_update",
+    parseErrorMessage: "Could not parse live discovery update.",
+    pausedMessage: "Live discovery updates are reconnecting.",
+  });
 }

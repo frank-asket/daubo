@@ -44,7 +44,8 @@ export function ApplicationsBoard() {
   const searchParams = useSearchParams();
   const qFromUrl = searchParams.get("q") ?? "";
   const { stats, reload: reloadStats } = useDashboardStats();
-  const { event: pipelineEvent } = usePipelineStream(true);
+  const { event: pipelineEvent, streamError: pipelineStreamError, isStale: pipelineStreamStale } =
+    usePipelineStream(true);
   const items = useDomainPipelineStore((s) => s.applications) as Array<Application & { package_draft: PackageDraft }>;
   const { isLoading: loading, mutate: reloadApplications } = useDomainApplications();
 
@@ -63,6 +64,7 @@ export function ApplicationsBoard() {
   const [staleOnly, setStaleOnly] = useState(false);
   const [pipelineTab, setPipelineTab] = useState<PipelineTab>("all");
   const autoPreviewTriggered = useRef(false);
+  const streamReloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -109,9 +111,18 @@ export function ApplicationsBoard() {
 
   useEffect(() => {
     if (!pipelineEvent) return;
-    // Stream only sends changed snapshots; refresh board state when backend pipeline mutates.
-    void load();
+    // Debounce to avoid burst refetches when multiple updates arrive close together.
+    if (streamReloadTimer.current) clearTimeout(streamReloadTimer.current);
+    streamReloadTimer.current = setTimeout(() => {
+      void load();
+    }, 350);
   }, [pipelineEvent, load]);
+
+  useEffect(() => {
+    return () => {
+      if (streamReloadTimer.current) clearTimeout(streamReloadTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     setFilterText(qFromUrl);
@@ -292,6 +303,16 @@ export function ApplicationsBoard() {
         </p>
       ) : null}
       <ResumeProfileStrip />
+      {pipelineStreamStale ? (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+          Live pipeline stream is stale. Reconnecting in the background.
+        </p>
+      ) : null}
+      {pipelineStreamError ? (
+        <p className="rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-300">
+          {pipelineStreamError}
+        </p>
+      ) : null}
       <form
         onSubmit={addApplication}
         className="rounded-2xl border border-zinc-800 bg-[#0c0c0c] p-6"

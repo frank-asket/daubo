@@ -90,7 +90,11 @@ export function JobDiscoverPanel({
   onCompleteRef.current = onDiscoveryComplete;
 
   const { stats } = useDashboardStats();
-  const { event: discoverEvent } = useDiscoverStream(true);
+  const {
+    event: discoverEvent,
+    streamError: discoverStreamError,
+    isStale: discoverStreamStale,
+  } = useDiscoverStream(true);
   const [country, setCountry] = useState("");
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [cityOrRegion, setCityOrRegion] = useState("");
@@ -109,6 +113,7 @@ export function JobDiscoverPanel({
   const [addingId, setAddingId] = useState<string | null>(null);
   const [preparingId, setPreparingId] = useState<string | null>(null);
   const [minFitThreshold, setMinFitThreshold] = useState(0);
+  const streamRefreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const fromQuery = normalizeFitThreshold(searchParams.get(DISCOVER_FIT_QUERY_KEY));
@@ -265,9 +270,18 @@ export function JobDiscoverPanel({
 
   useEffect(() => {
     if (!discoverEvent) return;
-    // Refresh the discover panel when backend listing/scoring snapshot changes.
-    void fetchLatestPlan();
+    // Debounce stream-triggered refreshes to smooth bursty updates.
+    if (streamRefreshTimer.current) clearTimeout(streamRefreshTimer.current);
+    streamRefreshTimer.current = setTimeout(() => {
+      void fetchLatestPlan();
+    }, 350);
   }, [discoverEvent, fetchLatestPlan]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRefreshTimer.current) clearTimeout(streamRefreshTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!stats?.has_resume || hintsPrefilled.current) return;
@@ -374,6 +388,16 @@ export function JobDiscoverPanel({
           Last suggestions from your résumé
           {autoPlanAt ? `: ${new Date(autoPlanAt).toLocaleString()}` : ""}. This can take about a minute
           after you save your résumé—refresh the page if this area stays blank.
+        </p>
+      ) : null}
+      {discoverStreamStale ? (
+        <p className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100">
+          Live discovery stream is stale. Reconnecting automatically.
+        </p>
+      ) : null}
+      {discoverStreamError ? (
+        <p className="mt-2 rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-[11px] text-zinc-300">
+          {discoverStreamError}
         </p>
       ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -9,6 +9,11 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+asyncpg://user:pass@127.0.0.1:5432/daubo
+      BACKEND_CORS_ORIGINS: http://localhost:3000
+      DAUBO_INTERNAL_API_SECRET: ci_internal_secret
+      OPENROUTER_API_KEY: ci_openrouter_key
     defaults:
       run:
         working-directory: backend
@@ -29,15 +34,27 @@ jobs:
         run: uv run ruff check app tests
 
       - name: Unit tests
-        env:
-          DATABASE_URL: postgresql+asyncpg://user:pass@127.0.0.1:5432/daubo
         run: uv run python -m unittest discover -s tests -p "test_*.py"
+
+      - name: Sync apps/api test dependencies
+        working-directory: .
+        run: uv sync --project apps/api --extra dev
+
+      - name: Streaming snapshot parity tests (apps/api)
+        working-directory: .
+        run: PYTHONPATH="$PWD:$PWD/apps/api" uv run --project apps/api pytest apps/api/tests/test_streaming_snapshots.py
+
+      - name: Validate Railway required env contract
+        working-directory: .
+        run: npm run check:env:railway
 
   web:
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci
       CLERK_SECRET_KEY: sk_test_ci
+      DAUBO_API_URL: https://api.example.test
+      DAUBO_INTERNAL_API_SECRET: ci_internal_secret
     steps:
       - uses: actions/checkout@v4
 
@@ -54,3 +71,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Validate Vercel required env contract
+        run: npm run check:env:vercel

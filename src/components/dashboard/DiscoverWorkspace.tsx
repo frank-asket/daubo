@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { JobDiscoverPanel, type DiscoverResult } from "@/components/dashboard/JobDiscoverPanel";
 import { ResumeMatchHighlightsCard } from "@/components/dashboard/ResumeMatchHighlightsCard";
 import { useDashboardStats } from "@/components/dashboard/DashboardStatsContext";
@@ -48,9 +48,14 @@ function MetricCard({
 export function DiscoverWorkspace() {
   const { stats, reload: reloadStats } = useDashboardStats();
   const { data: jobsData } = useJobs({ page: 1, pageSize: 100 });
-  const { event: discoverEvent } = useDiscoverStream(true);
+  const {
+    event: discoverEvent,
+    streamError: discoverStreamError,
+    isStale: discoverStreamStale,
+  } = useDiscoverStream(true);
   const [latestRun, setLatestRun] = useState<DiscoverResult | null>(null);
   const [matchStatus, setMatchStatus] = useState<"idle" | "queued" | "polling" | "ready" | "error">("idle");
+  const streamRefreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadLatest = useCallback(async () => {
     try {
@@ -72,9 +77,18 @@ export function DiscoverWorkspace() {
 
   useEffect(() => {
     if (!discoverEvent) return;
-    void loadLatest();
-    void reloadStats();
+    if (streamRefreshTimer.current) clearTimeout(streamRefreshTimer.current);
+    streamRefreshTimer.current = setTimeout(() => {
+      void loadLatest();
+      void reloadStats();
+    }, 350);
   }, [discoverEvent, loadLatest, reloadStats]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRefreshTimer.current) clearTimeout(streamRefreshTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!stats?.has_resume) {
@@ -201,6 +215,16 @@ export function DiscoverWorkspace() {
         {matchStatus === "error" ? (
           <p className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
             Could not start auto-match right now. Try the Refresh action in Discover in a moment.
+          </p>
+        ) : null}
+        {discoverStreamStale ? (
+          <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+            Live discovery updates are delayed. Reconnecting automatically.
+          </p>
+        ) : null}
+        {discoverStreamError ? (
+          <p className="mt-4 rounded-lg border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-sm text-zinc-300">
+            {discoverStreamError}
           </p>
         ) : null}
       </section>

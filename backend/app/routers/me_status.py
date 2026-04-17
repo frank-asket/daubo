@@ -176,10 +176,15 @@ async def agents_status_stream(
     settings: Settings = Depends(get_settings),
 ):
     async def event_gen():
+        last_sig: str | None = None
         while True:
             payload = await _build_agent_status(user_id=user_id, session=session, settings=settings)
-            data = json.dumps(payload.model_dump(mode="json"))
-            yield f"event: agent_status\ndata: {data}\n\n"
+            data = json.dumps(payload.model_dump(mode="json"), sort_keys=True)
+            if data != last_sig:
+                yield f"event: agent_status\ndata: {data}\n\n"
+                last_sig = data
+            else:
+                yield "event: ping\ndata: {}\n\n"
             await asyncio.sleep(5)
 
     return StreamingResponse(

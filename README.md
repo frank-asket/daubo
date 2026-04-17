@@ -264,6 +264,16 @@ export LANGCHAIN_PROJECT="daubo"   # optional
 
 Browser traffic uses **`/api/daubo/...`** via [`src/lib/daubo-api.ts`](src/lib/daubo-api.ts) (`dauboBffUrl`).
 
+### Ops runbook
+
+Production hardening and observability playbook lives at:
+- [`docs/OPERATIONS-RUNBOOK.md`](docs/OPERATIONS-RUNBOOK.md)
+
+It includes:
+- required env contract checks (`npm run check:env:vercel`, `npm run check:env:railway`)
+- Prometheus/Grafana wiring and validation
+- Sentry verification and release checklist
+
 ---
 
 ## Scripts
